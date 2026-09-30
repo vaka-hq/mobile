@@ -14,10 +14,11 @@ on:
 permissions:
   contents: read
 
-# One release at a time, and none cut short.
+# One release at a time, none cut short, and every one waiting kept in turn rather than replaced.
 concurrency:
   group: release
   cancel-in-progress: false
+  queue: max
 
 env:
   GH_REPO: ${{ github.repository }}
@@ -156,9 +157,10 @@ jobs:
           out=$RUNNER_TEMP/release
           mkdir -p "$out"
 
+          # Named without the version's `+commit`, which the release's title already shows.
           for apk in android/app/build/outputs/apk/release/app-*-release.apk; do
             abi=$(basename "$apk" -release.apk)
-            cp "$apk" "$out/vaka-$VAKA_VERSION_NAME-${abi#app-}.apk"
+            cp "$apk" "$out/vaka-${VAKA_VERSION_NAME%%+*}-${abi#app-}.apk"
           done
 
           printf '{"versionName":"%s","versionCode":%s,"channel":"%s"}\n' \

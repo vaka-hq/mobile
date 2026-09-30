@@ -612,7 +612,7 @@ export function SettingsScreen() {
               key: 'version',
               glyph: 'info',
               label: t({ message: 'Version', comment: 'App version label' }),
-              value: `${Application.nativeApplicationVersion ?? '0.0.1'} (${Application.nativeBuildVersion ?? '1'})`,
+              value: Application.nativeApplicationVersion ?? '0.0.1',
             },
             {
               key: 'licenses',

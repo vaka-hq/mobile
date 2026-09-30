@@ -205,9 +205,10 @@ the `release` environment's secrets. There are two channels:
 The workflow gives the build its name and version code (`VAKA_VERSION_NAME` and
 `VAKA_VERSION_CODE`, read by `app.config.ts`). The code is the build time in minutes since 2026,
 so every release, of either channel, installs over the builds before it; local builds are 0.0.1
-with code 1. Each release holds one APK per CPU architecture, `vaka-<name>-<abi>.apk`, and an
-`update.json` with the name, code and channel. `.github/workflows/ci.yml` runs the checks and
-bundles the JavaScript for every pull request and push to `main`.
+with code 1. Each release holds one APK per CPU architecture, `vaka-<name>-<abi>.apk` (the name
+without a nightly's `+commit`), and an `update.json` with the name, code and channel.
+`.github/workflows/ci.yml` runs the checks and bundles the JavaScript for every pull request and
+push to `main`.
 
 The production app updates itself (`src/library/app-updates.ts`). Settings chooses the channel,
 Stable by default, and checks by hand; the app also checks once a day when it opens. It reads the

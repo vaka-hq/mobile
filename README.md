@@ -55,9 +55,20 @@ reload over Metro. Native changes (modules, config plugins, native dependencies)
 - `docs/architecture.md` explains how the app works.
 - `AGENTS.md` lists the conventions to follow when changing it.
 
-## Release builds
+## Releases
 
-Releases are built and signed locally, with no Expo cloud services. Create a signing key once:
+Releases are built and published by GitHub Actions, and the app updates itself from them, on the
+Stable or Nightly channel chosen in Settings. Push a tag to release the commit it is on:
+
+```sh
+git tag v1.1.0 nightly-20261001.42   # promote a nightly you have been using
+git push origin v1.1.0
+```
+
+`main` becomes a nightly once a day when it has changed, or at once from Actions → Release → Run
+workflow. `docs/architecture.md` explains the channels and versions.
+
+To build a signed release locally instead, create a signing key once:
 
 ```sh
 keytool -genkeypair -v -storetype PKCS12 -keystore ~/.android/vaka-upload.jks \
@@ -78,9 +89,10 @@ vp run android:release   # builds, signs and installs the production app
 ```
 
 A release makes one APK per CPU architecture in `android/app/build/outputs/apk/release/`; phones
-from recent years take `app-arm64-v8a-release.apk`. Raise `android.versionCode` in
-`app.config.ts` before each release, and keep the key and its passwords backed up: without them,
-the installed app cannot be updated.
+from recent years take `app-arm64-v8a-release.apk`. Keep the key and its passwords backed up, and
+use the same key for GitHub's `release` environment: without it, the installed app cannot be
+updated. A local build is version 0.0.1 with version code 1, so it installs over a published
+release only after that is uninstalled.
 
 The app comes in three variants, chosen with `APP_VARIANT`, which install side by side:
 

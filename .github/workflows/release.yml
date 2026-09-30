@@ -1,0 +1,188 @@
+name: Release
+
+# A `v` tag makes a stable release named after it, such as `v1.1.0`. Once a day, and when run by
+# hand, `main` becomes a nightly pre-release when it has changed since the last one. Every
+# release holds one APK per CPU architecture and the `update.json` the app reads to update itself.
+on:
+  push:
+    tags: ['v*']
+  schedule:
+    # Off the hour, when GitHub's scheduled runs are busiest.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One release at a time, and none cut short.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  plan:
+    name: Name the release
+    # Nightlies come from `main` only; a tag may be on any commit.
+    if: github.ref_type == 'tag' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      skip: ${{ steps.plan.outputs.skip }}
+      channel: ${{ steps.plan.outputs.channel }}
+      tag: ${{ steps.plan.outputs.tag }}
+      name: ${{ steps.plan.outputs.name }}
+      code: ${{ steps.plan.outputs.code }}
+      title: ${{ steps.plan.outputs.title }}
+      since: ${{ steps.plan.outputs.since }}
+    steps:
+      - name: Name the release
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest_stable=$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 \
+            --json tagName --jq '.[0].tagName // ""')
+
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            channel=stable
+            tag=$GITHUB_REF_NAME
+            name=${tag#v}
+            title="Vaka $name"
+            since=$latest_stable
+          else
+            channel=nightly
+            since=$(gh release list --exclude-drafts --limit 50 --json tagName,isPrerelease \
+              --jq '[.[] | select(.isPrerelease)][0].tagName // ""')
+
+            if [ -n "$since" ] && [ "$(gh api "repos/$GH_REPO/commits/$since" --jq .sha)" = "$GITHUB_SHA" ]; then
+              echo "Nothing has changed since $since."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            # The date, and this workflow's run number, which never repeats and finds the run.
+            tag=nightly-$(date -u +%Y%m%d).$GITHUB_RUN_NUMBER
+
+            # Named after the last stable release, or 0.0.1 before the first, and the commit built.
+            base=${latest_stable#v}
+            short=${GITHUB_SHA::7}
+            name=${base:-0.0.1}-nightly.${tag#nightly-}+$short
+            title="Nightly ${tag#nightly-} ($short)"
+          fi
+
+          # Minutes since 2026 began: every build, stable or nightly, installs over the ones before.
+          code=$(( ($(date -u +%s) - $(date -u -d 2026-01-01 +%s)) / 60 ))
+
+          {
+            echo "skip=false"
+            echo "channel=$channel"
+            echo "tag=$tag"
+            echo "name=$name"
+            echo "code=$code"
+            echo "title=$title"
+            echo "since=$since"
+          } >> "$GITHUB_OUTPUT"
+
+  release:
+    name: Build and publish
+    needs: plan
+    if: needs.plan.outputs.skip == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    # Holds the upload key; only this job, for `main` and `v` tags, can read it.
+    environment: release
+    permissions:
+      contents: write
+    env:
+      APP_VARIANT: production
+      VAKA_VERSION_NAME: ${{ needs.plan.outputs.name }}
+      VAKA_VERSION_CODE: ${{ needs.plan.outputs.code }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Vite+
+        uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+          run-install: true
+
+      - name: Format, lint, type-check and test
+        run: |
+          vp run check
+          git diff --exit-code
+
+      - name: Set up Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # The open-source cache; the default one comes under Gradle's own terms of use.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-provider: basic
+
+      - name: Generate the Android project
+        run: vp run generate
+
+      - name: Build the APKs
+        env:
+          VAKA_UPLOAD_KEYSTORE: ${{ secrets.VAKA_UPLOAD_KEYSTORE }}
+          ORG_GRADLE_PROJECT_VAKA_UPLOAD_STORE_PASSWORD: ${{ secrets.VAKA_UPLOAD_STORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_VAKA_UPLOAD_KEY_ALIAS: ${{ secrets.VAKA_UPLOAD_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_VAKA_UPLOAD_KEY_PASSWORD: ${{ secrets.VAKA_UPLOAD_KEY_PASSWORD }}
+        run: |
+          keystore=$RUNNER_TEMP/upload.jks
+          printf '%s' "$VAKA_UPLOAD_KEYSTORE" | base64 --decode > "$keystore"
+          cd android
+          ORG_GRADLE_PROJECT_VAKA_UPLOAD_STORE_FILE=$keystore ./gradlew assembleRelease
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANNEL: ${{ needs.plan.outputs.channel }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          TITLE: ${{ needs.plan.outputs.title }}
+          SINCE: ${{ needs.plan.outputs.since }}
+        run: |
+          out=$RUNNER_TEMP/release
+          mkdir -p "$out"
+
+          for apk in android/app/build/outputs/apk/release/app-*-release.apk; do
+            abi=$(basename "$apk" -release.apk)
+            cp "$apk" "$out/vaka-$VAKA_VERSION_NAME-${abi#app-}.apk"
+          done
+
+          printf '{"versionName":"%s","versionCode":%s,"channel":"%s"}\n' \
+            "$VAKA_VERSION_NAME" "$VAKA_VERSION_CODE" "$CHANNEL" > "$out/update.json"
+
+          flags=(--title "$TITLE" --generate-notes)
+          [ -n "$SINCE" ] && flags+=(--notes-start-tag "$SINCE")
+
+          if [ "$CHANNEL" = stable ]; then
+            flags+=(--verify-tag --latest)
+          else
+            flags+=(--target "$GITHUB_SHA" --prerelease --latest=false)
+          fi
+
+          gh release create "$TAG" "$out"/* "${flags[@]}"
+
+      - name: Keep the newest ten nightlies
+        if: needs.plan.outputs.channel == 'nightly'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --exclude-drafts --limit 100 --json tagName,isPrerelease \
+            --jq '.[] | select(.isPrerelease) | .tagName' |
+            tail -n +11 |
+            while read -r old; do
+              gh release delete "$old" --yes --cleanup-tag
+            done

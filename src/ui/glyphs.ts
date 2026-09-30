@@ -58,6 +58,7 @@ import Refresh from '@expo/material-symbols/refresh.xml'
 import Replay from '@expo/material-symbols/replay.xml'
 import ResetSettings from '@expo/material-symbols/reset_settings.xml'
 import RestartAlt from '@expo/material-symbols/restart_alt.xml'
+import Science from '@expo/material-symbols/science.xml'
 import Search from '@expo/material-symbols/search.xml'
 import Settings from '@expo/material-symbols/settings.xml'
 import SettingsBackupRestore from '@expo/material-symbols/settings_backup_restore.xml'
@@ -76,6 +77,7 @@ import TextIncrease from '@expo/material-symbols/text_increase.xml'
 import Title from '@expo/material-symbols/title.xml'
 import Toc from '@expo/material-symbols/toc.xml'
 import Undo from '@expo/material-symbols/undo.xml'
+import Update from '@expo/material-symbols/update.xml'
 import VpnLock from '@expo/material-symbols/vpn_lock.xml'
 import WidthFull from '@expo/material-symbols/width_full.xml'
 import WidthNormal from '@expo/material-symbols/width_normal.xml'
@@ -211,6 +213,9 @@ export const glyphs = {
   textLarger: TextIncrease,
   textSmaller: TextDecrease,
   title: Title,
+  /** Looking for a newer version of the app, and the releases it follows. */
+  update: Update,
+  updateChannel: Science,
   warning: ErrorIcon,
 } satisfies Record<string, number>
 

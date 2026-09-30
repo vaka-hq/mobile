@@ -14,6 +14,7 @@ import {
   Box,
   Column,
   Icon,
+  LinearProgressIndicator,
   ListItem,
   LoadingIndicator,
   Row,
@@ -576,6 +577,76 @@ export function AvailabilityDialog({
       <AlertDialog.DismissButton>
         <TextButton onClick={onCancel}>
           <Text>{t({ message: 'Cancel', comment: 'Closes a dialog without changes' })}</Text>
+        </TextButton>
+      </AlertDialog.DismissButton>
+    </AlertDialog>
+  )
+}
+
+/**
+ * A dialog for a task that runs in steps, such as installing an update: a message, or a spinner
+ * beside it while busy, and a progress bar while a share of the work is known. Its confirm
+ * button's slot stays mounted throughout, empty while there is nothing to confirm, since the
+ * dialog reads its slots only once.
+ */
+export function StatusDialog({
+  title,
+  message,
+  busy = false,
+  progress = null,
+  confirmLabel = null,
+  dismissLabel,
+  onConfirm,
+  onDismiss,
+}: {
+  title: string
+  message: string
+  busy?: boolean
+  /** How much is done, from 0 to 1. */
+  progress?: number | null
+  /** The button that carries on, or null for none. */
+  confirmLabel?: string | null
+  dismissLabel: string
+  onConfirm?: () => void
+  onDismiss: () => void
+}) {
+  const colors = useMaterialColors()
+
+  return (
+    <AlertDialog onDismissRequest={onDismiss}>
+      <AlertDialog.Title>
+        <Text style={{ typography: 'headlineSmall' }}>{title}</Text>
+      </AlertDialog.Title>
+      <AlertDialog.Text>
+        <Column verticalArrangement={{ spacedBy: 16 }}>
+          {busy ? (
+            <Row verticalAlignment='center' horizontalArrangement={{ spacedBy: 16 }}>
+              <LoadingIndicator modifiers={[size(32, 32)]} />
+              <Text color={colors.onSurfaceVariant}>{message}</Text>
+            </Row>
+          ) : (
+            <Text>{message}</Text>
+          )}
+          {progress === null ? null : (
+            <LinearProgressIndicator
+              progress={Math.min(1, Math.max(0, progress))}
+              modifiers={[fillMaxWidth()]}
+            />
+          )}
+        </Column>
+      </AlertDialog.Text>
+      <AlertDialog.ConfirmButton>
+        {confirmLabel && onConfirm ? (
+          <TextButton onClick={onConfirm}>
+            <Text>{confirmLabel}</Text>
+          </TextButton>
+        ) : (
+          <Box />
+        )}
+      </AlertDialog.ConfirmButton>
+      <AlertDialog.DismissButton>
+        <TextButton onClick={onDismiss}>
+          <Text>{dismissLabel}</Text>
         </TextButton>
       </AlertDialog.DismissButton>
     </AlertDialog>

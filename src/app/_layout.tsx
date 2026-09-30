@@ -11,11 +11,13 @@ import AppError from '@/components/app-error'
 import { PlacePrompt } from '@/components/place-prompt'
 import { PlayerLayer } from '@/components/player-layer'
 import { SystemBack } from '@/components/system-back'
+import { UpdateAlert } from '@/components/update-alert'
 import { LocalizationProvider } from '@/i18n'
 import { useAppColorScheme } from '@/lib/app-color-scheme'
 import { FeedbackProvider } from '@/lib/feedback'
 import { queryClient } from '@/lib/query-client'
 import { rootBackgroundColor } from '@/lib/root-background'
+import { checkForUpdatesDaily } from '@/library/app-updates'
 import { resumeOfflineDownloads } from '@/library/offline'
 import { startPlayer } from '@/player/controller'
 
@@ -39,6 +41,7 @@ function AppProviders() {
     // Starting fails only when audio cannot be set up; the app still opens, without the last book.
     startPlayer().catch(() => undefined)
     resumeOfflineDownloads()
+    checkForUpdatesDaily()
   }, [])
 
   return (
@@ -62,6 +65,7 @@ function AppProviders() {
               <AccountAlert />
               <AbbSilenceAlert />
               <PlacePrompt />
+              <UpdateAlert />
               <SystemBack />
             </View>
           </FeedbackProvider>

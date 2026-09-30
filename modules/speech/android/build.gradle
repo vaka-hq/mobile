@@ -1,0 +1,22 @@
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.speech'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.speech"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+    consumerProguardFiles 'consumer-rules.pro'
+  }
+}
+
+dependencies {
+  implementation 'com.facebook.react:react-android'
+  // Offline speech recognition; its language model is downloaded when the listener turns the
+  // mode on, never shipped with the app.
+  implementation 'com.alphacephei:vosk-android:0.3.75@aar'
+  implementation 'net.java.dev.jna:jna:5.18.1@aar'
+}

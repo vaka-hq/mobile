@@ -1,0 +1,50 @@
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath("org.jetbrains.kotlin.plugin.compose:org.jetbrains.kotlin.plugin.compose.gradle.plugin:${kotlinVersion}")
+  }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
+group = 'expo.modules.androidcomponents'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.androidcomponents"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  buildFeatures {
+    compose true
+  }
+}
+
+dependencies {
+  implementation 'com.facebook.react:react-android'
+  // Coil 3.2 matches this Expo/React Native build's Kotlin 2.1 toolchain (as in the reference app).
+  implementation 'io.coil-kt.coil3:coil-compose:3.2.0'
+  implementation 'io.coil-kt.coil3:coil-network-okhttp:3.2.0'
+
+  if (findProject(':expo-ui') != null) {
+    implementation project(':expo-ui')
+  } else {
+    def expoUiPackageJson = rootProject.file('../node_modules/@expo/ui/package.json')
+    if (!expoUiPackageJson.exists()) {
+      throw new GradleException('Unable to resolve the installed @expo/ui version')
+    }
+    def expoUiVersion = new groovy.json.JsonSlurper().parse(expoUiPackageJson).version
+    implementation "expo.modules.ui:expo.modules.ui:${expoUiVersion}"
+  }
+  // Match the Compose and Material 3 versions that @expo/ui is built against.
+  implementation 'androidx.compose.animation:animation-android:1.10.6'
+  implementation 'androidx.compose.foundation:foundation-android:1.10.6'
+  implementation 'androidx.compose.ui:ui-android:1.10.6'
+  implementation 'androidx.compose.material3:material3:1.5.0-alpha17'
+  implementation 'androidx.compose.material3:material3-android:1.5.0-alpha17'
+}

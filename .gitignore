@@ -1,0 +1,53 @@
+# Operating-system metadata
+.DS_Store
+._*
+Thumbs.db
+
+# Dependencies and tool caches
+node_modules/
+.pnpm-store/
+.cache/
+.vite-plus/
+.vite-hooks/
+*.tsbuildinfo
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Expo
+.expo/
+dist/
+expo-env.d.ts
+
+# Generated native folders, and the build output of the local native modules
+/android
+.kotlin/
+.gradle/
+modules/*/android/build/
+modules/*/android/.cxx/
+
+# Signing material
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+
+# Metro
+.metro-health-check*
+
+# Build output and logs
+coverage/
+*.log
+
+# Lingui runtime catalogs are generated from the tracked PO files.
+src/locales/**/messages.ts
+src/locales/**/messages.d.ts
+src/locales/**/messages.mo
+
+# Local editor state
+.idea/
+.vscode/*
+*.sw?

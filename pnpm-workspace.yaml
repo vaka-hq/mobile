@@ -1,0 +1,24 @@
+verifyDepsBeforeRun: false
+
+# Only versions published at least three days ago are installed, in minutes.
+minimumReleaseAge: 4320
+
+overrides:
+  '@react-native/metro-config': 0.86.3
+  '@types/react': 19.2.18
+  vite: npm:@voidzero-dev/vite-plus-core@0.3.3
+  vitest: 4.1.11
+
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    typescript: '>=5 <8'
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+
+patchedDependencies:
+  expo-audio@57.0.5: patches/expo-audio@57.0.5.patch

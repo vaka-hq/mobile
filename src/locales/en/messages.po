@@ -1,0 +1,3015 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-09-26 15:02+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#. A highlighted passage in quotation marks
+#: src/components/reader-sheets.tsx
+msgid "“{passage}”"
+msgstr "“{passage}”"
+
+#. A shared highlight: the passage in quotation marks, then the book title
+#: src/screens/reader.tsx
+msgid "“{passage}”\n"
+"— {title}"
+msgstr "“{passage}”\n"
+"— {title}"
+
+#. Line in the restore dialog: books in the backup’s library
+#. placeholder {0}: contents.books
+#: src/components/backup-restore.tsx
+msgid "{0, plural, one {# book} other {# books}}"
+msgstr "{0, plural, one {# book} other {# books}}"
+
+#. Line in the restore dialog: audiobook bookmarks in the backup
+#. placeholder {0}: contents.bookmarks
+#: src/components/backup-restore.tsx
+msgid "{0, plural, one {# bookmark} other {# bookmarks}}"
+msgstr "{0, plural, one {# bookmark} other {# bookmarks}}"
+
+#. Line in the restore dialog: e-books with their places in the backup
+#. placeholder {0}: contents.ebooks
+#: src/components/backup-restore.tsx
+msgid "{0, plural, one {# e-book} other {# e-books}}"
+msgstr "{0, plural, one {# e-book} other {# e-books}}"
+
+#. Line in the restore dialog: e-book highlights, notes and bookmarks
+#. placeholder {0}: contents.notes
+#: src/components/backup-restore.tsx
+msgid "{0, plural, one {# highlight or note} other {# highlights and notes}}"
+msgstr "{0, plural, one {# highlight or note} other {# highlights and notes}}"
+
+#. Line in the restore dialog: followed series in the backup
+#. placeholder {0}: contents.series
+#: src/components/backup-restore.tsx
+msgid "{0, plural, one {# series} other {# series}}"
+msgstr "{0, plural, one {# series} other {# series}}"
+
+#. Listening time remaining, for example “3 h 20 min left”
+#. placeholder {0}: duration(seconds)
+#: src/ui/labels.ts
+msgid "{0} left"
+msgstr "{0} left"
+
+#. How far into an e-book reading has got, when its pages are not counted
+#. placeholder {0}: i18n.number(place.progress, { style: 'percent' })
+#: src/ui/labels.ts
+msgid "{0} read"
+msgstr "{0} read"
+
+#. Backup restored, with how many library books it held
+#: src/components/backup-restore.tsx
+msgid "{books, plural, one {Restored # book from the backup} other {Restored # books from the backup}}"
+msgstr "{books, plural, one {Restored # book from the backup} other {Restored # books from the backup}}"
+
+#. Number of books in a series, in search results
+#: src/screens/browse.tsx
+msgid "{booksCount, plural, one {# book} other {# books}}"
+msgstr "{booksCount, plural, one {# book} other {# books}}"
+
+#. Size of the cached data, like “2.4 MB cached”
+#: src/screens/settings.tsx
+msgid "{cachedSize} cached"
+msgstr "{cachedSize} cached"
+
+#. E-books storage row, like “3 e-books · 4.2 MB”
+#: src/screens/settings.tsx
+msgid "{ebookCount, plural, one {# e-book · {ebookSize}} other {# e-books · {ebookSize}}}"
+msgstr "{ebookCount, plural, one {# e-book · {ebookSize}} other {# e-books · {ebookSize}}}"
+
+#. Upload detail: how many files it holds
+#: src/components/source-info.tsx
+msgid "{fileCount, plural, one {# file} other {# files}}"
+msgstr "{fileCount, plural, one {# file} other {# files}}"
+
+#. Where listening stopped in an audiobook, for example “1 h 5 min of 16 h 7 min”
+#: src/ui/labels.ts
+msgid "{heard} of {length}"
+msgstr "{heard} of {length}"
+
+#. Warns that removing a series takes its books out of the library with where listening and reading stopped, and their bookmarks
+#: src/components/series-sheet.tsx
+msgid "{held, plural, one {Its book leaves your library. You’ll lose its progress, notes and downloads.} other {All # books leave your library. You’ll lose their progress, notes and downloads.}}"
+msgstr "{held, plural, one {Its book leaves your library. You’ll lose its progress, notes and downloads.} other {All # books leave your library. You’ll lose their progress, notes and downloads.}}"
+
+#. A duration in hours and minutes
+#: src/ui/labels.ts
+msgid "{hours} h {minutes} min"
+msgstr "{hours} h {minutes} min"
+
+#. Pages left to read in an e-book, for example “243 pages left”
+#: src/ui/labels.ts
+msgid "{left, plural, one {# page left} other {# pages left}}"
+msgstr "{left, plural, one {# page left} other {# pages left}}"
+
+#. A duration in minutes
+#: src/ui/labels.ts
+msgid "{minutes} min"
+msgstr "{minutes} min"
+
+#. Sleep timer option
+#: src/ui/sheets.tsx
+msgid "{minutes} minutes"
+msgstr "{minutes} minutes"
+
+#. Sleep timer button: whole minutes left, like “5 min”
+#: src/screens/player.tsx
+msgid "{minutesLeft} min"
+msgstr "{minutesLeft} min"
+
+#. Explains adding a whole series: the books not in the library yet, and later ones
+#: src/components/series-sheet.tsx
+msgid "{missing, plural, one {Adds # book, and new ones as they come out.} other {Adds # books, and new ones as they come out.}}"
+msgstr "{missing, plural, one {Adds # book, and new ones as they come out.} other {Adds # books, and new ones as they come out.}}"
+
+#. The first names of a long list of narrators, then how many more there are
+#: src/ui/labels.ts
+msgid "{more, plural, one {{first} and # more} other {{first} and # more}}"
+msgstr "{more, plural, one {{first} and # more} other {{first} and # more}}"
+
+#. Library filter chip with several choices: the filter’s name and how many are chosen, like “Authors (3)”
+#. placeholder {0}: chosen.length
+#: src/screens/library.tsx
+msgid "{name} ({0})"
+msgstr "{name} ({0})"
+
+#. Audiobooks storage row, like “2 audiobooks · 640 MB”
+#: src/screens/settings.tsx
+msgid "{offlineCount, plural, one {# audiobook · {offlineSize}} other {# audiobooks · {offlineSize}}}"
+msgstr "{offlineCount, plural, one {# audiobook · {offlineSize}} other {# audiobooks · {offlineSize}}}"
+
+#. Reader overview: pages left in the current chapter, under its name
+#: src/screens/reader.tsx
+msgid "{pagesLeft, plural, one {# page left} other {# pages left}}"
+msgstr "{pagesLeft, plural, one {# page left} other {# pages left}}"
+
+#. How many people share parts of the upload
+#: src/components/source-info.tsx
+msgid "{peers, plural, one {# peer} other {# peers}}"
+msgstr "{peers, plural, one {# peer} other {# peers}}"
+
+#. Under the average Hardcover rating: how many readers rated, like “12K ratings”
+#: src/screens/work.tsx
+msgid "{ratingsCount, plural, one {{ratings} rating} other {{ratings} ratings}}"
+msgstr "{ratingsCount, plural, one {{ratings} rating} other {{ratings} ratings}}"
+
+#. Reader overview: reading time left in the current chapter, under its name
+#: src/screens/reader.tsx
+msgid "{roundedMinutes, plural, one {# min left} other {# min left}}"
+msgstr "{roundedMinutes, plural, one {# min left} other {# min left}}"
+
+#. How many people share the whole upload
+#: src/components/source-info.tsx
+msgid "{seeders, plural, one {# seeder} other {# seeders}}"
+msgstr "{seeders, plural, one {# seeder} other {# seeders}}"
+
+#. Skip interval option, for example “30 seconds”
+#: src/screens/settings.tsx
+msgid "{value} seconds"
+msgstr "{value} seconds"
+
+#. Heading above a book’s description
+#. Settings section
+#: src/screens/settings.tsx
+#: src/screens/work.tsx
+msgid "About"
+msgstr "About"
+
+#. Edition is shortened
+#. Edition is shortened
+#: src/components/book-details.tsx
+#: src/screens/work-streams.tsx
+msgid "Abridged"
+msgstr "Abridged"
+
+#. Error when a service refused the request, usually a key problem
+#: src/ui/errors.ts
+msgid "Access was refused. Check your keys in Settings."
+msgstr "Access was refused. Check your keys in Settings."
+
+#. Settings section
+#: src/screens/settings.tsx
+msgid "Accounts"
+msgstr "Accounts"
+
+#. Confirms adding a series to the library
+#: src/components/series-sheet.tsx
+msgid "Add"
+msgstr "Add"
+
+#. Match picker without a Hardcover API key
+#: src/screens/match.tsx
+msgid "Add a Hardcover API key in Settings first."
+msgstr "Add a Hardcover API key in Settings first."
+
+#. Adds a note to a bookmark
+#. Highlight sheet row
+#: src/components/book-sheets.tsx
+#: src/components/reader-sheets.tsx
+msgid "Add a note"
+msgstr "Add a note"
+
+#. Book page hint when no Hardcover API key is stored
+#: src/screens/book.tsx
+msgid "Add an API key in Settings for richer details"
+msgstr "Add an API key in Settings for richer details"
+
+#. Adds a bookmark at the current position
+#: src/components/book-sheets.tsx
+msgid "Add bookmark"
+msgstr "Add bookmark"
+
+#. Welcome step title
+#: src/screens/welcome.tsx
+msgid "Add Hardcover"
+msgstr "Add Hardcover"
+
+#. Adds every book of a series to the library
+#: src/components/series-sheet.tsx
+msgid "Add series to library"
+msgstr "Add series to library"
+
+#. Dialog title
+#: src/components/series-sheet.tsx
+msgid "Add series to library?"
+msgstr "Add series to library?"
+
+#. Listen button without the streaming service’s API key; it opens Settings. Do not name the service
+#: src/components/book-details.tsx
+msgid "Add streaming key"
+msgstr "Add streaming key"
+
+#. Toggle on the book page
+#. Toggle on the book page
+#: src/screens/book.tsx
+#: src/screens/work.tsx
+msgid "Add to library"
+msgstr "Add to library"
+
+#. Error when book details need a Hardcover key, which is not set
+#: src/ui/errors.ts
+msgid "Add your Hardcover API key in Settings to load book details."
+msgstr "Add your Hardcover API key in Settings to load book details."
+
+#. Error when listening needs the streaming service key, which is not set
+#: src/ui/errors.ts
+msgid "Add your streaming API key in Settings to listen."
+msgstr "Add your streaming API key in Settings to listen."
+
+#. Book page notice when the streaming service key is not set; do not name the service
+#: src/components/book-details.tsx
+msgid "Add your streaming API key in Settings to stream audiobooks."
+msgstr "Add your streaming API key in Settings to stream audiobooks."
+
+#. Button while adding to TorBox
+#: src/components/book-details.tsx
+msgid "Adding…"
+msgstr "Adding…"
+
+#. Text field label
+#. Text field label
+#. Text field label for the proxy host
+#: src/screens/settings.tsx
+#: src/screens/welcome.tsx
+msgid "Address"
+msgstr "Address"
+
+#. Listening and reading setting: the place is found by listening to the words
+#: src/screens/settings.tsx
+msgid "Advanced"
+msgstr "Advanced"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Afrikaans"
+msgstr "Afrikaans"
+
+#. Reader display setting
+#: src/components/reader-sheets.tsx
+msgid "Alignment"
+msgstr "Alignment"
+
+#. Library status filter: every book
+#: src/screens/library.tsx
+msgid "All"
+msgstr "All"
+
+#. Error when a site answered with something the app cannot read
+#: src/ui/errors.ts
+msgid "An unexpected answer came back. Try again later."
+msgstr "An unexpected answer came back. Try again later."
+
+#. Name of the e-book library
+#: src/screens/settings.tsx
+msgid "Anna’s Archive"
+msgstr "Anna’s Archive"
+
+#. Dialog title
+#. Setting for the e-book library mirror
+#: src/screens/settings.tsx
+msgid "Anna’s Archive address"
+msgstr "Anna’s Archive address"
+
+#. Anna’s Archive row when the mirror does not answer
+#. Anna’s Archive row when the mirror does not answer
+#: src/screens/settings.tsx
+msgid "Anna’s Archive could not be reached. Check its address."
+msgstr "Anna’s Archive could not be reached. Check its address."
+
+#. Anna’s Archive key rejected
+#: src/screens/settings.tsx
+msgid "Anna’s Archive did not accept this key"
+msgstr "Anna’s Archive did not accept this key"
+
+#. Dialog title
+#: src/screens/settings.tsx
+msgid "Anna’s Archive key"
+msgstr "Anna’s Archive key"
+
+#. Start-up check: the saved Anna’s Archive key was rejected
+#. Startup alert: the Anna’s Archive key was rejected
+#: src/components/account-alert.tsx
+#: src/ui/errors.ts
+msgid "Anna’s Archive no longer accepts your member key."
+msgstr "Anna’s Archive no longer accepts your member key."
+
+#. Warns that a backup with API keys and the proxy password exposes them
+#: src/screens/settings.tsx
+msgid "Anyone with the file can use them."
+msgstr "Anyone with the file can use them."
+
+#. Text field label
+#. Text field label
+#. Text field label
+#. Text field label
+#: src/screens/settings.tsx
+#: src/screens/welcome.tsx
+msgid "API key"
+msgstr "API key"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Arabic"
+msgstr "Arabic"
+
+#. Dialog title
+#. Setting for the site mirror
+#: src/screens/settings.tsx
+msgid "AudioBookBay address"
+msgstr "AudioBookBay address"
+
+#. Title when loading uploads from AudioBookBay failed
+#: src/screens/browse.tsx
+msgid "AudioBookBay couldn’t be reached"
+msgstr "AudioBookBay couldn’t be reached"
+
+#. Dialog title when AudioBookBay stops answering, likely blocking the phone
+#. Title when AudioBookBay stops answering, likely blocking the phone
+#: src/components/abb-silence-alert.tsx
+#: src/screens/browse.tsx
+msgid "AudioBookBay isn’t answering"
+msgstr "AudioBookBay isn’t answering"
+
+#. Error when AudioBookBay stops answering, likely blocking the phone
+#: src/ui/errors.ts
+msgid "AudioBookBay isn’t answering. It may have blocked your connection for a while; a proxy in Settings gets around it."
+msgstr "AudioBookBay isn’t answering. It may have blocked your connection for a while; a proxy in Settings gets around it."
+
+#. AudioBookBay proxy checked and saved
+#: src/screens/settings.tsx
+msgid "AudioBookBay now goes through the proxy"
+msgstr "AudioBookBay now goes through the proxy"
+
+#. Dialog title
+#. Setting for the proxy AudioBookBay pages are loaded through
+#. Welcome step title for the optional proxy AudioBookBay pages go through
+#: src/screens/settings.tsx
+#: src/screens/welcome.tsx
+msgid "AudioBookBay proxy"
+msgstr "AudioBookBay proxy"
+
+#. Search chip: audiobook uploads
+#. Storage setting showing the audiobooks downloaded to the phone
+#. Storage-sheet section of audiobook files
+#. Title of the sheet listing downloaded audiobooks
+#: src/components/downloads-sheet.tsx
+#: src/components/storage-sheets.tsx
+#: src/screens/browse.tsx
+#: src/screens/settings.tsx
+msgid "Audiobooks"
+msgstr "Audiobooks"
+
+#. Library sort order
+#: src/screens/library.tsx
+msgid "Author"
+msgstr "Author"
+
+#. Library filter: by author
+#: src/screens/library.tsx
+msgid "Authors"
+msgstr "Authors"
+
+#. Upload detail: plays at once or downloads
+#: src/components/source-info.tsx
+msgid "Availability"
+msgstr "Availability"
+
+#. Top bar button returning to the previous screen
+#. Top bar button returning to the previous screen
+#. Top bar button returning to the previous screen
+#: src/ui/primitives.tsx
+#: src/ui/reader.tsx
+#: src/ui/screen.tsx
+msgid "Back"
+msgstr "Back"
+
+#. Player control jumping backwards
+#. placeholder {0}: preferences.skipBackSeconds
+#: src/screens/player.tsx
+msgid "Back {0} seconds"
+msgstr "Back {0} seconds"
+
+#. Marker above the reader’s slider returning to the place before a jump
+#. Marker above the reader’s slider returning to the place before a jump
+#: src/screens/reader.tsx
+#: src/ui/reader.tsx
+msgid "Back to where you were"
+msgstr "Back to where you were"
+
+#. Settings row saving a backup file
+#: src/screens/settings.tsx
+msgid "Back up library"
+msgstr "Back up library"
+
+#. Settings section
+#: src/screens/settings.tsx
+msgid "Backup"
+msgstr "Backup"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Basque"
+msgstr "Basque"
+
+#. Choice opening an e-book not read before at its start
+#: src/components/place-prompt.tsx
+msgid "Beginning"
+msgstr "Beginning"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Bengali"
+msgstr "Bengali"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Bestsellers"
+msgstr "Bestsellers"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Biographies"
+msgstr "Biographies"
+
+#. Highlight colour
+#: src/ui/reader.tsx
+msgid "Blue"
+msgstr "Blue"
+
+#. Position in a book series, for example “Book 2 of The Expanse”
+#. Position in a book series, for example “Book 2 of The Expanse”
+#. placeholder {0}: series.position
+#. placeholder {1}: series.name
+#: src/components/book-details.tsx
+#: src/screens/work.tsx
+msgid "Book {0} of {1}"
+msgstr "Book {0} of {1}"
+
+#. A bookmark without a chapter name
+#: src/components/reader-sheets.tsx
+msgid "Bookmark"
+msgstr "Bookmark"
+
+#. Opens the bookmark list
+#. Title of the bookmark list
+#: src/components/book-sheets.tsx
+#: src/screens/player.tsx
+msgid "Bookmarks"
+msgstr "Bookmarks"
+
+#. Search chip: books on Hardcover
+#: src/screens/browse.tsx
+msgid "Books"
+msgstr "Books"
+
+#. Series filter sheet when no book in the library is part of a series
+#: src/screens/library.tsx
+msgid "Books in a series appear here once they are in your library."
+msgstr "Books in a series appear here once they are in your library."
+
+#. Navigation destination: new and trending books, and searching for more
+#. Title of the browse and search screen
+#: src/components/bottom-bar.tsx
+#: src/screens/browse.tsx
+msgid "Browse"
+msgstr "Browse"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Bulgarian"
+msgstr "Bulgarian"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Business"
+msgstr "Business"
+
+#. Cache cleared
+#: src/screens/settings.tsx
+msgid "Cached data cleared"
+msgstr "Cached data cleared"
+
+#. Closes a dialog without changes
+#. Closes a dialog without changes
+#. Closes a dialog without changes
+#. Closes a dialog without changes
+#. Closes a dialog without changes
+#. Closes a dialog without changes
+#. Closes a dialog without changes
+#. Confirms cancelling a download
+#: src/components/cancel-download.tsx
+#: src/ui/dialogs.tsx
+msgid "Cancel"
+msgstr "Cancel"
+
+#. Library e-book menu action
+#. Stops a TorBox download
+#. Stops a TorBox download
+#. Stops an audiobook download
+#. Stops an e-book download
+#: src/components/book-details.tsx
+#: src/components/downloads-sheet.tsx
+#: src/screens/library.tsx
+#: src/screens/work-streams.tsx
+msgid "Cancel download"
+msgstr "Cancel download"
+
+#. Dialog title
+#: src/components/cancel-download.tsx
+msgid "Cancel the download?"
+msgstr "Cancel the download?"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Catalan"
+msgstr "Catalan"
+
+#. Book fact label
+#: src/components/book-details.tsx
+msgid "Categories"
+msgstr "Categories"
+
+#. Title of the recording list while the book is playing
+#: src/screens/work-streams.tsx
+msgid "Change audiobook"
+msgstr "Change audiobook"
+
+#. Listen button when another source of the book is playing
+#: src/components/book-details.tsx
+msgid "Change source"
+msgstr "Change source"
+
+#. Short sleep timer button label: stops at the end of this chapter
+#: src/screens/player.tsx
+msgid "Chapter"
+msgstr "Chapter"
+
+#. Name of a chapter without a title of its own, like “Chapter 3”
+#. Name of a chapter without a title of its own, like “Chapter 3”
+#: src/player/controller.ts
+#: src/ui/labels.ts
+msgid "Chapter {number}"
+msgstr "Chapter {number}"
+
+#. Book fact label
+#. Opens the chapter list
+#. Title of the chapter list
+#: src/components/book-details.tsx
+#: src/components/book-sheets.tsx
+#: src/screens/player.tsx
+msgid "Chapters"
+msgstr "Chapters"
+
+#. Listen button when checking the download failed; pressing it checks again
+#: src/components/book-details.tsx
+msgid "Check again"
+msgstr "Check again"
+
+#. Hint when AudioBookBay could not be reached
+#: src/screens/browse.tsx
+msgid "Check its address in Settings, or try again in a moment."
+msgstr "Check its address in Settings, or try again in a moment."
+
+#. App bar button checking which uploads are still being shared
+#: src/screens/work-streams.tsx
+msgid "Check sources"
+msgstr "Check sources"
+
+#. Start-up account check dialog title
+#: src/components/account-alert.tsx
+msgid "Check your settings"
+msgstr "Check your settings"
+
+#. Row under the Listen button while checking which recordings can play right away
+#: src/screens/work.tsx
+msgid "Checking availability…"
+msgstr "Checking availability…"
+
+#. Shown while a source or file is checked before it is chosen
+#: src/screens/work-streams.tsx
+msgid "Checking if it’s available…"
+msgstr "Checking if it’s available…"
+
+#. Dialog title
+#: src/screens/work-streams.tsx
+msgid "Checking the source"
+msgstr "Checking the source"
+
+#. Anna’s Archive row while verifying the key
+#. AudioBookBay proxy row while testing the proxy
+#. Book status while checking availability
+#. Hardcover row while verifying the key
+#. Shown while a value is being verified
+#. Shown while a value is being verified
+#. Shown while a value is being verified
+#. TorBox row while verifying the key
+#. Upload details while its seeders are looked up
+#: src/components/book-details.tsx
+#: src/components/source-info.tsx
+#: src/screens/settings.tsx
+#: src/screens/welcome.tsx
+#: src/ui/dialogs.tsx
+msgid "Checking…"
+msgstr "Checking…"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Children"
+msgstr "Children"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Chinese"
+msgstr "Chinese"
+
+#. Chooses a dead upload
+#: src/screens/work-streams.tsx
+msgid "Choose anyway"
+msgstr "Choose anyway"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Classic"
+msgstr "Classic"
+
+#. Confirms clearing the cache
+#: src/screens/settings.tsx
+msgid "Clear"
+msgstr "Clear"
+
+#. Resets the library author filter
+#: src/screens/library.tsx
+msgid "Clear authors"
+msgstr "Clear authors"
+
+#. Setting that clears cached book details and streamed audio
+#: src/screens/settings.tsx
+msgid "Clear cached data"
+msgstr "Clear cached data"
+
+#. Dialog title
+#: src/screens/settings.tsx
+msgid "Clear cached data?"
+msgstr "Clear cached data?"
+
+#. Empties the search field
+#: src/ui/primitives.tsx
+msgid "Clear search"
+msgstr "Clear search"
+
+#. Resets the library series filter
+#: src/screens/library.tsx
+msgid "Clear series"
+msgstr "Clear series"
+
+#. Closes the reader’s display settings panel
+#: src/components/reader-sheets.tsx
+msgid "Close"
+msgstr "Close"
+
+#. Reader line spacing choice
+#: src/components/reader-sheets.tsx
+msgid "Compact"
+msgstr "Compact"
+
+#. Welcome step button checking an API key
+#: src/screens/welcome.tsx
+msgid "Connect"
+msgstr "Connect"
+
+#. Welcome step title
+#: src/screens/welcome.tsx
+msgid "Connect TorBox"
+msgstr "Connect TorBox"
+
+#. Anna’s Archive row with a valid key
+#. Hardcover row with a valid key
+#. TorBox row with a valid key
+#: src/screens/settings.tsx
+msgid "Connected"
+msgstr "Connected"
+
+#. Anna’s Archive key saved
+#: src/screens/settings.tsx
+msgid "Connected to Anna’s Archive"
+msgstr "Connected to Anna’s Archive"
+
+#. Hardcover key saved
+#: src/screens/settings.tsx
+msgid "Connected to Hardcover"
+msgstr "Connected to Hardcover"
+
+#. Hardcover key saved, with the account email
+#. placeholder {0}: account.email
+#: src/screens/settings.tsx
+msgid "Connected to Hardcover as {0}"
+msgstr "Connected to Hardcover as {0}"
+
+#. TorBox key saved
+#: src/screens/settings.tsx
+msgid "Connected to TorBox"
+msgstr "Connected to TorBox"
+
+#. TorBox key saved
+#. placeholder {0}: details.email
+#: src/screens/settings.tsx
+msgid "Connected to TorBox as {0}"
+msgstr "Connected to TorBox as {0}"
+
+#. Heading above sensitive topics readers flagged in the book
+#: src/screens/work.tsx
+msgid "Content warnings"
+msgstr "Content warnings"
+
+#. Reader bar button
+#. Title of the reader’s table of contents
+#: src/components/reader-sheets.tsx
+#: src/ui/reader.tsx
+msgid "Contents"
+msgstr "Contents"
+
+#. Book page button reading on from where reading stopped
+#: src/screens/work.tsx
+msgid "Continue"
+msgstr "Continue"
+
+#. Title of the dialog asking where to pick a book up, before reading or listening
+#. Title of the dialog asking where to pick a book up, before reading or listening
+#: src/components/place-prompt.tsx
+msgid "Continue from"
+msgstr "Continue from"
+
+#. Toolbar action over selected text in the reader
+#: src/screens/reader.tsx
+msgid "Copy"
+msgstr "Copy"
+
+#. AudioBookBay proxy unreachable or not answering
+#: src/components/proxy-setup.ts
+msgid "Could not connect through the proxy. Check the address and try again."
+msgstr "Could not connect through the proxy. Check the address and try again."
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Croatian"
+msgstr "Croatian"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Czech"
+msgstr "Czech"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Danish"
+msgstr "Danish"
+
+#. Reader page theme
+#: src/components/reader-sheets.tsx
+msgctxt "page"
+msgid "Dark"
+msgstr "Dark"
+
+#. Dialog title
+#. Setting for new books
+#: src/screens/settings.tsx
+msgid "Default speed"
+msgstr "Default speed"
+
+#. Confirms deleting an e-book
+#. Confirms deleting downloads
+#. Confirms deleting downloads
+#. Confirms deleting downloads
+#. Confirms deleting downloads
+#. Confirms deleting downloads
+#: src/components/downloads-sheet.tsx
+#: src/components/storage-sheets.tsx
+#: src/screens/library.tsx
+msgid "Delete"
+msgstr "Delete"
+
+#. Reader notes sheet button
+#. Removes a bookmark
+#: src/components/book-sheets.tsx
+#: src/components/reader-sheets.tsx
+msgid "Delete bookmark"
+msgstr "Delete bookmark"
+
+#. Deletes the downloaded copy of an audiobook or e-book from the phone
+#. Deletes the downloaded copy of an audiobook or e-book from the phone
+#. Deletes the downloaded copy of an audiobook or e-book from the phone
+#. Deletes the downloaded copy of an audiobook or e-book from the phone
+#: src/components/downloads-sheet.tsx
+#: src/components/storage-sheets.tsx
+msgid "Delete download"
+msgstr "Delete download"
+
+#. Library e-book menu action deleting the file, place and highlights
+#: src/screens/library.tsx
+msgid "Delete e-book with notes"
+msgstr "Delete e-book with notes"
+
+#. Dialog title
+#: src/screens/library.tsx
+msgid "Delete e-book?"
+msgstr "Delete e-book?"
+
+#. Deletes the downloads of every finished audiobook
+#: src/components/storage-sheets.tsx
+msgid "Delete finished audiobooks"
+msgstr "Delete finished audiobooks"
+
+#. Dialog title
+#: src/components/storage-sheets.tsx
+msgid "Delete finished audiobooks?"
+msgstr "Delete finished audiobooks?"
+
+#. Deletes the files of every finished e-book
+#: src/components/storage-sheets.tsx
+msgid "Delete finished e-books"
+msgstr "Delete finished e-books"
+
+#. Dialog title
+#: src/components/storage-sheets.tsx
+msgid "Delete finished e-books?"
+msgstr "Delete finished e-books?"
+
+#. Highlight sheet row
+#. Reader notes sheet button
+#: src/components/reader-sheets.tsx
+msgid "Delete highlight"
+msgstr "Delete highlight"
+
+#. Dialog title
+#. Dialog title
+#: src/components/downloads-sheet.tsx
+#: src/components/storage-sheets.tsx
+msgid "Delete this audiobook’s download?"
+msgstr "Delete this audiobook’s download?"
+
+#. Dialog title
+#. Dialog title
+#: src/components/downloads-sheet.tsx
+#: src/components/storage-sheets.tsx
+msgid "Delete this e-book’s download?"
+msgstr "Delete this e-book’s download?"
+
+#. Book facts heading
+#: src/components/book-details.tsx
+msgid "Details"
+msgstr "Details"
+
+#. Reader bar button for text settings
+#. Title of the reader’s display settings panel
+#: src/components/reader-sheets.tsx
+#: src/ui/reader.tsx
+msgid "Display"
+msgstr "Display"
+
+#. Book page button downloading the e-book before it can be read
+#. Downloads the e-book again from the reader when it is missing
+#. Listen button for a source TorBox must download
+#. Listen button for a source TorBox must download
+#: src/components/book-details.tsx
+#: src/screens/reader.tsx
+#: src/screens/work.tsx
+msgid "Download"
+msgstr "Download"
+
+#. Storage-sheet row when a download failed; its button tries again
+#. Storage-sheet row when a download failed; its button tries again
+#: src/components/downloads-sheet.tsx
+msgid "Download failed"
+msgstr "Download failed"
+
+#. E-book row after its download failed
+#: src/components/ebook-row.tsx
+msgid "Download failed · Tap to try again"
+msgstr "Download failed · Tap to try again"
+
+#. Downloads-sheet row for an audiobook whose download failed, with how far it got
+#: src/components/storage-sheets.tsx
+msgid "Download failed at {percent}%. Tap to try again."
+msgstr "Download failed at {percent}%. Tap to try again."
+
+#. Downloads-sheet row saving the audiobook to listen without a connection
+#: src/components/downloads-sheet.tsx
+msgid "Download the audiobook"
+msgstr "Download the audiobook"
+
+#. Downloads-sheet row saving the book’s e-book to read it offline
+#: src/components/downloads-sheet.tsx
+msgid "Download the e-book"
+msgstr "Download the e-book"
+
+#. Book row when the audiobook is downloaded for offline listening
+#. E-book row for a file already downloaded
+#. E-book row for a file already downloaded
+#. Marks the recording row when the audiobook is downloaded to the phone
+#: src/components/ebook-row.tsx
+#: src/screens/library.tsx
+#: src/screens/work-ebooks.tsx
+#: src/screens/work.tsx
+msgid "Downloaded"
+msgstr "Downloaded"
+
+#. A download has just finished
+#: src/components/book-details.tsx
+msgid "Downloaded and ready to listen."
+msgstr "Downloaded and ready to listen."
+
+#. Read button while the e-book downloads, before its size is known
+#: src/screens/work.tsx
+msgid "Downloading"
+msgstr "Downloading"
+
+#. E-book row while its file downloads, with how far it has got
+#. E-book row while its file downloads, with how far it has got
+#. placeholder {0}: i18n.number(ebook.bytes / ebook.total, { style: 'percent' })
+#. placeholder {0}: i18n.number(ebook.total > 0 ? ebook.bytes / ebook.total : 0, { style: 'percent' })
+#: src/components/ebook-row.tsx
+#: src/screens/library.tsx
+msgid "Downloading · {0}"
+msgstr "Downloading · {0}"
+
+#. Book status with download progress
+#. Downloads-sheet row while the audiobook downloads, with how far it has got
+#. Downloads-sheet row while the audiobook downloads, with how far it has got
+#. Listen button while TorBox downloads the audiobook; pressing it offers to cancel
+#: src/components/book-details.tsx
+#: src/components/downloads-sheet.tsx
+#: src/components/storage-sheets.tsx
+msgid "Downloading · {percent}%"
+msgstr "Downloading · {percent}%"
+
+#. Source row while TorBox downloads the upload, like “Downloading 42%”
+#: src/screens/work-streams.tsx
+msgid "Downloading {percent}%"
+msgstr "Downloading {percent}%"
+
+#. Listening and reading setting while its speech model downloads
+#: src/screens/settings.tsx
+msgid "Downloading speech model · {speechProgress}"
+msgstr "Downloading speech model · {speechProgress}"
+
+#. Feedback after switching to an uncached source of the book that is playing
+#: src/components/book-details.tsx
+msgid "Downloading. You can change to it once it has finished."
+msgstr "Downloading. You can change to it once it has finished."
+
+#. Feedback after adding an uncached audiobook
+#. Feedback after adding an uncached audiobook
+#: src/components/book-details.tsx
+msgid "Downloading. You can listen once it has finished."
+msgstr "Downloading. You can listen once it has finished."
+
+#. E-book row while its file starts downloading
+#: src/components/ebook-row.tsx
+msgid "Downloading…"
+msgstr "Downloading…"
+
+#. Upload detail: must be downloaded first
+#: src/components/source-info.tsx
+msgid "Downloads before it plays"
+msgstr "Downloads before it plays"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Dutch"
+msgstr "Dutch"
+
+#. Search chip: EPUB files to read
+#. Storage setting showing the e-books downloaded to the phone
+#. Storage-sheet section of e-book files
+#. Title of the sheet listing downloaded e-books
+#: src/components/downloads-sheet.tsx
+#: src/components/storage-sheets.tsx
+#: src/screens/browse.tsx
+#: src/screens/settings.tsx
+msgid "E-books"
+msgstr "E-books"
+
+#. Row under the Read button when looking up e-books failed
+#: src/screens/work.tsx
+msgid "E-books could not be searched"
+msgstr "E-books could not be searched"
+
+#. Searching for a book’s e-books failed
+#: src/screens/work-ebooks.tsx
+msgid "E-books could not be searched. Try again in a moment."
+msgstr "E-books could not be searched. Try again in a moment."
+
+#. Title when searching the e-book sites failed
+#: src/screens/browse.tsx
+msgid "E-books couldn’t be searched"
+msgstr "E-books couldn’t be searched"
+
+#. Listening and reading choice: no carrying over
+#: src/screens/settings.tsx
+msgid "Each keeps its own place."
+msgstr "Each keeps its own place."
+
+#. Edits a bookmark’s note
+#. Highlight sheet row
+#: src/components/book-sheets.tsx
+#: src/components/reader-sheets.tsx
+msgid "Edit note"
+msgstr "Edit note"
+
+#. Sleep timer option
+#. Sleep timer option
+#: src/screens/player.tsx
+#: src/ui/sheets.tsx
+msgid "End of chapter"
+msgstr "End of chapter"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "English"
+msgstr "English"
+
+#. The proxy port is missing or not a valid number
+#: src/components/proxy-setup.ts
+msgid "Enter a port from 1 to 65535"
+msgstr "Enter a port from 1 to 65535"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Esperanto"
+msgstr "Esperanto"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Estonian"
+msgstr "Estonian"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Fantasy"
+msgstr "Fantasy"
+
+#. Upload detail
+#: src/components/source-info.tsx
+msgid "Files"
+msgstr "Files"
+
+#. Reader search page before anything was searched
+#: src/components/reader-sheets.tsx
+msgid "Find a word or a phrase anywhere in the book."
+msgstr "Find a word or a phrase anywhere in the book."
+
+#. Browse search field placeholder
+#: src/screens/browse.tsx
+msgid "Find books"
+msgstr "Find books"
+
+#. Row under the Read button while e-books of the book are looked up
+#. Row under the Read button while e-books of the book are looked up
+#: src/components/downloads-sheet.tsx
+#: src/screens/work.tsx
+msgid "Finding e-books…"
+msgstr "Finding e-books…"
+
+#. Row under the Listen button while recordings of the book are looked up
+#: src/screens/work.tsx
+msgid "Finding sources…"
+msgstr "Finding sources…"
+
+#. Shown while the place to pick the book up from is found
+#. Shown while the place to pick the book up from is found
+#. Shown while the place to pick the book up from is found
+#. Shown while the place to pick the book up from is found
+#. Shown while the place to pick the book up from is found
+#: src/components/place-prompt.tsx
+#: src/screens/player.tsx
+#: src/screens/reader.tsx
+msgid "Finding the place…"
+msgstr "Finding the place…"
+
+#. Listening and reading choice: exact place by speech recognition, with the download size
+#: src/screens/settings.tsx
+msgid "Finds the exact sentence. Downloads {speechSize} for English books."
+msgstr "Finds the exact sentence. Downloads {speechSize} for English books."
+
+#. Confirms marking a book finished
+#. Confirms marking a book finished
+#: src/components/book-menu.tsx
+#: src/screens/library.tsx
+msgid "Finish"
+msgstr "Finish"
+
+#. Library section of books listened to the end
+#: src/screens/library.tsx
+msgid "Finished"
+msgstr "Finished"
+
+#. Book page progress
+#. Series sheet: a book of the series was finished
+#: src/components/series-sheet.tsx
+#: src/screens/work.tsx
+msgctxt "book status"
+msgid "Finished"
+msgstr "Finished"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Finnish"
+msgstr "Finnish"
+
+#. Reader display setting
+#: src/components/reader-sheets.tsx
+msgid "Font"
+msgstr "Font"
+
+#. Book fact label
+#. Upload detail
+#: src/components/book-details.tsx
+#: src/components/source-info.tsx
+msgid "Format"
+msgstr "Format"
+
+#. Player control jumping forwards
+#. placeholder {0}: preferences.skipForwardSeconds
+#: src/screens/player.tsx
+msgid "Forward {0} seconds"
+msgstr "Forward {0} seconds"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "French"
+msgstr "French"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Galician"
+msgstr "Galician"
+
+#. Heading above a book’s genres
+#: src/screens/work.tsx
+msgid "Genres"
+msgstr "Genres"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "German"
+msgstr "German"
+
+#. First welcome screen button
+#: src/screens/welcome.tsx
+msgid "Get started"
+msgstr "Get started"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Greek"
+msgstr "Greek"
+
+#. Highlight colour
+#: src/ui/reader.tsx
+msgid "Green"
+msgstr "Green"
+
+#. Name of the book metadata service
+#. Name of the book metadata service
+#: src/screens/book.tsx
+#: src/screens/settings.tsx
+msgid "Hardcover"
+msgstr "Hardcover"
+
+#. Dialog title
+#: src/screens/settings.tsx
+msgid "Hardcover API key"
+msgstr "Hardcover API key"
+
+#. Title when loading books to browse from Hardcover failed
+#: src/screens/browse.tsx
+msgid "Hardcover couldn’t be reached"
+msgstr "Hardcover couldn’t be reached"
+
+#. Title when searching Hardcover for books or series failed
+#: src/screens/browse.tsx
+msgid "Hardcover couldn’t be searched"
+msgstr "Hardcover couldn’t be searched"
+
+#. Hardcover key rejected or expired
+#: src/settings/key-problems.ts
+msgid "Hardcover did not accept this API key"
+msgstr "Hardcover did not accept this API key"
+
+#. Hardcover rate limit reached
+#. Hardcover rate limit reached
+#: src/settings/key-problems.ts
+#: src/ui/errors.ts
+msgid "Hardcover is busy. Try again in a minute."
+msgstr "Hardcover is busy. Try again in a minute."
+
+#. Start-up check: the saved Hardcover key was rejected or lacks access
+#: src/components/account-alert.tsx
+msgid "Hardcover no longer accepts your API key."
+msgstr "Hardcover no longer accepts your API key."
+
+#. Error when Hardcover rejects the saved key
+#: src/ui/errors.ts
+msgid "Hardcover no longer accepts your API key. Check it in Settings."
+msgstr "Hardcover no longer accepts your API key. Check it in Settings."
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Hebrew"
+msgstr "Hebrew"
+
+#. Title of the sheet for one highlight
+#: src/components/reader-sheets.tsx
+msgid "Highlight"
+msgstr "Highlight"
+
+#. Toolbar action over selected text in the reader: highlights it (a verb)
+#: src/screens/reader.tsx
+msgctxt "text toolbar action"
+msgid "Highlight"
+msgstr "Highlight"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Hindi"
+msgstr "Hindi"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Historical Fiction"
+msgstr "Historical Fiction"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "History"
+msgstr "History"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Horror"
+msgstr "Horror"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Humor"
+msgstr "Humor"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Hungarian"
+msgstr "Hungarian"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Icelandic"
+msgstr "Icelandic"
+
+#. Library button when the book is saved
+#: src/screens/work.tsx
+msgid "In library"
+msgstr "In library"
+
+#. Library section and status of books being listened to or read
+#: src/screens/library.tsx
+msgid "In progress"
+msgstr "In progress"
+
+#. Backs up with keys and passwords
+#: src/screens/settings.tsx
+msgid "Include"
+msgstr "Include"
+
+#. Dialog title
+#: src/screens/settings.tsx
+msgid "Include keys and passwords?"
+msgstr "Include keys and passwords?"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Indonesian"
+msgstr "Indonesian"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Irish"
+msgstr "Irish"
+
+#. Explains clearing cached book details and streamed audio
+#: src/screens/settings.tsx
+msgid "It downloads again when needed."
+msgstr "It downloads again when needed."
+
+#. Shown when AudioBookBay may have blocked or rate limited the phone
+#: src/screens/browse.tsx
+msgid "It may have blocked your connection for a while. A proxy in Settings gets around it."
+msgstr "It may have blocked your connection for a while. A proxy in Settings gets around it."
+
+#. Dialog explaining that AudioBookBay may have blocked or rate limited the phone
+#: src/components/abb-silence-alert.tsx
+msgid "It may have blocked your connection for making too many requests. Blocks usually last up to three days. A proxy in Settings gets around it."
+msgstr "It may have blocked your connection for making too many requests. Blocks usually last up to three days. A proxy in Settings gets around it."
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Italian"
+msgstr "Italian"
+
+#. Explains deleting an e-book with everything kept for it
+#: src/screens/library.tsx
+msgid "Its file, reading place, highlights and notes are deleted."
+msgstr "Its file, reading place, highlights and notes are deleted."
+
+#. Warns that deleting an audiobook download deletes its saved data
+#. Warns that deleting an audiobook download deletes its saved data
+#: src/components/downloads-sheet.tsx
+#: src/components/storage-sheets.tsx
+msgid "Its progress and bookmarks are deleted too."
+msgstr "Its progress and bookmarks are deleted too."
+
+#. Warns that deleting an e-book download deletes its saved data
+#. Warns that deleting an e-book download deletes its saved data
+#: src/components/downloads-sheet.tsx
+#: src/components/storage-sheets.tsx
+msgid "Its reading progress, highlights and notes are deleted too."
+msgstr "Its reading progress, highlights and notes are deleted too."
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Japanese"
+msgstr "Japanese"
+
+#. Reader text alignment choice
+#: src/components/reader-sheets.tsx
+msgid "Justified"
+msgstr "Justified"
+
+#. Keeps the download going
+#. Keeps the download in progress
+#: src/components/cancel-download.tsx
+#: src/components/download-guard.tsx
+msgid "Keep"
+msgstr "Keep"
+
+#. Line in the restore dialog: API keys and the proxy sign-in
+#: src/components/backup-restore.tsx
+msgid "Keys and passwords"
+msgstr "Keys and passwords"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Korean"
+msgstr "Korean"
+
+#. Book fact label
+#. Upload detail
+#: src/components/book-details.tsx
+#: src/components/source-info.tsx
+msgid "Language"
+msgstr "Language"
+
+#. Reader display setting
+#: src/components/reader-sheets.tsx
+msgid "Larger text"
+msgstr "Larger text"
+
+#. Choice picking the book up where listening stopped; the chapter follows
+#. Choice picking the book up where listening stopped; the chapter follows
+#: src/components/place-prompt.tsx
+msgid "Last listened"
+msgstr "Last listened"
+
+#. Reader overview: the page showing is the chapter’s last
+#. Reading stopped on the e-book’s last page
+#: src/screens/reader.tsx
+#: src/ui/labels.ts
+msgid "Last page"
+msgstr "Last page"
+
+#. Choice picking the book up where reading stopped; the chapter follows
+#. Choice picking the book up where reading stopped; the chapter follows
+#: src/components/place-prompt.tsx
+msgid "Last read"
+msgstr "Last read"
+
+#. Start-up account check dialog
+#: src/components/account-alert.tsx
+msgid "Later"
+msgstr "Later"
+
+#. Browse chip: newest uploads
+#: src/screens/browse.tsx
+msgid "Latest"
+msgstr "Latest"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Latin"
+msgstr "Latin"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Latvian"
+msgstr "Latvian"
+
+#. Backs up without keys and passwords
+#: src/screens/settings.tsx
+msgid "Leave out"
+msgstr "Leave out"
+
+#. Reader text alignment choice
+#: src/components/reader-sheets.tsx
+msgid "Left"
+msgstr "Left"
+
+#. Book fact label
+#. Label under the audiobook’s listening time
+#: src/components/book-details.tsx
+#: src/screens/work.tsx
+msgid "Length"
+msgstr "Length"
+
+#. Reader overview: reading time left in the current chapter, under its name
+#: src/screens/reader.tsx
+msgid "Less than a minute left"
+msgstr "Less than a minute left"
+
+#. Navigation destination: saved audiobooks
+#. Title of the library screen
+#: src/components/bottom-bar.tsx
+#: src/screens/library.tsx
+msgid "Library"
+msgstr "Library"
+
+#. Dialog title
+#. Setting for the e-book library mirror used without a member key
+#: src/screens/settings.tsx
+msgid "Library Genesis address"
+msgstr "Library Genesis address"
+
+#. Settings row opening the licenses of the open-source packages
+#. Title of the screen listing the open-source packages and their licenses
+#: src/screens/licenses.tsx
+#: src/screens/settings.tsx
+msgid "Licenses"
+msgstr "Licenses"
+
+#. Reader page theme
+#: src/components/reader-sheets.tsx
+msgctxt "page"
+msgid "Light"
+msgstr "Light"
+
+#. Reader display setting
+#: src/components/reader-sheets.tsx
+msgid "Line spacing"
+msgstr "Line spacing"
+
+#. Starts streaming the audiobook
+#. Starts streaming the audiobook
+#. Starts streaming the audiobook
+#: src/components/book-details.tsx
+msgid "Listen"
+msgstr "Listen"
+
+#. Reader bar button playing the audiobook from the page being read
+#: src/ui/reader.tsx
+msgid "Listen from here"
+msgstr "Listen from here"
+
+#. What the app does and what the welcome steps set up; TorBox, Hardcover and AudioBookBay are names
+#: src/screens/welcome.tsx
+msgid "Listen to audiobooks and read their e-books in one place. Next you connect TorBox to stream them, Hardcover for book details and, if you need one, a proxy for AudioBookBay."
+msgstr "Listen to audiobooks and read their e-books in one place. Next you connect TorBox to stream them, Hardcover for book details and, if you need one, a proxy for AudioBookBay."
+
+#. Library status filter: books being listened to
+#: src/screens/library.tsx
+msgid "Listening"
+msgstr "Listening"
+
+#. Book page progress
+#. Series sheet: a book of the series is being listened to
+#: src/components/series-sheet.tsx
+#: src/screens/work.tsx
+msgctxt "book status"
+msgid "Listening"
+msgstr "Listening"
+
+#. Dialog title
+#. Setting for carrying the place between the audiobook and the e-book
+#: src/screens/settings.tsx
+msgid "Listening and reading"
+msgstr "Listening and reading"
+
+#. Book page progress: listening, with the time left and how far in
+#: src/screens/work.tsx
+msgid "Listening, {heardLeft} left ({heardPercent})"
+msgstr "Listening, {heardLeft} left ({heardPercent})"
+
+#. Book page progress: listening, with how far in
+#: src/screens/work.tsx
+msgid "Listening, {heardPercent}"
+msgstr "Listening, {heardPercent}"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Lithuanian"
+msgstr "Lithuanian"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "LitRPG"
+msgstr "LitRPG"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Malay"
+msgstr "Malay"
+
+#. Book page menu item opening the sheet that saves or deletes the audiobook and e-book on the phone
+#. Book page row opening the sheet that saves or deletes the audiobook and e-book on the phone
+#: src/components/book-menu.tsx
+#: src/components/downloads-sheet.tsx
+msgid "Manage storage"
+msgstr "Manage storage"
+
+#. Reader display setting
+#: src/components/reader-sheets.tsx
+msgid "Margins"
+msgstr "Margins"
+
+#. Library and book menu action
+#. Library and book menu action
+#: src/components/book-menu.tsx
+#: src/screens/library.tsx
+msgid "Mark as finished"
+msgstr "Mark as finished"
+
+#. Dialog title
+#. Dialog title
+#: src/components/book-menu.tsx
+#: src/screens/library.tsx
+msgid "Mark as finished?"
+msgstr "Mark as finished?"
+
+#. Library and book menu action that forgets all progress
+#. Library and book menu action that forgets all progress
+#: src/components/book-menu.tsx
+#: src/screens/library.tsx
+msgid "Mark as not started"
+msgstr "Mark as not started"
+
+#. Dialog title
+#. Dialog title
+#: src/components/book-menu.tsx
+#: src/screens/library.tsx
+msgid "Mark as not started?"
+msgstr "Mark as not started?"
+
+#. Title of the Hardcover match picker
+#: src/screens/match.tsx
+msgid "Match on Hardcover"
+msgstr "Match on Hardcover"
+
+#. Heading above moods readers tagged the book with
+#: src/screens/work.tsx
+msgid "Moods"
+msgstr "Moods"
+
+#. Opens a book’s menu in the library
+#: src/components/book-menu.tsx
+msgid "More options"
+msgstr "More options"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Mystery"
+msgstr "Mystery"
+
+#. Narrator credit under the author on the book page
+#: src/components/book-details.tsx
+msgid "Narrated by {narratedBy}"
+msgstr "Narrated by {narratedBy}"
+
+#. Upload detail
+#: src/components/source-info.tsx
+msgid "Narrator"
+msgstr "Narrator"
+
+#. Heading over uploads that do not credit a narrator
+#: src/screens/work-streams.tsx
+msgid "Narrator not named"
+msgstr "Narrator not named"
+
+#. Reader margin choice
+#: src/components/reader-sheets.tsx
+msgid "Narrow"
+msgstr "Narrow"
+
+#. Player control
+#: src/screens/player.tsx
+msgid "Next chapter"
+msgstr "Next chapter"
+
+#. TalkBack action on the reader’s page
+#: src/screens/reader.tsx
+msgid "Next page"
+msgstr "Next page"
+
+#. Opening an upload’s page failed because there is no browser
+#: src/components/source-info.tsx
+msgid "No app on this phone can open the link."
+msgstr "No app on this phone can open the link."
+
+#. Empty sheet of downloaded audiobooks
+#: src/components/storage-sheets.tsx
+msgid "No audiobooks downloaded"
+msgstr "No audiobooks downloaded"
+
+#. Empty search results title
+#: src/screens/browse.tsx
+msgid "No audiobooks found"
+msgstr "No audiobooks found"
+
+#. Author filter sheet when the library has no books with authors
+#: src/screens/library.tsx
+msgid "No authors yet"
+msgstr "No authors yet"
+
+#. Empty bookmark list title
+#: src/components/book-sheets.tsx
+msgid "No bookmarks"
+msgstr "No bookmarks"
+
+#. Empty Hardcover search
+#. Empty Hardcover search
+#: src/screens/browse.tsx
+#: src/screens/match.tsx
+msgid "No books found on Hardcover"
+msgstr "No books found on Hardcover"
+
+#. Empty Hardcover browse list
+#: src/screens/browse.tsx
+msgid "No books here yet"
+msgstr "No books here yet"
+
+#. The chosen library filters leave no books; the line break splits the title in two
+#: src/screens/library.tsx
+msgid "No books match\n"
+"these filters"
+msgstr "No books match\n"
+"these filters"
+
+#. Searching the library finds no books; the line break splits the title in two
+#: src/screens/library.tsx
+msgid "No books match\n"
+"your search"
+msgstr "No books match\n"
+"your search"
+
+#. Chapter list before chapters are read
+#: src/components/book-sheets.tsx
+msgid "No chapters yet"
+msgstr "No chapters yet"
+
+#. Error when the phone could not connect at all
+#: src/ui/errors.ts
+msgid "No connection. Check your internet and try again."
+msgstr "No connection. Check your internet and try again."
+
+#. Empty sheet of downloaded e-books
+#: src/components/storage-sheets.tsx
+msgid "No e-books downloaded"
+msgstr "No e-books downloaded"
+
+#. No EPUB files were found for a book
+#. No EPUB files were found for a book
+#. Row under the Read button when the book has no e-books
+#. Row under the Read button when the book has no e-books
+#: src/components/downloads-sheet.tsx
+#: src/screens/browse.tsx
+#: src/screens/work-ebooks.tsx
+#: src/screens/work.tsx
+msgid "No e-books found"
+msgstr "No e-books found"
+
+#. Hardcover unmatched row
+#: src/screens/book.tsx
+msgid "No match. Tap to choose."
+msgstr "No match. Tap to choose."
+
+#. Warning before choosing an upload whose torrent has no seeders
+#: src/screens/work-streams.tsx
+msgid "No one is sharing it, so it may never download."
+msgstr "No one is sharing it, so it may never download."
+
+#. Storage-sheet row when the book has no playable recording to download
+#: src/components/downloads-sheet.tsx
+msgid "No recording to download yet"
+msgstr "No recording to download yet"
+
+#. Empty Hardcover series search
+#: src/screens/browse.tsx
+msgid "No series found on Hardcover"
+msgstr "No series found on Hardcover"
+
+#. Series filter sheet when no book in the library is part of a series
+#: src/screens/library.tsx
+msgid "No series yet"
+msgstr "No series yet"
+
+#. No uploads were found for a book
+#. Row under the Listen button when the book has no recordings to play
+#: src/screens/work-streams.tsx
+#: src/screens/work.tsx
+msgid "No sources found"
+msgstr "No sources found"
+
+#. Storage row when nothing of its kind is downloaded
+#. Storage row when nothing of its kind is downloaded
+#: src/screens/settings.tsx
+msgctxt "downloads"
+msgid "None"
+msgstr "None"
+
+#. Match picker option to unlink Hardcover
+#: src/screens/match.tsx
+msgid "None of these"
+msgstr "None of these"
+
+#. Reader line spacing choice
+#: src/components/reader-sheets.tsx
+msgid "Normal"
+msgstr "Normal"
+
+#. Reader margin choice
+#: src/components/reader-sheets.tsx
+msgctxt "margins"
+msgid "Normal"
+msgstr "Normal"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Norwegian"
+msgstr "Norwegian"
+
+#. Reader search without results
+#: src/components/reader-sheets.tsx
+msgid "Not found in this book"
+msgstr "Not found in this book"
+
+#. Series sheet: a book of the series is not in the library
+#: src/components/series-sheet.tsx
+msgctxt "book status"
+msgid "Not in library"
+msgstr "Not in library"
+
+#. Listen button for a torrent without audio
+#: src/components/book-details.tsx
+msgid "Not playable"
+msgstr "Not playable"
+
+#. Book status: TorBox must download the torrent
+#: src/components/book-details.tsx
+msgid "Not ready yet. It downloads first, which can take a while."
+msgstr "Not ready yet. It downloads first, which can take a while."
+
+#. Library section of books not yet played
+#: src/screens/library.tsx
+msgid "Not started"
+msgstr "Not started"
+
+#. Book page progress
+#. Series sheet: a book of the series is in the library but not started
+#: src/components/series-sheet.tsx
+#: src/screens/work.tsx
+msgctxt "book status"
+msgid "Not started"
+msgstr "Not started"
+
+#. Title of the dialog for a bookmark’s note
+#. Title of the dialog for a highlight’s note
+#: src/components/book-sheets.tsx
+#: src/screens/reader.tsx
+msgid "Note"
+msgstr "Note"
+
+#. Toolbar action over selected text in the reader: adds a note to it (a verb, short)
+#: src/screens/reader.tsx
+msgctxt "text toolbar action"
+msgid "Note"
+msgstr "Note"
+
+#. Reader bar button for highlights and bookmarks
+#: src/ui/reader.tsx
+msgid "Notes"
+msgstr "Notes"
+
+#. Title of the reader sheet listing highlights and bookmarks
+#: src/components/reader-sheets.tsx
+msgid "Notes and bookmarks"
+msgstr "Notes and bookmarks"
+
+#. Reader notes sheet before anything was highlighted or bookmarked
+#: src/components/reader-sheets.tsx
+msgid "Nothing saved yet"
+msgstr "Nothing saved yet"
+
+#. Restore dialog for an empty backup
+#: src/components/backup-restore.tsx
+msgid "Nothing to add"
+msgstr "Nothing to add"
+
+#. Listening and reading setting: not carried over
+#. Sleep timer option
+#: src/screens/settings.tsx
+#: src/ui/sheets.tsx
+msgid "Off"
+msgstr "Off"
+
+#. Closes an information dialog
+#: src/components/abb-silence-alert.tsx
+msgid "OK"
+msgstr "OK"
+
+#. Asks to replace the TorBox download in progress; the name is a torrent’s title in quotes
+#: src/components/download-guard.tsx
+msgid "Only one source downloads at a time, and {names} is downloading now. Cancel it and download this one instead?"
+msgstr "Only one source downloads at a time, and {names} is downloading now. Cancel it and download this one instead?"
+
+#. Asks to replace several TorBox downloads in progress; the names are torrent titles in quotes, separated by commas
+#: src/components/download-guard.tsx
+msgid "Only one source downloads at a time, and these are downloading now: {names}. Cancel them and download this one instead?"
+msgstr "Only one source downloads at a time, and these are downloading now: {names}. Cancel them and download this one instead?"
+
+#. App bar toggle that hides uploads that must be downloaded first
+#: src/screens/work-streams.tsx
+msgid "Only sources that play right away"
+msgstr "Only sources that play right away"
+
+#. Opens the Browse tab from an empty list of sources
+#. Opens the Browse tab from an empty list of sources
+#: src/screens/work-ebooks.tsx
+#: src/screens/work-streams.tsx
+msgid "Open Browse"
+msgstr "Open Browse"
+
+#. Opens Settings to set up a proxy for AudioBookBay
+#. Opens the settings screen
+#. Opens the settings screen
+#. Start-up account check dialog
+#: src/components/abb-silence-alert.tsx
+#: src/components/account-alert.tsx
+#: src/components/book-details.tsx
+#: src/screens/player.tsx
+msgid "Open settings"
+msgstr "Open settings"
+
+#. Opens the upload’s page in the browser
+#: src/components/source-info.tsx
+msgid "Open the post"
+msgstr "Open the post"
+
+#. Reader font choice: the font the book comes with
+#: src/components/reader-sheets.tsx
+msgid "Original"
+msgstr "Original"
+
+#. Reader display setting: a light or dark page
+#: src/components/reader-sheets.tsx
+msgid "Page"
+msgstr "Page"
+
+#. Where reading stopped in an e-book, for example “Page 243 of 617”
+#: src/ui/labels.ts
+msgid "Page {page} of {pages}"
+msgstr "Page {page} of {pages}"
+
+#. Label under the printed page count
+#: src/screens/work.tsx
+msgid "Pages"
+msgstr "Pages"
+
+#. Text field label for the proxy password
+#. Text field label for the proxy password
+#: src/screens/settings.tsx
+#: src/screens/welcome.tsx
+msgid "Password"
+msgstr "Password"
+
+#. Listen button pausing the book that is playing
+#. Listen button pausing the book that is playing
+#. Pauses the audiobook
+#. Pauses the audiobook
+#: src/components/book-details.tsx
+#: src/components/mini-player.tsx
+#: src/screens/player.tsx
+msgid "Pause"
+msgstr "Pause"
+
+#. Library row button pausing the book, with its title
+#: src/screens/library.tsx
+msgid "Pause {title}"
+msgstr "Pause {title}"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Persian"
+msgstr "Persian"
+
+#. Listening and reading choice: chapter estimate
+#: src/screens/settings.tsx
+msgid "Picks up near the same spot in the chapter."
+msgstr "Picks up near the same spot in the chapter."
+
+#. Highlight colour
+#: src/ui/reader.tsx
+msgid "Pink"
+msgstr "Pink"
+
+#. Plays the audiobook
+#. Plays the audiobook
+#: src/components/mini-player.tsx
+#: src/screens/player.tsx
+msgid "Play"
+msgstr "Play"
+
+#. Library row button resuming the book, with its title
+#: src/screens/library.tsx
+msgid "Play {title}"
+msgstr "Play {title}"
+
+#. Settings section
+#: src/screens/settings.tsx
+msgid "Playback"
+msgstr "Playback"
+
+#. Title of the speed sheet
+#: src/ui/sheets.tsx
+msgid "Playback speed"
+msgstr "Playback speed"
+
+#. Player button opening the speed choice, with the current speed
+#. placeholder {0}: speedLabel(now.speed)
+#: src/screens/player.tsx
+msgid "Playback speed {0}"
+msgstr "Playback speed {0}"
+
+#. Marks an upload that is already cached and streams at once
+#. Upload detail: already cached
+#: src/components/source-info.tsx
+#: src/screens/work-streams.tsx
+msgid "Plays right away"
+msgstr "Plays right away"
+
+#. Body of the app-wide error screen
+#: src/components/app-error.tsx
+msgid "Please try again."
+msgstr "Please try again."
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Polish"
+msgstr "Polish"
+
+#. Text field label for the proxy port
+#. Text field label for the proxy port
+#: src/screens/settings.tsx
+#: src/screens/welcome.tsx
+msgid "Port"
+msgstr "Port"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Portuguese"
+msgstr "Portuguese"
+
+#. Upload detail
+#: src/components/source-info.tsx
+msgid "Post title"
+msgstr "Post title"
+
+#. Upload detail: when it was uploaded
+#: src/components/source-info.tsx
+msgid "Posted"
+msgstr "Posted"
+
+#. Dialog title
+#. Setting for the language audiobooks and e-books are ranked first in, English next
+#: src/screens/settings.tsx
+msgid "Preferred language"
+msgstr "Preferred language"
+
+#. Play button while TorBox prepares the stream
+#. Play button while TorBox prepares the stream
+#: src/components/book-details.tsx
+msgid "Preparing…"
+msgstr "Preparing…"
+
+#. Player control
+#: src/screens/player.tsx
+msgid "Previous chapter"
+msgstr "Previous chapter"
+
+#. TalkBack action on the reader’s page
+#: src/screens/reader.tsx
+msgid "Previous page"
+msgstr "Previous page"
+
+#. Marks an upload whose torrent has no seeders
+#: src/screens/work-streams.tsx
+msgid "Probably dead: no one is sharing it"
+msgstr "Probably dead: no one is sharing it"
+
+#. Text field label, like isp.decodo.com
+#: src/screens/settings.tsx
+msgid "Proxy address"
+msgstr "Proxy address"
+
+#. Heading over the e-book files of one publisher
+#: src/screens/work-ebooks.tsx
+msgid "Published by {publisher}"
+msgstr "Published by {publisher}"
+
+#. Book fact label
+#: src/components/book-details.tsx
+msgid "Publisher"
+msgstr "Publisher"
+
+#. Heading over e-book files that do not name their publisher
+#: src/screens/work-ebooks.tsx
+msgid "Publisher not named"
+msgstr "Publisher not named"
+
+#. Label under the average Hardcover rating
+#: src/screens/work.tsx
+msgid "Rating"
+msgstr "Rating"
+
+#. Book page button opening the e-book
+#: src/screens/work.tsx
+msgid "Read"
+msgstr "Read"
+
+#. Library row button opening the book to read on, with its title
+#: src/screens/library.tsx
+msgid "Read {title}"
+msgstr "Read {title}"
+
+#. Heading over the uploads of one narrator’s recording
+#: src/screens/work-streams.tsx
+msgid "Read by {narrators}"
+msgstr "Read by {narrators}"
+
+#. Player button pausing the audiobook and opening its e-book at the same place
+#: src/screens/player.tsx
+msgid "Read from here"
+msgstr "Read from here"
+
+#. Library status filter: books being read
+#: src/screens/library.tsx
+msgid "Reading"
+msgstr "Reading"
+
+#. Series sheet: a book of the series is being read
+#: src/components/series-sheet.tsx
+msgctxt "book status"
+msgid "Reading"
+msgstr "Reading"
+
+#. Book page progress: reading, with the page and how far in
+#: src/screens/work.tsx
+msgid "Reading page {readPage} of {readPages} ({readPercent})"
+msgstr "Reading page {readPage} of {readPages} ({readPercent})"
+
+#. Book page progress: reading, with how far in
+#: src/screens/work.tsx
+msgid "Reading, {readPercent}"
+msgstr "Reading, {readPercent}"
+
+#. Book status: playable now
+#: src/components/book-details.tsx
+msgid "Ready to stream"
+msgstr "Ready to stream"
+
+#. Book status: TorBox already has the files
+#: src/components/book-details.tsx
+msgid "Ready. Streaming starts right away."
+msgstr "Ready. Streaming starts right away."
+
+#. Library sort order
+#: src/screens/library.tsx
+msgid "Recently added"
+msgstr "Recently added"
+
+#. Library sort order
+#: src/screens/library.tsx
+msgid "Recently played"
+msgstr "Recently played"
+
+#. Reader line spacing choice
+#: src/components/reader-sheets.tsx
+msgid "Relaxed"
+msgstr "Relaxed"
+
+#. Book fact label
+#: src/components/book-details.tsx
+msgid "Released"
+msgstr "Released"
+
+#. Shown for a package without a licence file; the licence is a name like MIT
+#: src/screens/licenses.tsx
+msgid "Released under the {name} licence. The package includes no licence text."
+msgstr "Released under the {name} licence. The package includes no licence text."
+
+#. Confirms removing a book from the library
+#. Confirms removing a series from the library
+#: src/components/library-toggle.tsx
+#: src/components/series-sheet.tsx
+msgid "Remove"
+msgstr "Remove"
+
+#. Library menu action
+#. Toggle on the book page
+#: src/screens/book.tsx
+#: src/screens/library.tsx
+msgid "Remove from library"
+msgstr "Remove from library"
+
+#. Dialog title
+#: src/components/library-toggle.tsx
+msgid "Remove from library?"
+msgstr "Remove from library?"
+
+#. Removes a stored API key
+#. Removes a stored API key
+#. Removes the stored TorBox key
+#: src/screens/settings.tsx
+msgid "Remove key"
+msgstr "Remove key"
+
+#. Highlight sheet row
+#: src/components/reader-sheets.tsx
+msgid "Remove note"
+msgstr "Remove note"
+
+#. Removes the stored proxy
+#: src/screens/settings.tsx
+msgid "Remove proxy"
+msgstr "Remove proxy"
+
+#. Takes a whole series out of the library
+#: src/components/series-sheet.tsx
+msgid "Remove series from library"
+msgstr "Remove series from library"
+
+#. Dialog title
+#: src/components/series-sheet.tsx
+msgid "Remove series from library?"
+msgstr "Remove series from library?"
+
+#. Cancels one download for another
+#: src/components/download-guard.tsx
+msgid "Replace"
+msgstr "Replace"
+
+#. Dialog title
+#: src/screens/settings.tsx
+msgid "Replace the Anna’s Archive key?"
+msgstr "Replace the Anna’s Archive key?"
+
+#. Dialog title
+#: src/screens/settings.tsx
+msgid "Replace the AudioBookBay proxy?"
+msgstr "Replace the AudioBookBay proxy?"
+
+#. Dialog title
+#: src/components/download-guard.tsx
+msgid "Replace the download?"
+msgstr "Replace the download?"
+
+#. Dialog title
+#: src/screens/settings.tsx
+msgid "Replace the Hardcover key?"
+msgstr "Replace the Hardcover key?"
+
+#. Dialog title
+#: src/screens/settings.tsx
+msgid "Replace the TorBox key?"
+msgstr "Replace the TorBox key?"
+
+#. Button in the reader’s display settings panel putting every setting back
+#: src/components/reader-sheets.tsx
+msgid "Reset to default"
+msgstr "Reset to default"
+
+#. Confirms restoring a backup
+#. Welcome app bar button restoring a backup file instead of setting up
+#: src/components/backup-restore.tsx
+#: src/screens/welcome.tsx
+msgid "Restore"
+msgstr "Restore"
+
+#. Settings row reading a backup file
+#: src/screens/settings.tsx
+msgid "Restore from backup"
+msgstr "Restore from backup"
+
+#. Dialog title
+#: src/components/backup-restore.tsx
+msgid "Restore this backup?"
+msgstr "Restore this backup?"
+
+#. Continue listening from the saved position
+#. Continue listening from the saved position
+#: src/components/book-details.tsx
+msgid "Resume"
+msgstr "Resume"
+
+#. Retries a failed action
+#. Retries a failed action
+#. Retries a failed action
+#. Retries a failed action
+#. Retries a failed action
+#. Retries a failed action
+#. Retries a failed action
+#. Retries a failed action
+#. Retries a failed action
+#. Retries a failed action
+#. Retries a failed action
+#. Retries a failed action
+#. Retries a failed action
+#: src/components/book-details.tsx
+#: src/components/series-sheet.tsx
+#: src/screens/book.tsx
+#: src/screens/browse.tsx
+#: src/screens/library.tsx
+#: src/screens/match.tsx
+#: src/screens/player.tsx
+#: src/screens/work-ebooks.tsx
+#: src/screens/work-streams.tsx
+#: src/screens/work.tsx
+msgid "Retry"
+msgstr "Retry"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Romance"
+msgstr "Romance"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Romanian"
+msgstr "Romanian"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Russian"
+msgstr "Russian"
+
+#. Reader font choice: sans serif
+#: src/components/reader-sheets.tsx
+msgid "Sans"
+msgstr "Sans"
+
+#. Saves a note
+#. Saves a note
+#. Saves a setting
+#. Saves a setting
+#. Saves a setting
+#. Saves a setting
+#. Saves a setting
+#. Saves a setting
+#: src/components/book-sheets.tsx
+#: src/screens/reader.tsx
+#: src/screens/settings.tsx
+msgid "Save"
+msgstr "Save"
+
+#. Backup saved, with the file name
+#: src/screens/settings.tsx
+msgid "Saved {name}"
+msgstr "Saved {name}"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Sci-Fi"
+msgstr "Sci-Fi"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Science"
+msgstr "Science"
+
+#. Switches the search to audiobook uploads
+#: src/screens/browse.tsx
+msgid "Search audiobooks"
+msgstr "Search audiobooks"
+
+#. Placeholder of the search bar on the reader’s search page
+#. Reader top bar button
+#: src/components/reader-sheets.tsx
+#: src/ui/reader.tsx
+msgid "Search in book"
+msgstr "Search in book"
+
+#. Reader search page before anything was searched
+#: src/components/reader-sheets.tsx
+msgid "Search this book"
+msgstr "Search this book"
+
+#. Placeholder of the search field at the top of the library
+#: src/screens/library.tsx
+msgid "Search your library"
+msgstr "Search your library"
+
+#. Text field label
+#: src/screens/settings.tsx
+msgid "Secret key"
+msgstr "Secret key"
+
+#. Title of the screen choosing which recording and upload of a book to play
+#: src/screens/work-streams.tsx
+msgid "Select audiobook"
+msgstr "Select audiobook"
+
+#. Title of the screen choosing which EPUB file of a book to read
+#: src/screens/work-ebooks.tsx
+msgid "Select e-book"
+msgstr "Select e-book"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Self-help"
+msgstr "Self-help"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Serbian"
+msgstr "Serbian"
+
+#. Library filter: by series
+#. Search chip: series on Hardcover
+#: src/screens/browse.tsx
+#: src/screens/library.tsx
+msgid "Series"
+msgstr "Series"
+
+#. Reader font choice
+#: src/components/reader-sheets.tsx
+msgid "Serif"
+msgstr "Serif"
+
+#. Line in the restore dialog: the app’s settings
+#. Opens the settings screen
+#. Title of the settings screen
+#: src/components/backup-restore.tsx
+#: src/screens/library.tsx
+#: src/screens/settings.tsx
+msgid "Settings"
+msgstr "Settings"
+
+#. Highlight sheet row sharing the passage
+#. Toolbar action over selected text in the reader
+#: src/components/reader-sheets.tsx
+#: src/screens/reader.tsx
+msgid "Share"
+msgstr "Share"
+
+#. Upload detail: seeders and peers
+#: src/components/source-info.tsx
+msgid "Sharing"
+msgstr "Sharing"
+
+#. App bar toggle that also shows uploads that must be downloaded first
+#: src/screens/work-streams.tsx
+msgid "Show all sources"
+msgstr "Show all sources"
+
+#. TalkBack action on the page opening the reader’s bars
+#: src/screens/reader.tsx
+msgid "Show reader controls"
+msgstr "Show reader controls"
+
+#. Listening and reading setting: the place is estimated from the chapters
+#: src/screens/settings.tsx
+msgid "Simple"
+msgstr "Simple"
+
+#. Book fact label
+#. Upload detail
+#: src/components/book-details.tsx
+#: src/components/source-info.tsx
+msgid "Size"
+msgstr "Size"
+
+#. Storage-sheet e-book row when the site does not give the file size
+#: src/components/downloads-sheet.tsx
+msgid "Size unknown"
+msgstr "Size unknown"
+
+#. Welcome app bar button skipping a step
+#: src/screens/welcome.tsx
+msgid "Skip"
+msgstr "Skip"
+
+#. Dialog title
+#. Mini player: jump backwards by the skip interval
+#. Setting for the rewind button
+#: src/components/mini-player.tsx
+#: src/screens/settings.tsx
+msgid "Skip back"
+msgstr "Skip back"
+
+#. Dialog title
+#. Setting for the fast-forward button
+#: src/screens/settings.tsx
+msgid "Skip forward"
+msgstr "Skip forward"
+
+#. Sleep timer chip when off
+#: src/screens/player.tsx
+msgid "Sleep"
+msgstr "Sleep"
+
+#. Title of the sleep timer sheet
+#: src/ui/sheets.tsx
+msgid "Sleep timer"
+msgstr "Sleep timer"
+
+#. Player button opening the sleep timer, with the time left or “End of chapter”
+#: src/screens/player.tsx
+msgid "Sleep timer, {sleepDescription}"
+msgstr "Sleep timer, {sleepDescription}"
+
+#. Player button opening the sleep timer while it is off
+#: src/screens/player.tsx
+msgid "Sleep timer, off"
+msgstr "Sleep timer, off"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Slovak"
+msgstr "Slovak"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Slovenian"
+msgstr "Slovenian"
+
+#. Reader display setting
+#: src/components/reader-sheets.tsx
+msgid "Smaller text"
+msgstr "Smaller text"
+
+#. Some uploads failed to load; a Retry button follows
+#: src/screens/work-streams.tsx
+msgid "Some streams could not be opened."
+msgstr "Some streams could not be opened."
+
+#. Title of the app-wide error screen
+#: src/components/app-error.tsx
+msgid "Something went wrong"
+msgstr "Something went wrong"
+
+#. Error with no more specific wording
+#: src/ui/errors.ts
+msgid "Something went wrong. Try again."
+msgstr "Something went wrong. Try again."
+
+#. Title of the library sort sheet
+#: src/screens/library.tsx
+msgid "Sort by"
+msgstr "Sort by"
+
+#. Spoken label of the library sort chip, with the chosen order
+#: src/screens/library.tsx
+msgid "Sort: {sortLabel}"
+msgstr "Sort: {sortLabel}"
+
+#. Settings section
+#: src/screens/settings.tsx
+msgid "Sources"
+msgstr "Sources"
+
+#. Row under the Listen button when looking up recordings failed
+#: src/screens/work.tsx
+msgid "Sources could not be loaded"
+msgstr "Sources could not be loaded"
+
+#. Looking up uploads of a book failed
+#. Looking up uploads of a book failed
+#: src/screens/work-streams.tsx
+#: src/screens/work.tsx
+msgid "Sources could not be searched. Try again in a moment."
+msgstr "Sources could not be searched. Try again in a moment."
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Spanish"
+msgstr "Spanish"
+
+#. Listening and reading setting when its speech model failed to download
+#: src/screens/settings.tsx
+msgid "Speech model missing. Choose again to download it."
+msgstr "Speech model missing. Choose again to download it."
+
+#. The speech model finished downloading
+#: src/screens/settings.tsx
+msgid "Speech model ready"
+msgstr "Speech model ready"
+
+#. Listen button while the download has stopped getting anywhere; pressing it offers to cancel
+#: src/components/book-details.tsx
+msgid "Stalled · {percent}%"
+msgstr "Stalled · {percent}%"
+
+#. Book status: the download stopped getting anywhere, with its progress
+#: src/components/book-details.tsx
+msgid "Stalled at {percent}%. No one may be sharing it right now."
+msgstr "Stalled at {percent}%. No one may be sharing it right now."
+
+#. Confirms marking a book not started
+#. Confirms marking a book not started
+#: src/components/book-menu.tsx
+#: src/screens/library.tsx
+msgid "Start over"
+msgstr "Start over"
+
+#. Download button of the book’s e-book while its download starts
+#: src/screens/work.tsx
+msgid "Starting…"
+msgstr "Starting…"
+
+#. Library filter: where books stand
+#: src/screens/library.tsx
+msgid "Status"
+msgstr "Status"
+
+#. Stops the audiobook and removes the player and its notification
+#: src/screens/player.tsx
+msgid "Stop and close"
+msgstr "Stop and close"
+
+#. Settings section
+#. Title of the sheet that saves or deletes the audiobook and e-book on the phone
+#: src/components/downloads-sheet.tsx
+#: src/screens/settings.tsx
+msgid "Storage"
+msgstr "Storage"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Swahili"
+msgstr "Swahili"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Swedish"
+msgstr "Swedish"
+
+#. Dialog title
+#: src/screens/reader.tsx
+msgid "Switching to listening"
+msgstr "Switching to listening"
+
+#. Dialog title
+#. Dialog title
+#: src/screens/player.tsx
+#: src/screens/reader.tsx
+msgid "Switching to reading"
+msgstr "Switching to reading"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Tagalog"
+msgstr "Tagalog"
+
+#. How to add to the empty notes and bookmarks sheet
+#: src/components/reader-sheets.tsx
+msgid "Tap a page’s top corner to bookmark it, or select text to highlight it."
+msgstr "Tap a page’s top corner to bookmark it, or select text to highlight it."
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Teen & Young Adult"
+msgstr "Teen & Young Adult"
+
+#. Reader display setting
+#: src/components/reader-sheets.tsx
+msgid "Text size"
+msgstr "Text size"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Thai"
+msgstr "Thai"
+
+#. Invalid proxy host
+#: src/components/proxy-setup.ts
+msgid "That is not a valid proxy address"
+msgstr "That is not a valid proxy address"
+
+#. Invalid URL
+#. Invalid URL
+#: src/screens/settings.tsx
+msgid "That is not a valid web address"
+msgstr "That is not a valid web address"
+
+#. Error when the audio player fails to play a file
+#: src/ui/errors.ts
+msgid "The audio could not be played. Try again."
+msgstr "The audio could not be played. Try again."
+
+#. Error when reading chapter markers from the audio files fails
+#: src/ui/errors.ts
+msgid "The chapters of this audiobook could not be read."
+msgstr "The chapters of this audiobook could not be read."
+
+#. Explains removing the TorBox key
+#: src/screens/settings.tsx
+msgid "The current key is removed from this device. You can add a new one afterwards."
+msgstr "The current key is removed from this device. You can add a new one afterwards."
+
+#. Shown when downloading an e-book failed
+#: src/components/ebook-row.tsx
+msgid "The e-book could not be downloaded. Try another file."
+msgstr "The e-book could not be downloaded. Try another file."
+
+#. Explains a reader failure and what to do about it
+#: src/screens/reader.tsx
+msgid "The file may be damaged. Try again, or choose another e-book on the book’s page."
+msgstr "The file may be damaged. Try again, or choose another e-book on the book’s page."
+
+#. Explains removing the Hardcover key
+#: src/screens/settings.tsx
+msgid "The key is removed from this device. Details already saved for your books stay; new books use AudioBookBay details until you add a key."
+msgstr "The key is removed from this device. Details already saved for your books stay; new books use AudioBookBay details until you add a key."
+
+#. Explains removing the Anna’s Archive key
+#: src/screens/settings.tsx
+msgid "The key is removed from this device. E-books come from Library Genesis until you add one."
+msgstr "The key is removed from this device. E-books come from Library Genesis until you add one."
+
+#. Anna’s Archive row with a bad key
+#. TorBox row with a bad key
+#: src/screens/settings.tsx
+msgid "The key was not accepted. Tap to replace it."
+msgstr "The key was not accepted. Tap to replace it."
+
+#. Start-up check: the saved proxy does not answer
+#: src/components/account-alert.tsx
+msgid "The proxy could not be reached."
+msgstr "The proxy could not be reached."
+
+#. Error when the proxy rejects its sign-in
+#: src/ui/errors.ts
+msgid "The proxy did not accept its username and password. Check them in Settings."
+msgstr "The proxy did not accept its username and password. Check them in Settings."
+
+#. AudioBookBay proxy rejected the sign-in
+#: src/components/proxy-setup.ts
+msgid "The proxy did not accept this username and password"
+msgstr "The proxy did not accept this username and password"
+
+#. Explains removing the AudioBookBay proxy
+#: src/screens/settings.tsx
+msgid "The proxy is removed from this device and pages load directly until you add one again."
+msgstr "The proxy is removed from this device and pages load directly until you add one again."
+
+#. Start-up check: the saved proxy sign-in was rejected
+#: src/components/account-alert.tsx
+msgid "The proxy no longer accepts your username and password."
+msgstr "The proxy no longer accepts your username and password."
+
+#. Error when a service failed on its side
+#: src/ui/errors.ts
+msgid "The service is having problems. Try again later."
+msgstr "The service is having problems. Try again later."
+
+#. Warns that deleting finished audiobook downloads deletes their saved data
+#: src/components/storage-sheets.tsx
+msgid "Their progress and bookmarks are deleted too."
+msgstr "Their progress and bookmarks are deleted too."
+
+#. Warns that deleting finished e-book downloads deletes their saved data
+#: src/components/storage-sheets.tsx
+msgid "Their reading progress, highlights and notes are deleted too."
+msgstr "Their reading progress, highlights and notes are deleted too."
+
+#. Book load failure title
+#: src/screens/book.tsx
+msgid "This audiobook could not be opened"
+msgstr "This audiobook could not be opened"
+
+#. Error when an audiobook has nothing to stream and is not on the phone
+#: src/ui/errors.ts
+msgid "This audiobook is not ready to play yet."
+msgstr "This audiobook is not ready to play yet."
+
+#. Hardcover book load failure title
+#: src/screens/work.tsx
+msgid "This book could not be loaded from Hardcover"
+msgstr "This book could not be loaded from Hardcover"
+
+#. Reader contents sheet when the book lists no chapters
+#: src/components/reader-sheets.tsx
+msgid "This book has no table of contents"
+msgstr "This book has no table of contents"
+
+#. Error when a service answered that something does not exist
+#: src/ui/errors.ts
+msgid "This could not be found."
+msgstr "This could not be found."
+
+#. Reader failed to open a downloaded file
+#: src/screens/reader.tsx
+msgid "This e-book could not be opened"
+msgstr "This e-book could not be opened"
+
+#. Reader opened for an e-book that was removed or failed to download
+#: src/screens/reader.tsx
+msgid "This e-book is not on your phone"
+msgstr "This e-book is not on your phone"
+
+#. The picked file could not be read as a backup
+#. The picked file could not be read as a backup
+#: src/components/backup-restore.tsx
+#: src/ui/errors.ts
+msgid "This file is not a Vaka backup"
+msgstr "This file is not a Vaka backup"
+
+#. Hardcover key lacks the needed permission; read:catalog is a technical name
+#: src/settings/key-problems.ts
+msgid "This key cannot read Hardcover’s catalogue. Create one with read:catalog."
+msgstr "This key cannot read Hardcover’s catalogue. Create one with read:catalog."
+
+#. Series sheet load failure
+#: src/components/series-sheet.tsx
+msgid "This series could not be loaded"
+msgstr "This series could not be loaded"
+
+#. Dialog title
+#: src/screens/work-streams.tsx
+msgid "This source is probably dead"
+msgstr "This source is probably dead"
+
+#. Error when a request timed out
+#: src/ui/errors.ts
+msgid "This took too long to answer. Try again in a moment."
+msgstr "This took too long to answer. Try again in a moment."
+
+#. Book status: nothing streamable
+#: src/components/book-details.tsx
+msgid "This torrent has no .m4b, .m4a or .mp3 files to play."
+msgstr "This torrent has no .m4b, .m4a or .mp3 files to play."
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "Thriller"
+msgstr "Thriller"
+
+#. Library sort order
+#: src/screens/library.tsx
+msgid "Title"
+msgstr "Title"
+
+#. Hardcover search placeholder
+#: src/screens/match.tsx
+msgid "Title and author"
+msgstr "Title and author"
+
+#. Error when a service limited how often the app may ask
+#: src/ui/errors.ts
+msgid "Too many requests. Try again in a minute."
+msgstr "Too many requests. Try again in a minute."
+
+#. Name of the streaming service
+#: src/screens/settings.tsx
+msgid "TorBox"
+msgstr "TorBox"
+
+#. Dialog title
+#: src/screens/settings.tsx
+msgid "TorBox API key"
+msgstr "TorBox API key"
+
+#. TorBox key rejected
+#: src/settings/key-problems.ts
+msgid "TorBox did not accept this API key"
+msgstr "TorBox did not accept this API key"
+
+#. Start-up check: the saved TorBox key was rejected
+#: src/components/account-alert.tsx
+msgid "TorBox no longer accepts your API key."
+msgstr "TorBox no longer accepts your API key."
+
+#. Browse chip: books trending on Hardcover
+#: src/screens/browse.tsx
+msgid "Trending"
+msgstr "Trending"
+
+#. Browse chip: an audiobook genre
+#: src/screens/browse.tsx
+msgid "True Crime"
+msgstr "True Crime"
+
+#. Reopens an e-book that failed to open
+#. Retries after an app-wide error
+#: src/components/app-error.tsx
+#: src/screens/reader.tsx
+msgid "Try again"
+msgstr "Try again"
+
+#. Hint under a failed e-book search
+#: src/screens/browse.tsx
+msgid "Try again in a moment."
+msgstr "Try again in a moment."
+
+#. Reader search without results, suggesting what to try
+#: src/components/reader-sheets.tsx
+msgid "Try another word or a shorter phrase."
+msgstr "Try another word or a shorter phrase."
+
+#. Hint when nothing was found for a book; Browse is the tab for finding books
+#. Hint when nothing was found for a book; Browse is the tab for finding books
+#: src/screens/work-ebooks.tsx
+#: src/screens/work-streams.tsx
+msgid "Try searching for the book by its title in Browse."
+msgstr "Try searching for the book by its title in Browse."
+
+#. Hint under an empty Hardcover search
+#: src/screens/browse.tsx
+msgid "Try the audiobook uploads for books Hardcover does not list."
+msgstr "Try the audiobook uploads for books Hardcover does not list."
+
+#. Empty search results hint
+#. Empty search results hint
+#: src/screens/browse.tsx
+msgid "Try the title or the author’s name on its own."
+msgstr "Try the title or the author’s name on its own."
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Turkish"
+msgstr "Turkish"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Ukrainian"
+msgstr "Ukrainian"
+
+#. Source row when the chosen upload names no narrator, format or bitrate
+#. Upload details when its trackers did not answer
+#: src/components/source-info.tsx
+#: src/screens/work.tsx
+msgid "Unknown"
+msgstr "Unknown"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Urdu"
+msgstr "Urdu"
+
+#. Explains choosing no Hardcover match
+#: src/screens/match.tsx
+msgid "Use the details from AudioBookBay instead."
+msgstr "Use the details from AudioBookBay instead."
+
+#. Text field label for the proxy username
+#. Text field label for the proxy username
+#: src/screens/settings.tsx
+#: src/screens/welcome.tsx
+msgid "Username"
+msgstr "Username"
+
+#. App version label
+#: src/screens/settings.tsx
+msgid "Version"
+msgstr "Version"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Vietnamese"
+msgstr "Vietnamese"
+
+#. Title of the first welcome screen
+#: src/screens/welcome.tsx
+msgid "Welcome to Vaka"
+msgstr "Welcome to Vaka"
+
+#. A language books can be preferred in
+#: src/ui/languages.ts
+msgid "Welsh"
+msgstr "Welsh"
+
+#. Explains cancelling a download
+#: src/components/cancel-download.tsx
+msgid "What has downloaded so far is lost."
+msgstr "What has downloaded so far is lost."
+
+#. Series row when every book of the series is in the library
+#. Series row when every book of the series is in the library
+#: src/components/series-sheet.tsx
+#: src/screens/library.tsx
+msgid "Whole series in library"
+msgstr "Whole series in library"
+
+#. Reader margin choice
+#: src/components/reader-sheets.tsx
+msgid "Wide"
+msgstr "Wide"
+
+#. Book page menu item opening the picker to match the recording to another book
+#: src/components/book-menu.tsx
+msgid "Wrong book?"
+msgstr "Wrong book?"
+
+#. Highlight colour
+#: src/ui/reader.tsx
+msgid "Yellow"
+msgstr "Yellow"
+
+#. Warns that removing a book from the library forgets where listening and reading stopped, and its bookmarks
+#: src/components/library-toggle.tsx
+msgid "You’ll lose your progress, notes and downloads."
+msgstr "You’ll lose your progress, notes and downloads."
+
+#. Warns that marking a book finished or not started resets where listening and reading stopped
+#. Warns that marking a book finished or not started resets where listening and reading stopped
+#. Warns that marking a book finished or not started resets where listening and reading stopped
+#: src/components/book-menu.tsx
+#: src/screens/library.tsx
+msgid "You’ll lose your progress."
+msgstr "You’ll lose your progress."
+
+#. Library load failure
+#: src/screens/library.tsx
+msgid "Your library could not be read."
+msgstr "Your library could not be read."
+
+#. Empty library title
+#: src/screens/library.tsx
+msgid "Your library is empty"
+msgstr "Your library is empty"
+
+#. Field label in the note dialog
+#. Field label in the note dialog
+#: src/components/book-sheets.tsx
+#: src/screens/reader.tsx
+msgid "Your note"
+msgstr "Your note"
+
+#. The streaming service queued a download until another finishes; do not name the service
+#: src/ui/errors.ts
+msgid "Your streaming service is downloading all it can at once, so this waits its turn."
+msgstr "Your streaming service is downloading all it can at once, so this waits its turn."

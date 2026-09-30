@@ -1,0 +1,270 @@
+diff --git a/android/build.gradle b/android/build.gradle
+index f465e68db548adeff856a5dd3d01162dbd2bf3d9..4eb9f8f83a7581de285fa050c6c5eeb4b2d2a778 100644
+--- a/android/build.gradle
++++ b/android/build.gradle
+@@ -33,6 +33,8 @@ dependencies {
+   implementation "androidx.media3:media3-exoplayer-dash:$androidxMedia3Version"
+   implementation "androidx.media3:media3-datasource:$androidxMedia3Version"
+   implementation "androidx.media3:media3-datasource-okhttp:$androidxMedia3Version"
++  // Vaka: the stream disk cache's index.
++  implementation "androidx.media3:media3-database:$androidxMedia3Version"
+   implementation "androidx.media3:media3-exoplayer-hls:$androidxMedia3Version"
+   implementation "androidx.media3:media3-exoplayer-smoothstreaming:$androidxMedia3Version"
+ }
+diff --git a/android/src/main/java/expo/modules/audio/AudioModule.kt b/android/src/main/java/expo/modules/audio/AudioModule.kt
+index 992239ba7631ce0c97c0b41c5fbf61cc842386fe..787c5307aa58727742843b67c950e8bece43c476 100644
+--- a/android/src/main/java/expo/modules/audio/AudioModule.kt
++++ b/android/src/main/java/expo/modules/audio/AudioModule.kt
+@@ -203,6 +203,34 @@ class AudioModule : Module() {
+   override fun definition() = ModuleDefinition {
+     Name("ExpoAudio")
+ 
++    // Vaka: fetches part of a stream into the disk cache ahead of playing it, such as the audio
++    // just before a position the listener jumped to, so skipping back from there is instant.
++    AsyncFunction("prefetchRange") { url: String, position: Double, length: Double ->
++      GlobalScope.launch(Dispatchers.IO) {
++        try {
++          StreamCache.prefetch(context, httpDataSourceFactory(null), url, position.toLong(), length.toLong())
++        } catch (error: Exception) {
++          Log.w("ExpoAudio", "Prefetch failed: ${error.message}")
++        }
++      }
++    }
++
++    // Vaka: how far the notification's and lock screen's skip buttons jump, in seconds, as set in
++    // the app's Settings; they take effect from the next time the controls are drawn.
++    Function("setSkipIntervals") { back: Double, forward: Double ->
++      expo.modules.audio.service.AudioControlsService.seekBackMs = (back * 1000).toLong()
++      expo.modules.audio.service.AudioControlsService.seekForwardMs = (forward * 1000).toLong()
++    }
++
++    // Vaka: how much streamed audio the disk cache holds, and emptying it, for Settings.
++    AsyncFunction("streamCacheSize") {
++      StreamCache.size(context).toDouble()
++    }
++
++    AsyncFunction("clearStreamCache") {
++      StreamCache.clear(context)
++    }
++
+     OnCreate {
+       audioManager = appContext.reactContext?.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+       context.registerReceiver(ringerModeReceiver, IntentFilter(AudioManager.RINGER_MODE_CHANGED_ACTION))
+@@ -873,7 +901,8 @@ class AudioModule : Module() {
+       InMemoryDataSourceFactory(preloadedBytes)
+     } else {
+       when (uri.scheme) {
+-        "http", "https" -> httpDataSourceFactory(source.headers)
++        // Vaka: streams go through the disk cache, so seeks into fetched audio skip the network.
++        "http", "https" -> StreamCache.factory(context, httpDataSourceFactory(source.headers))
+         else -> DefaultDataSource.Factory(context)
+       }
+     }
+diff --git a/android/src/main/java/expo/modules/audio/AudioPlayer.kt b/android/src/main/java/expo/modules/audio/AudioPlayer.kt
+index c76a9fd2a53743a691782e0f67d0d71401df58f6..8a221a6b208ae7ba5c9f2fd819502cf7c11f0f82 100644
+--- a/android/src/main/java/expo/modules/audio/AudioPlayer.kt
++++ b/android/src/main/java/expo/modules/audio/AudioPlayer.kt
+@@ -36,22 +36,32 @@ class AudioPlayer(
+ ) : BaseAudioPlayer(
+   player = ExoPlayer.Builder(context)
+     .setLooper(context.mainLooper)
+-    .setAudioAttributes(AudioAttributes.DEFAULT, false)
++    // Vaka: spoken audio, and a pause when headphones are unplugged or Bluetooth disconnects,
++    // rather than carrying on through the phone's speaker.
++    .setAudioAttributes(
++      AudioAttributes.Builder()
++        .setUsage(C.USAGE_MEDIA)
++        .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
++        .build(),
++      false
++    )
++    .setHandleAudioBecomingNoisy(true)
+     .setSeekForwardIncrementMs(SEEK_JUMP_INTERVAL_MS)
+     .setSeekBackIncrementMs(SEEK_JUMP_INTERVAL_MS)
+     .apply {
+-      if (bufferDurationMs > 0) {
+-        setLoadControl(
+-          DefaultLoadControl.Builder()
+-            .setBufferDurationsMs(
+-              DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+-              bufferDurationMs.toInt().coerceAtLeast(DefaultLoadControl.DEFAULT_MIN_BUFFER_MS),
+-              DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+-              DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+-            )
+-            .build()
+-        )
+-      }
++      // Vaka: keep the last two minutes behind the playhead in memory, so skipping back replays
++      // them without downloading again.
++      setLoadControl(
++        DefaultLoadControl.Builder()
++          .setBufferDurationsMs(
++            DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
++            bufferDurationMs.toInt().coerceAtLeast(DefaultLoadControl.DEFAULT_MAX_BUFFER_MS),
++            DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
++            DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
++          )
++          .setBackBuffer(120_000, true)
++          .build()
++      )
+     }
+     .build(),
+   appContext = appContext,
+diff --git a/android/src/main/java/expo/modules/audio/StreamCache.kt b/android/src/main/java/expo/modules/audio/StreamCache.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..637b353eaf9b820b2b6b8369c30b527b8734787f
+--- /dev/null
++++ b/android/src/main/java/expo/modules/audio/StreamCache.kt
+@@ -0,0 +1,70 @@
++package expo.modules.audio
++
++import android.content.Context
++import androidx.core.net.toUri
++import androidx.media3.common.util.UnstableApi
++import androidx.media3.database.StandaloneDatabaseProvider
++import androidx.media3.datasource.DataSource
++import androidx.media3.datasource.DataSpec
++import androidx.media3.datasource.cache.CacheDataSource
++import androidx.media3.datasource.cache.CacheKeyFactory
++import androidx.media3.datasource.cache.CacheWriter
++import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
++import androidx.media3.datasource.cache.SimpleCache
++import java.io.File
++
++/**
++ * Vaka: streamed audio kept on disk, so a seek into anything already fetched plays without the
++ * network, including audio fetched ahead of a jump by [prefetch]. Streams are keyed without their
++ * query, since expiring links to the same file differ only in their token.
++ */
++@UnstableApi
++internal object StreamCache {
++  private const val MAX_BYTES = 256L * 1024 * 1024
++
++  @Volatile private var cache: SimpleCache? = null
++
++  val keyFactory = CacheKeyFactory { spec -> spec.uri.buildUpon().clearQuery().build().toString() }
++
++  fun get(context: Context): SimpleCache = cache ?: synchronized(this) {
++    cache ?: SimpleCache(
++      File(context.cacheDir, "vaka-stream-cache"),
++      LeastRecentlyUsedCacheEvictor(MAX_BYTES),
++      StandaloneDatabaseProvider(context)
++    ).also { cache = it }
++  }
++
++  fun factory(context: Context, upstream: DataSource.Factory): DataSource.Factory =
++    CacheDataSource.Factory()
++      .setCache(get(context))
++      .setUpstreamDataSourceFactory(upstream)
++      .setCacheKeyFactory(keyFactory)
++      .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
++
++  /** Bytes of audio held on disk. */
++  fun size(context: Context): Long = get(context).cacheSpace
++
++  /**
++   * Removes every stream from the disk cache, such as when the listener clears cached data. Audio
++   * being fetched right now finishes into the emptied cache.
++   */
++  fun clear(context: Context) {
++    val cache = get(context)
++
++    for (key in cache.keys.toList()) {
++      cache.removeResource(key)
++    }
++  }
++
++  /** Downloads `length` bytes from `position` into the cache; blocking, so call off the main thread. */
++  fun prefetch(context: Context, upstream: DataSource.Factory, url: String, position: Long, length: Long) {
++    val spec = DataSpec.Builder()
++      .setUri(url.toUri())
++      .setPosition(position.coerceAtLeast(0))
++      .setLength(length)
++      .build()
++    val source = factory(context, upstream).createDataSource() as CacheDataSource
++
++    CacheWriter(source, spec, null, null).cache()
++  }
++}
+diff --git a/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt b/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
+index 196a5d57f887c2667a88543bd2f6a80044a044f2..4bf10ac2e2f60b46b5e535e996631e4772dd477e 100644
+--- a/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
++++ b/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
+@@ -88,8 +88,8 @@ class AudioControlsService : MediaSessionService() {
+             currentPlayerRef.play()
+           }
+ 
+-        ACTION_SEEK_FORWARD -> currentPlayerRef.seekTo(currentPlayerRef.currentPosition + SEEK_INTERVAL_MS)
+-        ACTION_SEEK_BACKWARD -> currentPlayerRef.seekTo(currentPlayerRef.currentPosition - SEEK_INTERVAL_MS)
++        ACTION_SEEK_FORWARD -> currentPlayerRef.seekTo(currentPlayerRef.currentPosition + seekForwardMs)
++        ACTION_SEEK_BACKWARD -> currentPlayerRef.seekTo(currentPlayerRef.currentPosition - seekBackMs)
+       }
+     }
+ 
+@@ -243,7 +243,7 @@ class AudioControlsService : MediaSessionService() {
+     // Add seek backward button if enabled
+     if (currentOptions?.showSeekBackward == true) {
+       mediaButtons.add(
+-        CommandButton.Builder(CommandButton.ICON_SKIP_BACK_10)
++        CommandButton.Builder(skipBackIcon(seekBackMs))
+           .setDisplayName("Seek Backward")
+           .setEnabled(true)
+           .setSessionCommand(SessionCommand(ACTION_SEEK_BACKWARD, Bundle.EMPTY))
+@@ -265,7 +265,7 @@ class AudioControlsService : MediaSessionService() {
+     // Add seek forward button if enabled
+     if (currentOptions?.showSeekForward == true) {
+       mediaButtons.add(
+-        CommandButton.Builder(CommandButton.ICON_SKIP_FORWARD_10)
++        CommandButton.Builder(skipForwardIcon(seekForwardMs))
+           .setDisplayName("Seek Forward")
+           .setEnabled(true)
+           .setSessionCommand(SessionCommand(ACTION_SEEK_FORWARD, Bundle.EMPTY))
+@@ -559,6 +559,30 @@ class AudioControlsService : MediaSessionService() {
+     const val ACTION_SEEK_FORWARD = "expo.modules.audio.action.SEEK_FORWARD"
+     const val ACTION_SEEK_BACKWARD = "expo.modules.audio.action.SEEK_BACKWARD"
+ 
+-    const val SEEK_INTERVAL_MS = 10000L
++    // Vaka: how far the notification's and lock screen's skip buttons jump, as the listener set
++    // them in the app; the icons name the interval when Media3 has one for it.
++    @Volatile
++    var seekBackMs = 10000L
++
++    @Volatile
++    var seekForwardMs = 10000L
++
++    fun skipBackIcon(ms: Long) =
++      when (ms) {
++        5000L -> CommandButton.ICON_SKIP_BACK_5
++        10000L -> CommandButton.ICON_SKIP_BACK_10
++        15000L -> CommandButton.ICON_SKIP_BACK_15
++        30000L -> CommandButton.ICON_SKIP_BACK_30
++        else -> CommandButton.ICON_SKIP_BACK
++      }
++
++    fun skipForwardIcon(ms: Long) =
++      when (ms) {
++        5000L -> CommandButton.ICON_SKIP_FORWARD_5
++        10000L -> CommandButton.ICON_SKIP_FORWARD_10
++        15000L -> CommandButton.ICON_SKIP_FORWARD_15
++        30000L -> CommandButton.ICON_SKIP_FORWARD_30
++        else -> CommandButton.ICON_SKIP_FORWARD
++      }
+   }
+ }
+diff --git a/android/src/main/java/expo/modules/audio/service/AudioMediaSessionCallback.kt b/android/src/main/java/expo/modules/audio/service/AudioMediaSessionCallback.kt
+index 839aaef12d7699ea1a89037b31849775daa079f4..22a9d33f3eb69379c332d189a9372f148132bedc 100644
+--- a/android/src/main/java/expo/modules/audio/service/AudioMediaSessionCallback.kt
++++ b/android/src/main/java/expo/modules/audio/service/AudioMediaSessionCallback.kt
+@@ -51,10 +51,10 @@ class AudioMediaSessionCallback : MediaSession.Callback {
+   ): ListenableFuture<SessionResult> {
+     when (command.customAction) {
+       AudioControlsService.ACTION_SEEK_FORWARD -> {
+-        session.player.seekTo(session.player.currentPosition + AudioControlsService.SEEK_INTERVAL_MS)
++        session.player.seekTo(session.player.currentPosition + AudioControlsService.seekForwardMs)
+       }
+       AudioControlsService.ACTION_SEEK_BACKWARD -> {
+-        session.player.seekTo(session.player.currentPosition - AudioControlsService.SEEK_INTERVAL_MS)
++        session.player.seekTo(session.player.currentPosition - AudioControlsService.seekBackMs)
+       }
+     }
+     return super.onCustomCommand(session, controller, command, args)

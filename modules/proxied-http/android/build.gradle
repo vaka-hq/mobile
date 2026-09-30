@@ -1,0 +1,18 @@
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.proxiedhttp'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.proxiedhttp"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+}
+
+dependencies {
+  // React Native already ships OkHttp; this module uses that copy rather than adding its own.
+  implementation 'com.facebook.react:react-android'
+}

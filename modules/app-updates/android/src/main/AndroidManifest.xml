@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Installs the app's own updates, downloaded from its releases. -->
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+  <application>
+    <!-- Hears how an install went; only the installer, through the app's own pending intent. -->
+    <receiver
+      android:name="expo.modules.appupdates.InstallReceiver"
+      android:exported="false" />
+  </application>
+</manifest>

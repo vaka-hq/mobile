@@ -212,7 +212,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             ...config,
             name: variant.name,
             slug: 'vaka',
-            version: '1.0.0',
+            // Release builds are named and numbered by the release workflow; local builds are 0.0.1.
+            version: process.env.VAKA_VERSION_NAME ?? '0.0.1',
             platforms: ['android'],
             orientation: 'portrait',
             icon: './assets/images/icon.png',
@@ -220,8 +221,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             userInterfaceStyle: 'automatic',
             android: {
               package: variant.androidPackage,
-              // Raised with every release: Android installs an update only over a lower version code.
-              versionCode: 1,
+              // The build time in minutes, from the release workflow, so every release, stable or
+              // nightly, installs over the builds before it.
+              versionCode: Number(process.env.VAKA_VERSION_CODE ?? 1),
               allowBackup: false,
               // Pulled in by libraries for things the app does not use: biometric unlock of the
               // keystore, the Play install referrer and vibration, which haptic feedback does not need.

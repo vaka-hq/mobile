@@ -60,6 +60,12 @@ const preferencesSchema = z.object({
    * address; they are told again only after it has answered in between.
    */
   abbSilenceNoticed: z.boolean().catch(false),
+  /** Which releases the app updates to: tested ones only, or the nightly builds as well. */
+  updateChannel: z.enum(['stable', 'nightly']).catch('stable'),
+  /** When updates were last looked for, in milliseconds; they are looked for once a day. */
+  updatesCheckedAt: z.number().catch(0),
+  /** The version code of an update put off with Later; it is not offered again unasked. */
+  updateDeclined: z.number().catch(0),
 })
 
 export type Preferences = z.infer<typeof preferencesSchema>

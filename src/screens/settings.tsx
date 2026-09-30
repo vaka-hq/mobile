@@ -9,6 +9,12 @@ import { type ProxyFields, useProxySetup } from '@/components/proxy-setup'
 import { AudiobookDownloadsSheet, EbookDownloadsSheet } from '@/components/storage-sheets'
 import { useFeedback } from '@/lib/feedback'
 import { queryClient } from '@/lib/query-client'
+import {
+  checkForUpdates,
+  showUpdate,
+  updatesSupported,
+  useUpdateState,
+} from '@/library/app-updates'
 import { exportBackup, hasSecrets } from '@/library/backup'
 import { clearEbookCache, ebookBytes, ebookCacheBytes, useEbooks } from '@/library/ebooks'
 import { invalidateLibrary } from '@/library/invalidation'
@@ -73,6 +79,7 @@ type Dialog =
   | 'clearCache'
   | 'audiobookDownloads'
   | 'ebookDownloads'
+  | 'updateChannel'
   | 'backupSecrets'
 
 export function SettingsScreen() {
@@ -82,6 +89,7 @@ export function SettingsScreen() {
   const { showFeedback } = useFeedback()
   const preferences = usePreferences()
   const speechModel = useSpeechModel()
+  const updateState = useUpdateState()
 
   const speechProgress = i18n.number(
     speechModel.status === 'downloading' ? speechModel.progress : 0,
@@ -301,6 +309,46 @@ export function SettingsScreen() {
         : (hardcoverCheck.data?.email ??
           (hardcoverCheck.data?.username ? `@${hardcoverCheck.data.username}` : null) ??
           t({ message: 'Connected', comment: 'Hardcover row with a valid key' }))
+
+  const channelLabels = {
+    stable: t({ message: 'Stable', comment: 'Update channel: tested releases only' }),
+    nightly: t({
+      message: 'Nightly',
+      comment: 'Update channel: a build of the newest changes each day',
+    }),
+  }
+
+  const updateValue =
+    updateState.phase === 'checking'
+      ? t({ message: 'Checking…', comment: 'Check for updates row while looking' })
+      : updateState.phase === 'current'
+        ? t({
+            message: 'Up to date',
+            comment: 'Check for updates row when no newer version exists',
+          })
+        : updateState.phase === 'available'
+          ? t({
+              message: `Vaka ${updateState.update.versionName} is available`,
+              comment: 'Check for updates row with a newer version found, with its version name',
+            })
+          : updateState.phase === 'downloading'
+            ? t({
+                message: `Downloading… ${i18n.number(updateState.progress, { style: 'percent' })}`,
+                comment: 'Check for updates row while the update downloads, with the share done',
+              })
+            : updateState.phase === 'installing'
+              ? t({ message: 'Installing…', comment: 'Check for updates row while installing' })
+              : updateState.phase === 'failed'
+                ? updateState.update
+                  ? t({
+                      message: 'The update failed. Tap to try again.',
+                      comment: 'Check for updates row after an update failed',
+                    })
+                  : t({
+                      message: 'Couldn’t check for updates',
+                      comment: 'Check for updates row when the releases could not be read',
+                    })
+                : undefined
 
   return (
     <Screen
@@ -525,6 +573,38 @@ export function SettingsScreen() {
             },
           ]}
         />
+        {updatesSupported ? (
+          <Group
+            title={t({ message: 'Updates', comment: 'Settings section' })}
+            rows={[
+              {
+                key: 'updateChannel',
+                glyph: 'updateChannel',
+                label: t({
+                  message: 'Update channel',
+                  comment: 'Settings row choosing which releases the app updates to',
+                }),
+                value: channelLabels[preferences.updateChannel],
+                onPress: () => setDialog('updateChannel'),
+              },
+              {
+                key: 'checkUpdates',
+                glyph: 'update',
+                label: t({
+                  message: 'Check for updates',
+                  comment: 'Settings row looking for a newer version of the app',
+                }),
+                value: updateValue,
+                onPress: () =>
+                  updateState.phase === 'idle' ||
+                  updateState.phase === 'current' ||
+                  (updateState.phase === 'failed' && updateState.update === null)
+                    ? void checkForUpdates({ asked: true })
+                    : showUpdate(),
+              },
+            ]}
+          />
+        ) : null}
         <Group
           title={t({ message: 'About', comment: 'Settings section' })}
           rows={[
@@ -532,7 +612,7 @@ export function SettingsScreen() {
               key: 'version',
               glyph: 'info',
               label: t({ message: 'Version', comment: 'App version label' }),
-              value: `${Application.nativeApplicationVersion ?? '1.0.0'} (${Application.nativeBuildVersion ?? '1'})`,
+              value: `${Application.nativeApplicationVersion ?? '0.0.1'} (${Application.nativeBuildVersion ?? '1'})`,
             },
             {
               key: 'licenses',
@@ -616,6 +696,37 @@ export function SettingsScreen() {
             if (isLanguage(value)) {
               void setPreference('preferredLanguage', value)
             }
+          }}
+          onDismiss={() => setDialog(null)}
+        />
+      ) : null}
+      {dialog === 'updateChannel' ? (
+        <ChoiceDialog
+          title={t({ message: 'Update channel', comment: 'Dialog title' })}
+          options={[
+            {
+              value: 'stable' as const,
+              label: channelLabels.stable,
+              description: t({
+                message: 'Releases that have been tried for a while.',
+                comment: 'Update channel choice: stable releases',
+              }),
+            },
+            {
+              value: 'nightly' as const,
+              label: channelLabels.nightly,
+              description: t({
+                message: 'The newest changes, built each day. May have bugs.',
+                comment: 'Update channel choice: nightly builds',
+              }),
+            },
+          ]}
+          selected={preferences.updateChannel}
+          onSelect={(channel) => {
+            // A different channel may have a different newest build, so it is looked for at once.
+            void setPreference('updateChannel', channel).then(() =>
+              checkForUpdates({ asked: false }),
+            )
           }}
           onDismiss={() => setDialog(null)}
         />

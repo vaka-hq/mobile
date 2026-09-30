@@ -61,6 +61,13 @@ msgstr "{0, plural, one {# serie} other {# serier}}"
 msgid "{0} left"
 msgstr "{0} kvar"
 
+#. Update download progress: the share done, and the version name
+#. placeholder {0}: i18n.number(state.progress, { style: 'percent' })
+#. placeholder {1}: state.update.versionName
+#: src/components/update-alert.tsx
+msgid "{0} of Vaka {1}"
+msgstr "{0} av Vaka {1}"
+
 #. How far into an e-book reading has got, when its pages are not counted
 #. placeholder {0}: i18n.number(place.progress, { style: 'percent' })
 #: src/ui/labels.ts
@@ -304,10 +311,21 @@ msgstr "Justering"
 msgid "All"
 msgstr "Alla"
 
+#. Update dialog after opening the system setting that lets the app install its update
+#. placeholder {0}: state.update.versionName
+#: src/components/update-alert.tsx
+msgid "Allow Vaka to install apps in the setting that opened, then come back and tap Update to install {0}."
+msgstr "Tillåt Vaka att installera appar i inställningen som öppnades, kom sedan tillbaka och tryck på Uppdatera för att installera {0}."
+
 #. Error when a site answered with something the app cannot read
 #: src/ui/errors.ts
 msgid "An unexpected answer came back. Try again later."
 msgstr "Ett oväntat svar kom tillbaka. Försök igen senare."
+
+#. Update dialog when the system installer failed
+#: src/components/update-alert.tsx
+msgid "Android couldn’t install the update."
+msgstr "Android kunde inte installera uppdateringen."
 
 #. Name of the e-book library
 #: src/screens/settings.tsx
@@ -546,8 +564,10 @@ msgstr "Cachad data rensad"
 #. Closes a dialog without changes
 #. Closes a dialog without changes
 #. Closes a dialog without changes
+#. Closes a dialog without changes
 #. Confirms cancelling a download
 #: src/components/cancel-download.tsx
+#: src/components/update-alert.tsx
 #: src/ui/dialogs.tsx
 msgid "Cancel"
 msgstr "Avbryt"
@@ -615,6 +635,11 @@ msgstr "Kapitel"
 msgid "Check again"
 msgstr "Kontrollera igen"
 
+#. Settings row looking for a newer version of the app
+#: src/screens/settings.tsx
+msgid "Check for updates"
+msgstr "Sök efter uppdateringar"
+
 #. Hint when AudioBookBay could not be reached
 #: src/screens/browse.tsx
 msgid "Check its address in Settings, or try again in a moment."
@@ -648,6 +673,7 @@ msgstr "Kontrollerar källan"
 #. Anna’s Archive row while verifying the key
 #. AudioBookBay proxy row while testing the proxy
 #. Book status while checking availability
+#. Check for updates row while looking
 #. Hardcover row while verifying the key
 #. Shown while a value is being verified
 #. Shown while a value is being verified
@@ -712,8 +738,10 @@ msgstr "Rensa sökningen"
 msgid "Clear series"
 msgstr "Rensa serier"
 
+#. Closes an information dialog
 #. Closes the reader’s display settings panel
 #: src/components/reader-sheets.tsx
+#: src/components/update-alert.tsx
 msgid "Close"
 msgstr "Stäng"
 
@@ -798,6 +826,16 @@ msgstr "Kopiera"
 #: src/components/proxy-setup.ts
 msgid "Could not connect through the proxy. Check the address and try again."
 msgstr "Det gick inte att ansluta via proxyn. Kontrollera adressen och försök igen."
+
+#. Check for updates row when the releases could not be read
+#: src/screens/settings.tsx
+msgid "Couldn’t check for updates"
+msgstr "Det gick inte att söka efter uppdateringar"
+
+#. Update dialog when the releases could not be read
+#: src/components/update-alert.tsx
+msgid "Couldn’t check for updates. Check your connection and try again."
+msgstr "Det gick inte att söka efter uppdateringar. Kontrollera anslutningen och försök igen."
 
 #. A language books can be preferred in
 #: src/ui/languages.ts
@@ -1002,6 +1040,11 @@ msgstr "Laddar ned {percent} %"
 msgid "Downloading speech model · {speechProgress}"
 msgstr "Laddar ned talmodell · {speechProgress}"
 
+#. Dialog title while downloading
+#: src/components/update-alert.tsx
+msgid "Downloading update"
+msgstr "Laddar ned uppdateringen"
+
 #. Feedback after switching to an uncached source of the book that is playing
 #: src/components/book-details.tsx
 msgid "Downloading. You can change to it once it has finished."
@@ -1017,6 +1060,12 @@ msgstr "Laddar ned. Du kan lyssna när den är klar."
 #: src/components/ebook-row.tsx
 msgid "Downloading…"
 msgstr "Laddar ned …"
+
+#. Check for updates row while the update downloads, with the share done
+#. placeholder {0}: i18n.number(updateState.progress, { style: 'percent' })
+#: src/screens/settings.tsx
+msgid "Downloading… {0}"
+msgstr "Laddar ned… {0}"
 
 #. Upload detail: must be downloaded first
 #: src/components/source-info.tsx
@@ -1339,6 +1388,16 @@ msgstr "Ta med nycklar och lösenord?"
 msgid "Indonesian"
 msgstr "Indonesiska"
 
+#. Dialog title while installing
+#: src/components/update-alert.tsx
+msgid "Installing update"
+msgstr "Installerar uppdateringen"
+
+#. Check for updates row while installing
+#: src/screens/settings.tsx
+msgid "Installing…"
+msgstr "Installerar…"
+
 #. A language books can be preferred in
 #: src/ui/languages.ts
 msgid "Irish"
@@ -1441,8 +1500,10 @@ msgstr "Sista sidan"
 msgid "Last read"
 msgstr "Senast läst"
 
+#. Puts off installing an update
 #. Start-up account check dialog
 #: src/components/account-alert.tsx
+#: src/components/update-alert.tsx
 msgid "Later"
 msgstr "Senare"
 
@@ -1664,6 +1725,11 @@ msgstr "Nästa kapitel"
 #: src/screens/reader.tsx
 msgid "Next page"
 msgstr "Nästa sida"
+
+#. Update channel: a build of the newest changes each day
+#: src/screens/settings.tsx
+msgid "Nightly"
+msgstr "Nattlig"
 
 #. Opening an upload’s page failed because there is no browser
 #: src/components/source-info.tsx
@@ -2171,6 +2237,11 @@ msgstr "Utgiven"
 msgid "Released under the {name} licence. The package includes no licence text."
 msgstr "Släppt under licensen {name}. Paketet innehåller ingen licenstext."
 
+#. Update channel choice: stable releases
+#: src/screens/settings.tsx
+msgid "Releases that have been tried for a while."
+msgstr "Versioner som har provats ett tag."
+
 #. Confirms removing a book from the library
 #. Confirms removing a series from the library
 #: src/components/library-toggle.tsx
@@ -2568,6 +2639,11 @@ msgstr "Talmodellen saknas. Välj igen för att ladda ned den."
 msgid "Speech model ready"
 msgstr "Talmodellen är klar"
 
+#. Update channel: tested releases only
+#: src/screens/settings.tsx
+msgid "Stable"
+msgstr "Stabil"
+
 #. Listen button while the download has stopped getting anywhere; pressing it offers to cancel
 #: src/components/book-details.tsx
 msgid "Stalled · {percent}%"
@@ -2680,6 +2756,11 @@ msgstr "Kapitlen i den här ljudboken kunde inte läsas."
 msgid "The current key is removed from this device. You can add a new one afterwards."
 msgstr "Den nuvarande nyckeln tas bort från enheten. Du kan lägga till en ny efteråt."
 
+#. Update dialog when the downloaded file did not match its checksum
+#: src/components/update-alert.tsx
+msgid "The downloaded update was damaged, so it wasn’t installed. Try again."
+msgstr "Den nedladdade uppdateringen var skadad och installerades inte. Försök igen."
+
 #. Shown when downloading an e-book failed
 #: src/components/ebook-row.tsx
 msgid "The e-book could not be downloaded. Try another file."
@@ -2705,6 +2786,11 @@ msgstr "Nyckeln tas bort från enheten. E-böcker hämtas från Library Genesis 
 #: src/screens/settings.tsx
 msgid "The key was not accepted. Tap to replace it."
 msgstr "Nyckeln godtogs inte. Tryck för att byta den."
+
+#. Update channel choice: nightly builds
+#: src/screens/settings.tsx
+msgid "The newest changes, built each day. May have bugs."
+msgstr "De senaste ändringarna, byggda varje dag. Kan innehålla buggar."
 
 #. Start-up check: the saved proxy does not answer
 #: src/components/account-alert.tsx
@@ -2735,6 +2821,16 @@ msgstr "Proxyn godtar inte längre ditt användarnamn och lösenord."
 #: src/ui/errors.ts
 msgid "The service is having problems. Try again later."
 msgstr "Tjänsten har problem. Försök igen senare."
+
+#. Update dialog when downloading the new version failed
+#: src/components/update-alert.tsx
+msgid "The update couldn’t be downloaded. Check your connection and try again."
+msgstr "Uppdateringen kunde inte laddas ned. Kontrollera anslutningen och försök igen."
+
+#. Check for updates row after an update failed
+#: src/screens/settings.tsx
+msgid "The update failed. Tap to try again."
+msgstr "Uppdateringen misslyckades. Tryck för att försöka igen."
 
 #. Warns that deleting finished audiobook downloads deletes their saved data
 #: src/components/storage-sheets.tsx
@@ -2864,8 +2960,10 @@ msgid "True Crime"
 msgstr "True crime"
 
 #. Reopens an e-book that failed to open
+#. Retries a failed update
 #. Retries after an app-wide error
 #: src/components/app-error.tsx
+#: src/components/update-alert.tsx
 #: src/screens/reader.tsx
 msgid "Try again"
 msgstr "Försök igen"
@@ -2915,6 +3013,37 @@ msgstr "Ukrainska"
 msgid "Unknown"
 msgstr "Okänt"
 
+#. Check for updates row when no newer version exists
+#: src/screens/settings.tsx
+msgid "Up to date"
+msgstr "Senaste versionen"
+
+#. Downloads and installs the new version
+#: src/components/update-alert.tsx
+msgid "Update"
+msgstr "Uppdatera"
+
+#. Dialog title offering a new version
+#: src/components/update-alert.tsx
+msgid "Update available"
+msgstr "Uppdatering tillgänglig"
+
+#. Dialog title
+#. Settings row choosing which releases the app updates to
+#: src/screens/settings.tsx
+msgid "Update channel"
+msgstr "Uppdateringskanal"
+
+#. Dialog title when an update failed
+#: src/components/update-alert.tsx
+msgid "Update failed"
+msgstr "Uppdateringen misslyckades"
+
+#. Settings section
+#: src/screens/settings.tsx
+msgid "Updates"
+msgstr "Uppdateringar"
+
 #. A language books can be preferred in
 #: src/ui/languages.ts
 msgid "Urdu"
@@ -2931,6 +3060,23 @@ msgstr "Använd uppgifterna från AudioBookBay i stället."
 #: src/screens/welcome.tsx
 msgid "Username"
 msgstr "Användarnamn"
+
+#. Check for updates row with a newer version found, with its version name
+#. placeholder {0}: updateState.update.versionName
+#: src/screens/settings.tsx
+msgid "Vaka {0} is available"
+msgstr "Vaka {0} finns tillgänglig"
+
+#. Update dialog offering a new version, with its version name
+#. placeholder {0}: state.update.versionName
+#: src/components/update-alert.tsx
+msgid "Vaka {0} is ready to install."
+msgstr "Vaka {0} är redo att installeras."
+
+#. Update dialog while the system installs the new version
+#: src/components/update-alert.tsx
+msgid "Vaka restarts once Android has installed it."
+msgstr "Vaka startar om när Android har installerat den."
 
 #. App version label
 #: src/screens/settings.tsx

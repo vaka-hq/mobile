@@ -29,11 +29,12 @@ remembers the stream last chosen or played and opens with it.
   dominant colour), and the native e-book reader, `BookView`. Each screen is one Compose tree
   inside a `Host`; the tab bar and mini player share another.
 - `modules/speech` runs the offline Vosk recogniser on a stretch of audio, for finding a reading
-  place in a recording; `modules/proxied-http` reads pages through an HTTP proxy.
+  place in a recording; `modules/proxied-http` reads pages through an HTTP proxy;
+  `modules/app-updates` checks a downloaded update and hands it to Android's installer.
 - `src/sources/` holds one client per service: `audiobookbay` (HTML parsing of listings and posts),
   `hardcover` (API key, GraphQL and matching), `torbox` (REST client and track selection),
-  `annas-archive` and `libgen` (e-book search and downloads) and `ip-check` (the proxy's exit
-  address).
+  `annas-archive` and `libgen` (e-book search and downloads), `ip-check` (the proxy's exit
+  address) and `github` (the app's own releases).
 - `src/media/` reads chapters and durations from the streamed files with HTTP Range requests.
 - `src/library/` is local persistence (expo-sqlite), the orchestration of loading, matching and
   preparing books, stream-link caching and TanStack Query hooks.
@@ -181,6 +182,40 @@ with only that architecture's native libraries; install the one that matches the
 Debug builds stay whole.
 
 Release builds enable R8 minification and resource shrinking, and only reach `https://`
-addresses, so AudioBookBay's address and covers are always asked for over HTTPS. Raise
-`android.versionCode` in `app.config.ts` with every release: Android installs an update only over
-a lower version code.
+addresses, so AudioBookBay's address and covers are always asked for over HTTPS.
+
+## Releases and updates
+
+Releases are built by GitHub Actions (`.github/workflows/release.yml`) and published as GitHub
+releases of `vaka-hq/mobile`, signed with the owner's upload key, which the workflow reads from
+the `release` environment's secrets. There are two channels:
+
+- **Stable**: pushing a tag that starts with `v` releases that commit under the tag's name, such as
+  `v1.1.0` for 1.1.0. The name can be anything; the habit is to tag the commit of a nightly that
+  has been used for a while.
+- **Nightly**: once a day, and when the workflow is run by hand, `main` becomes a pre-release
+  tagged with the date and the workflow's run number, `nightly-20261001.42`, when it has changed
+  since the last nightly; the run number never repeats and finds the run in Actions. It is named
+  after the last stable release and the commit built, `1.1.0-nightly.20261001.42+c2fa9fc`, or
+  `0.0.1-nightly.…` before the first, so Settings shows which commit is running. The newest ten
+  are kept.
+
+The workflow gives the build its name and version code (`VAKA_VERSION_NAME` and
+`VAKA_VERSION_CODE`, read by `app.config.ts`). The code is the build time in minutes since 2026,
+so every release, of either channel, installs over the builds before it; local builds are 0.0.1
+with code 1. Each release holds one APK per CPU architecture, `vaka-<name>-<abi>.apk`, and an
+`update.json` with the name, code and channel. `.github/workflows/ci.yml` runs the checks and
+bundles the JavaScript for every pull request and push to `main`.
+
+The production app updates itself (`src/library/app-updates.ts`). Settings chooses the channel,
+Stable by default, and checks by hand; the app also checks once a day when it opens. It reads the
+repository's recent releases from GitHub's public API, takes the newest full release for Stable
+or the newest of any for Nightly (`src/library/update-release.ts`, pure and tested), and offers it
+when its `update.json` has a higher version code than the running build. Later puts that version
+off until the listener asks. Updating downloads the APK for the phone's CPU, checks it against the
+SHA-256 checksum GitHub records for every release file, and hands it to Android's installer
+through a `PackageInstaller` session (`modules/app-updates`). The app must first be allowed to
+install apps, which opens that setting the first time; on Android 12 and later an app so allowed
+may then update itself without asking again. Android refuses an update not signed with the same
+key. Moving from Nightly to Stable waits for a stable release newer than the running build, since
+Android never installs an older version code.

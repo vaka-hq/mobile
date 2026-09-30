@@ -25,7 +25,8 @@ short: how the app works belongs in `docs/`.
   `src/sources/` has one client per external service; `src/player/` owns playback; `src/media/`
   reads chapters from audio files; `src/settings/` holds preferences and secrets.
 - `modules/` holds the app's own native modules: `android-components` (the Compose bridge and the
-  e-book reader), `speech` (offline Vosk recognition) and `proxied-http` (reading through a proxy).
+  e-book reader), `speech` (offline Vosk recognition), `proxied-http` (reading through a proxy)
+  and `app-updates` (installing the app's own updates).
 
 ## Interface
 
@@ -179,8 +180,15 @@ short: how the app works belongs in `docs/`.
   generated; give Gradle the same `APP_VARIANT`, since release builds read the config again. After
   building another variant, regenerate `android/` for development.
 - Release builds are minified with R8, split into one APK per CPU architecture, and signed with
-  the owner's key from `~/.gradle/gradle.properties` (`VAKA_UPLOAD_*`); a production release
-  refuses the debug key. Raise `android.versionCode` for each release.
+  the owner's key from `~/.gradle/gradle.properties` (`VAKA_UPLOAD_*`) or, in GitHub Actions, the
+  `release` environment's secrets; a production release refuses the debug key.
+- Releases are published by `.github/workflows/release.yml`: a pushed `v` tag makes a stable
+  release named after it, and `main` becomes a nightly pre-release once a day when it has changed.
+  The workflow sets the version name and code (`VAKA_VERSION_NAME`, `VAKA_VERSION_CODE`, the build
+  time in minutes); never set them in `app.config.ts`. Pin every action to a full commit SHA with
+  its version in a comment. The production app updates itself from these releases
+  (`src/library/app-updates.ts`, `modules/app-updates`), reading each one's `update.json`; keep
+  the asset names (`vaka-<name>-<abi>.apk`, `update.json`) in step with the app.
 - The app icon, splash mark and themed icon come from `scripts/generate-icons.ts`
   (`vp run icons:generate`). The licences under Settings come from
   `scripts/generate-licenses.ts`; run it after changing dependencies, and update its list of

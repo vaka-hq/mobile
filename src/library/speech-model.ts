@@ -2,6 +2,7 @@ import { Directory, File, Paths } from 'expo-file-system'
 import { useSyncExternalStore } from 'react'
 import { getPreferences } from '@/settings/preferences'
 import { Speech } from '../../modules/speech'
+import { downloadResuming } from './resumable-download'
 
 /**
  * The offline speech model that finds the exact place between listening and reading. It is never
@@ -13,7 +14,7 @@ const modelName = 'vosk-model-small-en-us-0.15'
 
 const modelUrl = `https://alphacephei.com/vosk/models/${modelName}.zip`
 
-/** About how large the download is, for the setting that offers it, in bytes. */
+/** How large the download is, in bytes: offered in the setting, and how a complete one is known. */
 export const speechModelBytes = 41_205_931
 
 export type SpeechModelState =
@@ -112,13 +113,17 @@ async function install() {
   const download = archive()
   let lastUpdate = 0
 
-  set({ status: 'downloading', progress: 0 })
+  set({
+    status: 'downloading',
+    progress: download.exists ? download.size / speechModelBytes : 0,
+  })
 
   try {
     new Directory(Paths.document, 'speech').create({ intermediates: true, idempotent: true })
-    await File.downloadFileAsync(modelUrl, download, {
-      idempotent: true,
-      onProgress: ({ bytesWritten, totalBytes }) => {
+
+    // What a failed attempt downloaded is kept, so choosing the mode again carries on from it.
+    if (!download.exists || download.size < speechModelBytes) {
+      await downloadResuming(modelUrl, download, ({ bytesWritten, totalBytes }) => {
         const now = Date.now()
 
         if (now - lastUpdate > 300) {
@@ -128,8 +133,17 @@ async function install() {
             progress: bytesWritten / (totalBytes > 0 ? totalBytes : speechModelBytes),
           })
         }
-      },
-    })
+      })
+    }
+  } catch (error) {
+    set({ status: 'failed' })
+    throw error
+  }
+
+  // Unpacking takes a few seconds; the download is complete meanwhile.
+  set({ status: 'downloading', progress: 1 })
+
+  try {
     await Speech.installModel(download.uri, directory().uri)
     set({ status: 'ready' })
   } catch (error) {
@@ -150,6 +164,11 @@ export function removeSpeechModel() {
 
   if (folder.exists) {
     folder.delete()
+  }
+
+  // A download cut short is kept to carry on from, unless the mode is left.
+  if (!installing && archive().exists) {
+    archive().delete()
   }
 
   set({ status: 'missing' })

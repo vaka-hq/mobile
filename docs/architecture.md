@@ -118,7 +118,9 @@ floating text toolbar, whose Highlight and Note the app carries out. Its
 display settings are a card over the page. Listening and reading keep their own places and meet
 when the listener says so: the switch buttons carry the place over, and opening one after newer
 progress in the other asks where to start. The exact mode listens to a few seconds of the audio
-with the offline Vosk recogniser (`modules/speech`) to find the words on the page.
+with the offline Vosk recogniser (`modules/speech`) to find the words on the page. Its model is
+downloaded when the mode is chosen, picking up where a dropped connection left off rather than
+starting over.
 
 ## Offline, storage and backups
 

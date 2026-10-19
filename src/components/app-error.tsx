@@ -1,7 +1,7 @@
-import { Box, Button, Column, Text, useMaterialColors } from '@expo/ui/jetpack-compose'
-import { fillMaxSize, paddingAll } from '@expo/ui/jetpack-compose/modifiers'
 import { useLingui } from '@lingui/react/macro'
 import { Host } from '@/components/host'
+import { fillMaxSize, paddingAll } from '@/lib/compose-modifiers'
+import { Box, Button, Column, Text, useMaterialColors } from '@/lib/compose-ui'
 
 export default function AppError({ message, onRetry }: { message: string; onRetry: () => void }) {
   const { t } = useLingui()

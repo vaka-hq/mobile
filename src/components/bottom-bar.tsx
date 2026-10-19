@@ -27,8 +27,8 @@ function TabIcon({ tab }: { tab: Tab }) {
 }
 
 /**
- * The mini player and the Material 3 Expressive short navigation bar share one Compose tree above
- * the tabs.
+ * The Material 3 Expressive short navigation bar under the tabs; the mini player floats above it
+ * in the player layer.
  */
 export function BottomBar() {
   const { t } = useLingui()

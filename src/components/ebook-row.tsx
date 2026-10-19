@@ -25,7 +25,7 @@ export function ebookSource(result: Pick<EbookResult, 'publisher' | 'extension' 
 }
 
 /** What sets a file apart from the book's other files: language, year, size and publisher. */
-export function ebookFacts(result: Pick<EbookResult, 'language' | 'year' | 'size' | 'publisher'>) {
+function ebookFacts(result: Pick<EbookResult, 'language' | 'year' | 'size' | 'publisher'>) {
   return [result.language, result.year, result.size, result.publisher].filter(Boolean).join(' · ')
 }
 
@@ -64,7 +64,6 @@ export function EbookResultRow({
   onPress,
 }: {
   result: EbookResult
-  /** The file the book is read in. */
   card?: CardPosition
   onPress: () => void
 }) {

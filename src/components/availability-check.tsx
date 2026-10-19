@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AvailabilityDialog } from '@/ui/dialogs'
 
 /** What the check dialog says: while checking, and when the source seems unavailable. */
-export type AvailabilityTexts = {
+type AvailabilityTexts = {
   checkingTitle: string
   checkingMessage: string
   deadTitle: string

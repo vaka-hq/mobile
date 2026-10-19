@@ -1,6 +1,6 @@
 {
   "platforms": ["android"],
   "android": {
-    "modules": ["app.vaka.ui.VakaUIModule"]
+    "modules": ["app.vaka.ui.VakaViewsModule"]
   }
 }

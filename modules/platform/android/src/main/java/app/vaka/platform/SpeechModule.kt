@@ -7,11 +7,11 @@ import android.media.MediaFormat
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
-import expo.modules.kotlin.exception.CodedException
-import expo.modules.kotlin.modules.Module
-import expo.modules.kotlin.modules.ModuleDefinition
-import expo.modules.kotlin.records.Field
-import expo.modules.kotlin.records.Record
+import io.github.expo.modules.v2.ExpoModule
+import io.github.expo.modules.v2.JS
+import io.github.expo.modules.v2.JavaScriptThrowable
+import io.github.expo.modules.v2.Module
+import io.github.expo.modules.v2.Record
 import java.io.File
 import java.nio.ByteOrder
 import java.util.zip.ZipInputStream
@@ -20,6 +20,8 @@ import org.vosk.LibVosk
 import org.vosk.LogLevel
 import org.vosk.Model
 import org.vosk.Recognizer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** The rate Vosk's small models are trained at. */
 private const val speechRate = 16000
@@ -30,107 +32,136 @@ private const val longestSnippet = 120.0
 /** How long the model stays in memory after it was last used, in ms. */
 private const val modelIdleMillis = 60_000L
 
-class SnippetRequest : Record {
+@Record
+data class SnippetRequest(
   /** An http(s) URL to stream from, or a file URI or path on the phone. */
-  @Field val source: String = ""
-  @Field val headers: Map<String, String> = emptyMap()
+  val source: String = "",
+  val headers: Map<String, String> = emptyMap(),
   /** Where the stretch starts in the file, in seconds. */
-  @Field val start: Double = 0.0
+  val start: Double = 0.0,
   /** How long it is, in seconds. */
-  @Field val duration: Double = 20.0
+  val duration: Double = 20.0,
   /** The unpacked model's directory. */
-  @Field val model: String = ""
+  val model: String = "",
+)
+
+/** A word heard, with when it starts and ends in the file, in seconds. */
+@Record
+data class HeardWord(val word: String, val start: Double, val end: Double)
+
+@Record
+data class Transcript(val words: List<HeardWord>)
+
+class ModelError(message: String) : JavaScriptThrowable(message) {
+  override val code: String
+    get() = "ERR_SPEECH_MODEL"
 }
 
-class ModelError(message: String) : CodedException("ERR_SPEECH_MODEL", message, null)
-
-class AudioError(message: String) : CodedException("ERR_SPEECH_AUDIO", message, null)
+class AudioError(message: String) : JavaScriptThrowable(message) {
+  override val code: String
+    get() = "ERR_SPEECH_AUDIO"
+}
 
 /**
  * Turns a short stretch of an audiobook into words, offline, to find where listening and reading
  * meet. The audio is read from the file or stream directly, never from the microphone, and only
  * the stretch asked for is fetched and decoded.
  */
+@ExpoModule("Speech")
 class SpeechModule : Module() {
   private var loaded: Pair<String, Model>? = null
 
-  override fun definition() = ModuleDefinition {
-    Name("Speech")
+  /**
+   * Unpacks a downloaded model archive into `directory`, dropping the archive's top folder, and
+   * only then moves it into place, so a half-unpacked model is never used.
+   */
+  @JS
+  suspend fun installModel(archive: String, directory: String): Unit = withContext(Dispatchers.IO) {
+    val target = File(pathOf(directory))
+    val partial = File(target.parentFile, "${target.name}.part")
+    partial.deleteRecursively()
+    partial.mkdirs()
+    val root = partial.canonicalPath + File.separator
 
-    // Unpacks a downloaded model archive into `directory`, dropping the archive's top folder, and
-    // only then moves it into place, so a half-unpacked model is never used.
-    AsyncFunction("installModel") { archive: String, directory: String ->
-      val target = File(pathOf(directory))
-      val partial = File(target.parentFile, "${target.name}.part")
+    ZipInputStream(File(pathOf(archive)).inputStream().buffered()).use { zip ->
+      while (true) {
+        val entry = zip.nextEntry ?: break
+        val name = entry.name.substringAfter('/', "")
+        if (name.isEmpty()) continue
+        val file = File(partial, name)
+        // Never write outside the model's folder, whatever the archive names.
+        if (!file.canonicalPath.startsWith(root)) throw ModelError("The model archive is not valid")
+        if (entry.isDirectory) {
+          file.mkdirs()
+        } else {
+          file.parentFile?.mkdirs()
+          file.outputStream().use { zip.copyTo(it) }
+        }
+      }
+    }
+
+    if (!File(partial, "am").exists() && !File(partial, "conf").exists()) {
       partial.deleteRecursively()
-      partial.mkdirs()
-      val root = partial.canonicalPath + File.separator
-
-      ZipInputStream(File(pathOf(archive)).inputStream().buffered()).use { zip ->
-        while (true) {
-          val entry = zip.nextEntry ?: break
-          val name = entry.name.substringAfter('/', "")
-          if (name.isEmpty()) continue
-          val file = File(partial, name)
-          // Never write outside the model's folder, whatever the archive names.
-          if (!file.canonicalPath.startsWith(root)) throw ModelError("The model archive is not valid")
-          if (entry.isDirectory) {
-            file.mkdirs()
-          } else {
-            file.parentFile?.mkdirs()
-            file.outputStream().use { zip.copyTo(it) }
-          }
-        }
-      }
-
-      if (!File(partial, "am").exists() && !File(partial, "conf").exists()) {
-        partial.deleteRecursively()
-        throw ModelError("The archive holds no speech model")
-      }
-
-      releaseModel()
-      target.deleteRecursively()
-      if (!partial.renameTo(target)) throw ModelError("The model could not be put in place")
+      throw ModelError("The archive holds no speech model")
     }
 
-    // The words spoken in a stretch of the audio, each with when it starts and ends in the file.
-    // The audio goes to the recognizer as it is decoded, a little at a time, so memory stays the
-    // same however long the stretch.
-    AsyncFunction("transcribe") { request: SnippetRequest ->
-      val duration = request.duration.coerceIn(1.0, longestSnippet)
-      val words = mutableListOf<Map<String, Any>>()
+    releaseModel()
+    target.deleteRecursively()
+    if (!partial.renameTo(target)) throw ModelError("The model could not be put in place")
+  }
 
-      withModel(pathOf(request.model)) { model ->
-        Recognizer(model, speechRate.toFloat()).use { recognizer ->
-          recognizer.setWords(true)
-          fun collect(json: String) {
-            val result = JSONObject(json).optJSONArray("result") ?: return
-            for (index in 0 until result.length()) {
-              val word = result.getJSONObject(index)
-              words.add(
-                mapOf(
-                  "word" to word.getString("word"),
-                  "start" to request.start + word.getDouble("start"),
-                  "end" to request.start + word.getDouble("end"),
-                )
+  /**
+   * The words spoken in a stretch of the audio, each with when it starts and ends in the file.
+   * The audio goes to the recognizer as it is decoded, a little at a time, so memory stays the
+   * same however long the stretch.
+   */
+  @JS
+  suspend fun transcribe(request: SnippetRequest): Transcript = withContext(Dispatchers.Default) {
+    val duration = request.duration.coerceIn(1.0, longestSnippet)
+    val words = mutableListOf<HeardWord>()
+
+    withModel(pathOf(request.model)) { model ->
+      Recognizer(model, speechRate.toFloat()).use { recognizer ->
+        recognizer.setWords(true)
+        fun collect(json: String) {
+          val result = JSONObject(json).optJSONArray("result") ?: return
+          for (index in 0 until result.length()) {
+            val word = result.getJSONObject(index)
+            words.add(
+              HeardWord(
+                word = word.getString("word"),
+                start = request.start + word.getDouble("start"),
+                end = request.start + word.getDouble("end"),
               )
-            }
+            )
           }
-
-          decode(request.source, request.headers, request.start, duration) { samples, size ->
-            if (recognizer.acceptWaveForm(samples, size)) collect(recognizer.result)
-          }
-          collect(recognizer.finalResult)
         }
-      }
 
-      mapOf("words" to words)
+        decode(request.source, request.headers, request.start, duration) { samples, size ->
+          if (recognizer.acceptWaveForm(samples, size)) collect(recognizer.result)
+        }
+        collect(recognizer.finalResult)
+      }
     }
 
-    // Lets go of the model in memory, such as when it is deleted.
-    Function("releaseModel") { releaseModel() }
+    Transcript(words)
+  }
 
-    OnDestroy { releaseModel() }
+  /** Lets go of the model in memory, such as when it is deleted. */
+  @JS
+  fun releaseModel(): Unit = synchronized(this) {
+    main.removeCallbacks(idleRelease)
+    if (users > 0) {
+      releaseWhenDone = true
+      return
+    }
+    releaseWhenDone = false
+    loaded?.second?.close()
+    loaded = null
+  }
+
+  override fun onDestroy() {
+    releaseModel()
   }
 
   private fun pathOf(uri: String) = if (uri.startsWith("file:")) Uri.parse(uri).path ?: uri else uri
@@ -169,18 +200,6 @@ class SpeechModule : Module() {
         }
       }
     }
-  }
-
-  /** Frees the model, or while a stretch is being heard with it, as soon as that is done. */
-  private fun releaseModel(): Unit = synchronized(this) {
-    main.removeCallbacks(idleRelease)
-    if (users > 0) {
-      releaseWhenDone = true
-      return
-    }
-    releaseWhenDone = false
-    loaded?.second?.close()
-    loaded = null
   }
 
   private fun modelAt(path: String): Model {

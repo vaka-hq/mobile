@@ -25,10 +25,15 @@ short: how the app works belongs in `docs/`.
   `src/sources/` has one client per external service; `src/player/` owns playback; `src/media/`
   reads chapters from audio files; `src/settings/` holds preferences and secrets.
 - `modules/` holds the app's two native modules: `ui` (the Compose bridge, the e-book reader and
-  the stack's motion and Back, native module `VakaUI`) and `platform` (offline Vosk recognition,
-  reading through a proxy and installing the app's own updates, as the `Speech`, `ProxiedHttp`
-  and `AppUpdates` modules). Both are written in Kotlin with the Expo Modules DSL; Expo Modules
-  2.0's annotations are Swift-only so far.
+  the stack's motion and Back) and `platform` (offline Vosk recognition, reading through a proxy
+  and installing the app's own updates, as the `Speech`, `ProxiedHttp` and `AppUpdates` modules).
+- Native modules are written with Expo Modules 2.0 (`expoModule { v2 true }` in the module's
+  `build.gradle`): plain Kotlin classes with `@ExpoModule`, `@JS`, `@Event` and `@Record`, found at
+  compile time rather than listed in `expo-module.config.json`. A `@JS suspend` function starts on
+  the JavaScript thread, so blocking work goes in `withContext(Dispatchers.IO)` (or `Main` for
+  views); errors JavaScript checks by code extend `JavaScriptThrowable`. Views have no 2.0 form
+  yet, so `ui`'s Compose views stay on the definition DSL as `VakaViews`, listed in its
+  `expo-module.config.json`, beside its functions in `VakaUI`.
 
 ## Interface
 

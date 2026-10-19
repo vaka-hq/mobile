@@ -4,6 +4,11 @@ apply plugin: 'expo-module-gradle-plugin'
 group = 'app.vaka.platform'
 version = '0.1.0'
 
+// Expo Modules 2.0: annotated Kotlin classes, found at compile time rather than listed.
+expoModule {
+  v2 true
+}
+
 android {
   namespace "app.vaka.platform"
   defaultConfig {

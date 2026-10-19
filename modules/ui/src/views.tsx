@@ -94,14 +94,14 @@ const NativeScaffoldView: React.ComponentType<
   Omit<ScaffoldProps, 'topBar' | 'bottomBar' | 'floatingActionButton' | 'onSnackbarDismiss'> & {
     onSnackbarDismiss?: (event: NativeSyntheticEvent<Record<string, never>>) => void
   }
-> = requireNativeView('VakaUI', 'ScaffoldView')
+> = requireNativeView('VakaViews', 'ScaffoldView')
 
 type NativeAppBarProps = Omit<AppBarProps, 'navigationIcon' | 'actions' | 'titleContent'> & {
   children?: ReactNode
 }
 
 const NativeTopAppBarView: React.ComponentType<NativeAppBarProps> = requireNativeView(
-  'VakaUI',
+  'VakaViews',
   'TopAppBarView',
 )
 
@@ -113,7 +113,7 @@ type GatedListProps = {
 }
 
 const NativeGatedListView: React.ComponentType<GatedListProps> = requireNativeView(
-  'VakaUI',
+  'VakaViews',
   'GatedListView',
 )
 
@@ -127,7 +127,7 @@ export function GatedList(props: GatedListProps) {
 }
 
 const NativeStepDotsView: React.ComponentType<{ count: number; current: number }> =
-  requireNativeView('VakaUI', 'StepDotsView')
+  requireNativeView('VakaViews', 'StepDotsView')
 
 /**
  * Which step of a short sequence is showing: a dot for each, the current one a long pill that
@@ -138,7 +138,7 @@ export function StepDots({ count, current }: { count: number; current: number })
 }
 
 const NativeHeaderFieldView: React.ComponentType<{ children: ReactNode }> = requireNativeView(
-  'VakaUI',
+  'VakaViews',
   'HeaderFieldView',
 )
 
@@ -151,7 +151,7 @@ export function HeaderField({ children }: { children: ReactNode }) {
 }
 
 const NativeBodyCentreView: React.ComponentType<{ children: ReactNode }> = requireNativeView(
-  'VakaUI',
+  'VakaViews',
   'BodyCentreView',
 )
 
@@ -164,12 +164,12 @@ export function BodyCentre({ children }: { children: ReactNode }) {
 }
 
 const NativeHeaderAppBarView: React.ComponentType<{ children: ReactNode }> = requireNativeView(
-  'VakaUI',
+  'VakaViews',
   'HeaderAppBarView',
 )
 
 const NativeLargeTopAppBarView: React.ComponentType<NativeAppBarProps> = requireNativeView(
-  'VakaUI',
+  'VakaViews',
   'LargeTopAppBarView',
 )
 
@@ -180,7 +180,7 @@ const NativeShortNavigationBarView: React.ComponentType<{
   secondLabel: string
   thirdLabel: string
   selectedIndex: number
-}> = requireNativeView('VakaUI', 'ShortNavigationBarView')
+}> = requireNativeView('VakaViews', 'ShortNavigationBarView')
 
 export type CoverImageProps = {
   uri: string
@@ -204,7 +204,7 @@ const NativeCoverImageView: React.ComponentType<
     aspect: number
     onImageError?: () => void
   }
-> = requireNativeView('VakaUI', 'CoverImageView')
+> = requireNativeView('VakaViews', 'CoverImageView')
 
 /** A book cover drawn natively: colour placeholder, crossfade, and the cover's own proportions. */
 export function CoverImage({ color, aspect, onError, ...props }: CoverImageProps) {
@@ -247,7 +247,7 @@ const NativeConnectedActionsView: React.ComponentType<{
   iconOnly: boolean[]
   joinedBelow: boolean
   onActionPress: (event: NativeSyntheticEvent<{ index: number }>) => void
-}> = requireNativeView('VakaUI', 'ConnectedActionsView')
+}> = requireNativeView('VakaViews', 'ConnectedActionsView')
 
 export type ExpandingPlayerProps = {
   expanded: boolean
@@ -276,7 +276,7 @@ const NativeExpandingPlayerView: React.ComponentType<{
   vanishing: boolean
   onSettled?: (event: NativeSyntheticEvent<{ expanded: boolean }>) => void
   onFaded?: (event: NativeSyntheticEvent<{ shown: boolean }>) => void
-}> = requireNativeView('VakaUI', 'ExpandingPlayerView')
+}> = requireNativeView('VakaViews', 'ExpandingPlayerView')
 
 /**
  * The mini player and the full player as one Compose surface: the bar morphs into the whole view
@@ -305,7 +305,7 @@ export function ExpandingPlayer({
 }
 
 const NativePlayerFadeView: React.ComponentType<{ children: ReactNode }> = requireNativeView(
-  'VakaUI',
+  'VakaViews',
   'PlayerFadeView',
 )
 
@@ -318,7 +318,7 @@ export function PlayerFade({ children }: { children: ReactNode }) {
 }
 
 const NativeViewportBoxView: React.ComponentType<{ children: ReactNode }> = requireNativeView(
-  'VakaUI',
+  'VakaViews',
   'ViewportBoxView',
 )
 
@@ -343,7 +343,7 @@ export type FitColumnProps = {
 }
 
 const NativeFitColumnView: React.ComponentType<FitColumnProps> = requireNativeView(
-  'VakaUI',
+  'VakaViews',
   'FitColumnView',
 )
 
@@ -356,7 +356,7 @@ export function FitColumn(props: FitColumnProps) {
 }
 
 const NativeSideRevealView: React.ComponentType<{ visible: boolean; children: ReactNode }> =
-  requireNativeView('VakaUI', 'SideRevealView')
+  requireNativeView('VakaViews', 'SideRevealView')
 
 /**
  * A row that joins the one around it as a whole: its room opens while it fades in and travels
@@ -387,7 +387,7 @@ const NativeModalSheetView: React.ComponentType<
     wrapContent: boolean
     onDismissRequest: () => void
   }
-> = requireNativeView('VakaUI', 'ModalSheetView')
+> = requireNativeView('VakaViews', 'ModalSheetView')
 
 /**
  * The app's one bottom sheet: content height up to its opening stop, full-height expansion as
@@ -413,7 +413,7 @@ const NativeSheetListView: React.ComponentType<{
   children: ReactNode
   initialIndex: number
   minHeight: number
-}> = requireNativeView('VakaUI', 'SheetListView')
+}> = requireNativeView('VakaViews', 'SheetListView')
 
 /**
  * A sheet's lazy list of connected cards that opens with `initialIndex` in view, such as the
@@ -457,7 +457,7 @@ const NativeConnectedButtonGroupView: React.ComponentType<{
   longPressable: boolean[]
   onItemPress: (event: NativeSyntheticEvent<{ index: number }>) => void
   onItemLongPress: (event: NativeSyntheticEvent<{ index: number }>) => void
-}> = requireNativeView('VakaUI', 'ConnectedButtonGroupView')
+}> = requireNativeView('VakaViews', 'ConnectedButtonGroupView')
 
 /** A Material 3 Expressive connected button group of icon-and-label toggle buttons. */
 export function ConnectedButtonGroup({ items }: { items: ConnectedButtonGroupItem[] }) {
@@ -494,7 +494,7 @@ export type PlayPauseButtonProps = {
 
 const NativePlayPauseButtonView: React.ComponentType<
   Omit<PlayPauseButtonProps, 'onPress' | 'filled'> & { filled: boolean; onPress: () => void }
-> = requireNativeView('VakaUI', 'PlayPauseButtonView')
+> = requireNativeView('VakaViews', 'PlayPauseButtonView')
 
 /**
  * Play and pause as one Material 3 Expressive control: its shape morphs between round and a
@@ -619,7 +619,7 @@ const NativeBookView: React.ComponentType<{
   ref?: Ref<BookViewRef>
   onMessage: (event: NativeSyntheticEvent<{ data: string }>) => void
   style?: StyleProp<ViewStyle>
-}> = requireNativeView('VakaUI', 'BookView')
+}> = requireNativeView('VakaViews', 'BookView')
 
 /**
  * The reader drawn natively in Compose: EPUB chapters laid out into pages or one scrolling column.

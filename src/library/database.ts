@@ -193,6 +193,20 @@ const migrations = [
   ALTER TABLE request_cache ADD COLUMN used_at INTEGER NOT NULL DEFAULT 0;
   CREATE INDEX request_cache_used ON request_cache (used_at);
   `,
+  // Each book on the listener's Hardcover shelves as the last sync left it, to tell which side
+  // changed since: a change there wins, a change only here is sent there.
+  `
+  CREATE TABLE hardcover_shelf (
+    book_id INTEGER PRIMARY KEY NOT NULL,
+    user_book_id INTEGER NOT NULL,
+    status INTEGER NOT NULL,
+    read_id INTEGER,
+    progress_seconds REAL,
+    edition_id INTEGER,
+    edition_seconds REAL,
+    synced_at INTEGER NOT NULL
+  );
+  `,
 ]
 
 function open() {

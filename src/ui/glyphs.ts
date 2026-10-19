@@ -15,6 +15,7 @@ import ClockLoader40 from '@expo/material-symbols/clock_loader_40.xml'
 import Close from '@expo/material-symbols/close.xml'
 import CloudDone from '@expo/material-symbols/cloud_done.xml'
 import CloudDownload from '@expo/material-symbols/cloud_download.xml'
+import CloudSync from '@expo/material-symbols/cloud_sync.xml'
 import CollectionsBookmark from '@expo/material-symbols/collections_bookmark.xml'
 import Delete from '@expo/material-symbols/delete.xml'
 import DeleteSweep from '@expo/material-symbols/delete_sweep.xml'
@@ -191,6 +192,8 @@ export const glyphs = {
   seeders: Group,
   series: CollectionsBookmark,
   settings: Settings,
+  /** The library kept in step with the Hardcover shelves. */
+  shelfSync: CloudSync,
   share: Share,
   size: HardDrive,
   skipBack: Replay,

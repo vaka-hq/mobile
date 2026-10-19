@@ -27,10 +27,36 @@ export const queryKeys = {
   ebookMarks: (md5: string) => ['ebook-marks', md5] as const,
 }
 
+/** What changed: the library or a book's state, or only where listening stands. */
+export type LibraryChange = 'library' | 'listening'
+
+const changeListeners = new Set<(change: LibraryChange) => void>()
+
+/** Hears every change to the library and to listening, such as to keep Hardcover in step. */
+export function onLibraryChange(listener: (change: LibraryChange) => void) {
+  changeListeners.add(listener)
+
+  return () => {
+    changeListeners.delete(listener)
+  }
+}
+
+function notify(change: LibraryChange) {
+  for (const listener of changeListeners) {
+    listener(change)
+  }
+}
+
 export function invalidateLibrary() {
   void queryClient.invalidateQueries({ queryKey: queryKeys.library })
   void queryClient.invalidateQueries({ queryKey: queryKeys.works })
   void queryClient.invalidateQueries({ queryKey: queryKeys.followedSeries })
+  notify('library')
+}
+
+/** Listening has moved on and its place was saved, without anything else changing. */
+export function noteListening() {
+  notify('listening')
 }
 
 export function invalidateBook(id: string) {

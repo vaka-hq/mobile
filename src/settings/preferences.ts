@@ -60,6 +60,10 @@ const preferencesSchema = z.object({
    * address; they are told again only after it has answered in between.
    */
   abbSilenceNoticed: z.boolean().catch(false),
+  /** The library is kept in step with the listener's Hardcover shelves. */
+  hardcoverShelves: z.boolean().catch(false),
+  /** Whose Hardcover shelves the last sync read, so a key for another account starts afresh. */
+  hardcoverShelvesUser: z.number().nullable().catch(null),
   /** The listener closed Browse's notice about adding a Hardcover key; it does not show again. */
   hardcoverNoticeDismissed: z.boolean().catch(false),
   /** Which releases the app updates to: tested ones only, or the nightly builds as well. */

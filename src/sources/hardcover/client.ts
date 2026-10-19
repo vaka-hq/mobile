@@ -1047,9 +1047,13 @@ const shelfFields = `
 /** How many shelf entries one request reads; each request costs one of the rate limit's. */
 const shelfPageSize = 500
 
-/** Every book on the listener's shelves but the ignored ones, page by page. */
-export async function fetchShelves(signal?: AbortSignal): Promise<HardcoverShelfEntry[]> {
+/**
+ * Every book on the listener's shelves but the ignored ones, page by page, with whose shelves
+ * they are, so a key for another account is not taken for the same shelves.
+ */
+export async function fetchShelves(signal?: AbortSignal) {
   const entries: HardcoverShelfEntry[] = []
+  let userId: number | null = null
 
   for (let offset = 0; ; offset += shelfPageSize) {
     const { me } = await query(
@@ -1061,19 +1065,27 @@ export async function fetchShelves(signal?: AbortSignal): Promise<HardcoverShelf
             limit: $limit
             offset: $offset
           ) { ${shelfFields} }
+          id
         }
       }`,
       { limit: shelfPageSize, offset },
-      z.object({ me: z.array(z.object({ user_books: z.array(shelfEntry) })) }),
+      z.object({
+        me: z.array(z.object({ id: z.number(), user_books: z.array(shelfEntry) })),
+      }),
       signal,
     )
 
     const page = me[0]?.user_books ?? []
 
+    userId = me[0]?.id ?? userId
     entries.push(...page.map(entryFrom))
 
     if (page.length < shelfPageSize) {
-      return entries
+      if (userId === null) {
+        throw new HardcoverError('Hardcover did not say whose shelves these are', null)
+      }
+
+      return { userId, entries }
     }
   }
 }

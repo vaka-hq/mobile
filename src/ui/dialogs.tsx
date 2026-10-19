@@ -30,8 +30,7 @@ import { type Glyph, glyphs } from './glyphs'
 
 export type ChoiceDialogProps<T extends string | number> = {
   title: string
-  /** Each choice, with a line under it when it needs explaining. */
-  options: { value: T; label: string; description?: string }[]
+  options: { value: T; label: string }[]
   selected: T
   onSelect: (value: T) => void
   onDismiss: () => void
@@ -79,16 +78,7 @@ export function ChoiceDialog<T extends string | number>({
                 <RadioButton selected={option.value === selected} />
               </ListItem.LeadingContent>
               <ListItem.HeadlineContent>
-                {/* The line under a choice sits in the headline: a supporting slot keeps the
-                    dialog from showing at all. */}
-                <Column>
-                  <Text>{option.label}</Text>
-                  {option.description ? (
-                    <Text color={colors.onSurfaceVariant} style={{ typography: 'bodyMedium' }}>
-                      {option.description}
-                    </Text>
-                  ) : null}
-                </Column>
+                <Text>{option.label}</Text>
               </ListItem.HeadlineContent>
             </ListItem>
           ))}
@@ -120,6 +110,42 @@ export type TextDialogProps = {
   onDismiss: () => void
 }
 
+/**
+ * A dialog's save, run once at a time: what it resolves with, or the wording of what it throws, is
+ * the problem shown, keeping the dialog open; null means saved, and the caller closes the dialog.
+ */
+function useSave() {
+  const errorText = useErrorText()
+  const [checking, setChecking] = useState(false)
+  const [problem, setProblem] = useState<string | null>(null)
+
+  async function save(run: () => Promise<string | null>) {
+    if (checking) {
+      return
+    }
+
+    setChecking(true)
+    setProblem(null)
+
+    let result: string | null
+
+    try {
+      result = await run()
+    } catch (error) {
+      // A save that throws rather than naming its problem still frees the dialog.
+      result = errorText(error instanceof Error ? error : null)
+    }
+
+    // On success the caller unmounts the dialog, so state is only updated for a problem.
+    if (result !== null) {
+      setProblem(result)
+      setChecking(false)
+    }
+  }
+
+  return { checking, problem, setProblem, save }
+}
+
 /** Asks for one value, such as an API key or a web address, and stays open until it is accepted. */
 export function TextDialog({
   title,
@@ -133,35 +159,15 @@ export function TextDialog({
   onDismiss,
 }: TextDialogProps) {
   const { t } = useLingui()
-  const errorText = useErrorText()
   const text = useNativeState(initialValue)
   const [value, setValue] = useState(initialValue)
-  const [checking, setChecking] = useState(false)
-  const [problem, setProblem] = useState<string | null>(null)
+  const { checking, problem, setProblem, save } = useSave()
 
   async function submit(next: string) {
     const trimmed = next.trim()
 
-    if (!trimmed || checking) {
-      return
-    }
-
-    setChecking(true)
-    setProblem(null)
-
-    let result: string | null
-
-    try {
-      result = await onConfirm(trimmed)
-    } catch (error) {
-      // A save that throws rather than naming its problem still frees the dialog.
-      result = errorText(error instanceof Error ? error : null)
-    }
-
-    // On success the caller unmounts the dialog, so state is only updated for a problem.
-    if (result !== null) {
-      setProblem(result)
-      setChecking(false)
+    if (trimmed) {
+      await save(() => onConfirm(trimmed))
     }
   }
 
@@ -318,14 +324,11 @@ export function FormDialog<K extends string>({
   onDismiss,
 }: FormDialogProps<K>) {
   const { t } = useLingui()
-  const errorText = useErrorText()
+  const { checking, problem, setProblem, save } = useSave()
 
   const [values, setValues] = useState(() =>
     Object.fromEntries(fields.map((field) => [field.key, field.initialValue])),
   )
-
-  const [checking, setChecking] = useState(false)
-  const [problem, setProblem] = useState<string | null>(null)
 
   const trimmed = Object.fromEntries(
     fields.map((field) => [field.key, (values[field.key] ?? '').trim()]),
@@ -336,26 +339,8 @@ export function FormDialog<K extends string>({
   const filled = fields.every((field) => complete[field.key].length > 0)
 
   async function submit() {
-    if (!filled || checking) {
-      return
-    }
-
-    setChecking(true)
-    setProblem(null)
-
-    let result: string | null
-
-    try {
-      result = await onConfirm(complete)
-    } catch (error) {
-      // A save that throws rather than naming its problem still frees the dialog.
-      result = errorText(error instanceof Error ? error : null)
-    }
-
-    // On success the caller unmounts the dialog, so state is only updated for a problem.
-    if (result !== null) {
-      setProblem(result)
-      setChecking(false)
+    if (filled) {
+      await save(() => onConfirm(complete))
     }
   }
 
@@ -406,6 +391,18 @@ export function FormDialog<K extends string>({
   )
 }
 
+/** A spinner beside what is under way, in a dialog's body. */
+function Busy({ message }: { message: string }) {
+  const colors = useMaterialColors()
+
+  return (
+    <Row verticalAlignment='center' horizontalArrangement={{ spacedBy: 16 }}>
+      <LoadingIndicator modifiers={[size(32, 32)]} />
+      <Text color={colors.onSurfaceVariant}>{message}</Text>
+    </Row>
+  )
+}
+
 /** One place a book can be picked up from, such as where it was last read. */
 export type PlaceOption = {
   glyph: Glyph
@@ -440,10 +437,7 @@ export function PlaceChoiceDialog({
       </AlertDialog.Title>
       <AlertDialog.Text>
         {busy ? (
-          <Row verticalAlignment='center' horizontalArrangement={{ spacedBy: 16 }}>
-            <LoadingIndicator modifiers={[size(32, 32)]} />
-            <Text color={colors.onSurfaceVariant}>{busy}</Text>
-          </Row>
+          <Busy message={busy} />
         ) : (
           <Column modifiers={[fillMaxWidth()]} verticalArrangement={{ spacedBy: 8 }}>
             {options.map((option) => (
@@ -499,7 +493,6 @@ export function FindingPlaceDialog({
   onCancel: () => void
 }) {
   const { t } = useLingui()
-  const colors = useMaterialColors()
 
   return (
     <AlertDialog onDismissRequest={onCancel}>
@@ -507,10 +500,7 @@ export function FindingPlaceDialog({
         <Text style={{ typography: 'headlineSmall' }}>{title}</Text>
       </AlertDialog.Title>
       <AlertDialog.Text>
-        <Row verticalAlignment='center' horizontalArrangement={{ spacedBy: 16 }}>
-          <LoadingIndicator modifiers={[size(32, 32)]} />
-          <Text color={colors.onSurfaceVariant}>{message}</Text>
-        </Row>
+        <Busy message={message} />
       </AlertDialog.Text>
       <AlertDialog.DismissButton>
         <TextButton onClick={onCancel}>
@@ -546,7 +536,6 @@ export function AvailabilityDialog({
   onCancel: () => void
 }) {
   const { t } = useLingui()
-  const colors = useMaterialColors()
 
   return (
     <AlertDialog onDismissRequest={onCancel}>
@@ -556,14 +545,7 @@ export function AvailabilityDialog({
         </Text>
       </AlertDialog.Title>
       <AlertDialog.Text>
-        {phase === 'checking' ? (
-          <Row verticalAlignment='center' horizontalArrangement={{ spacedBy: 16 }}>
-            <LoadingIndicator modifiers={[size(32, 32)]} />
-            <Text color={colors.onSurfaceVariant}>{checkingMessage}</Text>
-          </Row>
-        ) : (
-          <Text>{deadMessage}</Text>
-        )}
+        {phase === 'checking' ? <Busy message={checkingMessage} /> : <Text>{deadMessage}</Text>}
       </AlertDialog.Text>
       <AlertDialog.ConfirmButton>
         {phase === 'dead' ? (
@@ -610,8 +592,6 @@ export function StatusDialog({
   onConfirm?: () => void
   onDismiss: () => void
 }) {
-  const colors = useMaterialColors()
-
   return (
     <AlertDialog onDismissRequest={onDismiss}>
       <AlertDialog.Title>
@@ -619,14 +599,7 @@ export function StatusDialog({
       </AlertDialog.Title>
       <AlertDialog.Text>
         <Column verticalArrangement={{ spacedBy: 16 }}>
-          {busy ? (
-            <Row verticalAlignment='center' horizontalArrangement={{ spacedBy: 16 }}>
-              <LoadingIndicator modifiers={[size(32, 32)]} />
-              <Text color={colors.onSurfaceVariant}>{message}</Text>
-            </Row>
-          ) : (
-            <Text>{message}</Text>
-          )}
+          {busy ? <Busy message={message} /> : <Text>{message}</Text>}
           {progress === null ? null : (
             <LinearProgressIndicator
               progress={Math.min(1, Math.max(0, progress))}

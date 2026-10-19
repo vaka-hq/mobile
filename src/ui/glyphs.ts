@@ -4,7 +4,6 @@ import AudioFile from '@expo/material-symbols/audio_file.xml'
 import AutoStories from '@expo/material-symbols/auto_stories.xml'
 import Bedtime from '@expo/material-symbols/bedtime.xml'
 import Bolt from '@expo/material-symbols/bolt.xml'
-import Bookmark from '@expo/material-symbols/bookmark.xml'
 import BookmarkAdd from '@expo/material-symbols/bookmark_add.xml'
 import Bookmarks from '@expo/material-symbols/bookmarks.xml'
 import CalendarToday from '@expo/material-symbols/calendar_today.xml'
@@ -58,7 +57,6 @@ import RecordVoiceOver from '@expo/material-symbols/record_voice_over.xml'
 import Refresh from '@expo/material-symbols/refresh.xml'
 import Replay from '@expo/material-symbols/replay.xml'
 import ResetSettings from '@expo/material-symbols/reset_settings.xml'
-import RestartAlt from '@expo/material-symbols/restart_alt.xml'
 import Science from '@expo/material-symbols/science.xml'
 import Search from '@expo/material-symbols/search.xml'
 import Settings from '@expo/material-symbols/settings.xml'
@@ -117,7 +115,6 @@ export const glyphs = {
   browse: Explore,
   browseFilled: ExploreFill,
   book: AutoStories,
-  bookmark: Bookmark,
   bookmarkAdd: BookmarkAdd,
   bookmarkFilled: BookmarkFill,
   bookmarks: Bookmarks,
@@ -169,7 +166,6 @@ export const glyphs = {
   narrator: RecordVoiceOver,
   nextChapter: SkipNext,
   note: EditNote,
-  notStarted: RestartAlt,
   offline: DownloadForOffline,
   onPhone: OfflinePin,
   pause: PauseFill,

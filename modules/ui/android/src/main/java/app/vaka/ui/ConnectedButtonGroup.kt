@@ -108,10 +108,10 @@ private fun connectedShapes(leading: Boolean, trailing: Boolean): ToggleButtonSh
 
 /**
  * A Material 3 Expressive connected button group: toggle buttons side by side in a pill-shaped
- * tonal container, with tight inner corners and round outer ends. Buttons are icons, their labels spoken; a checked one fills,
- * rounds fully and widens to show its label, and a pressed one springs its corners round and
- * narrows while its neighbours widen. Each button's
- * icon comes from the slot `icon<index>`.
+ * tonal container, with tight inner corners and round outer ends. Buttons are icons, their labels
+ * spoken; a checked one fills, rounds fully and widens to show its label, and a pressed one springs
+ * its corners round and narrows while its neighbours widen. Each button's icon comes from the slot
+ * `icon<index>`.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

@@ -373,15 +373,11 @@ fun FunctionalComposableScope.ExpandingPlayerContent(
         }
       }
     }
-
   }
 }
 
 @OptimizedComposeProps
-data class PlayerFadeProps(
-  // Unused; props records need a field.
-  val unused: Boolean = false
-) : ComposeProps
+class PlayerFadeProps : ComposeProps
 
 /**
  * Places the content where it will be once the player's transition ends, whatever the morphing
@@ -412,10 +408,11 @@ private fun Modifier.pinnedToFinalPlace(scope: LookaheadScope) = with(scope) {
 /**
  * Content of the player that fades rather than travelling with the morphing container, such as
  * the controls below the cover: it appears once the container is well on its way, and fades out
- * over the first part of the close, the reverse of opening. Outside the expanding player it is drawn as it is.
+ * over the first part of the close, the reverse of opening. Outside the expanding player it is
+ * drawn as it is.
  */
 @Composable
-fun FunctionalComposableScope.PlayerFadeContent(@Suppress("UNUSED_PARAMETER") props: PlayerFadeProps) {
+fun FunctionalComposableScope.PlayerFadeContent() {
   val scopes = LocalPlayerSharedScopes.current
   val alpha = scopes?.visibility?.transition?.animateFloat(
     transitionSpec = {

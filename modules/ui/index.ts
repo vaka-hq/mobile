@@ -31,5 +31,3 @@ export {
   TopAppBar,
   ViewportBox,
 } from './src/views'
-
-export * from './src/types'

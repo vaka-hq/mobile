@@ -12,11 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** Keeps short taps visible for 180 ms without delaying the click, so every press shows its spring. */
-internal class PressPulseInteractionSource(
-  private val scope: CoroutineScope,
-  private val now: () -> Long = { SystemClock.uptimeMillis() },
-  private val wait: suspend (Long) -> Unit = { delay(it) }
-) : MutableInteractionSource {
+internal class PressPulseInteractionSource(private val scope: CoroutineScope) : MutableInteractionSource {
   private val visual = MutableInteractionSource()
   override val interactions = visual.interactions
   private val starts = mutableMapOf<PressInteraction.Press, Long>()
@@ -43,14 +39,14 @@ internal class PressPulseInteractionSource(
   private fun dispatch(interaction: Interaction) {
     when (interaction) {
       is PressInteraction.Press -> {
-        starts[interaction] = now()
+        starts[interaction] = SystemClock.uptimeMillis()
         forward(interaction)
       }
       is PressInteraction.Release -> {
         val began = starts[interaction.press] ?: return
         releases.remove(interaction.press)?.cancel()
         val release = scope.launch(start = CoroutineStart.LAZY) {
-          wait((180L - (now() - began)).coerceAtLeast(0L))
+          delay((180L - (SystemClock.uptimeMillis() - began)).coerceAtLeast(0L))
           starts.remove(interaction.press)
           releases.remove(interaction.press)
           visual.emit(interaction)

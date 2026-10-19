@@ -622,8 +622,8 @@ const NativeBookView: React.ComponentType<{
 }> = requireNativeView('VakaViews', 'BookView')
 
 /**
- * The reader drawn natively in Compose: EPUB chapters laid out into pages or one scrolling column.
- * It takes commands as JSON through `send` and reports what happens as JSON events.
+ * The reader drawn natively in Compose: EPUB chapters laid out into pages. It takes commands as
+ * JSON through `send` and reports what happens as JSON events.
  */
 export function BookView({
   ref,

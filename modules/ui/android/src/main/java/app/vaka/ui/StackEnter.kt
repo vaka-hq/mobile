@@ -48,11 +48,13 @@ internal object StackEnter {
   private fun postpone(fragment: ScreenStackFragment, view: View) {
     val screen = fragment.screen
     val stack = screen.container as? ScreenStack ?: return
-    // The stack's first screen has no transition, and sheets wait for their own layout already.
-    if (bypass || stack.screenCount <= 1 || screen.stackPresentation != Screen.StackPresentation.PUSH) return
-    fragment.postponeEnterTransition()
     // The screens beside it now are the ones the transition moves away from it.
     val others = (0 until stack.childCount).map { stack.getChildAt(it) }.filter { it !== view }
+    // The stack's first screen has no transition as the app starts, with nothing beside it, but
+    // it does when it is revealed again, such as going back to the tabs. Sheets wait for their own
+    // layout already.
+    if (bypass || others.isEmpty() || screen.stackPresentation != Screen.StackPresentation.PUSH) return
+    fragment.postponeEnterTransition()
     var started = false
     val start = {
       if (!started) {

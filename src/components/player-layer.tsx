@@ -4,6 +4,7 @@ import { BackHandler, StyleSheet } from 'react-native'
 import { Host } from '@/components/host'
 import { MiniPlayer } from '@/components/mini-player'
 import { useBackPreviewBlocked } from '@/components/system-back'
+import { useTabsShown } from '@/components/tabs-shown'
 import {
   collapsePlayer,
   miniPlayerHeight,
@@ -14,8 +15,6 @@ import {
 import { usePlayerValue } from '@/player/use-player'
 import { PlayerContent } from '@/screens/player'
 import { ExpandingPlayer } from '../../modules/ui'
-
-const tabPaths = new Set(['/', '/browse'])
 
 /**
  * The mini player and the full player, floating above every route as one native surface. The
@@ -28,7 +27,7 @@ export function PlayerLayer() {
   const pathname = usePathname()
   const loaded = usePlayerValue((state) => state.book !== null)
   const { expanded, tabBarHeight, starting, entrance, vanishing } = usePlayerLayout()
-  const onTabs = tabPaths.has(pathname)
+  const onTabs = useTabsShown()
 
   // On the tabs the bar waits for the tab bar's height, so it never flashes over the tab bar.
   // The welcome screens and the reader have the whole screen to themselves.

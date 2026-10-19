@@ -246,7 +246,7 @@ export type GroupRow = {
    */
   toggle?: boolean
   onToggle?: () => void
-  /** Hides the switch, which fades and grows in when it shows again, such as once it applies. */
+  /** Hides the switch, which fades in when it shows again, such as once it applies. */
   toggleHidden?: boolean
   /** Something about the row is still being found out: a small spinner at its end. */
   pending?: boolean
@@ -408,12 +408,8 @@ export function Group({
                 <ListItem.TrailingContent>
                   <AnimatedVisibility
                     visible={!row.toggleHidden}
-                    enterTransition={EnterTransition.fadeIn().plus(
-                      EnterTransition.expandHorizontally(),
-                    )}
-                    exitTransition={ExitTransition.fadeOut().plus(
-                      ExitTransition.shrinkHorizontally(),
-                    )}
+                    enterTransition={EnterTransition.fadeIn()}
+                    exitTransition={ExitTransition.fadeOut()}
                   >
                     <Switch
                       value={row.toggle}

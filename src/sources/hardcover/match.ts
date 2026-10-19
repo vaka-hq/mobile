@@ -12,7 +12,7 @@ export type HardcoverHit = {
   usersCount: number
 }
 
-export type MatchCandidate = {
+type MatchCandidate = {
   hit: HardcoverHit
   score: number
 }
@@ -106,7 +106,7 @@ export function bestMatch(hits: HardcoverHit[], title: string, author: string | 
 }
 
 /** What distinguishes one audiobook edition of a book from another. */
-export type EditionCandidate = {
+type EditionCandidate = {
   narrators: string[]
   language: string | null
   hasCover: boolean

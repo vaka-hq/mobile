@@ -81,7 +81,7 @@ const preferencesSchema = z.object({
   updateDeclined: z.number().catch(0),
 })
 
-export type Preferences = z.infer<typeof preferencesSchema>
+type Preferences = z.infer<typeof preferencesSchema>
 
 type PreferenceKey = keyof Preferences
 
@@ -126,6 +126,15 @@ export function usePreferences() {
   return useSyncExternalStore(subscribe, getPreferences)
 }
 
+function store<K extends PreferenceKey>(key: K, value: Preferences[K]) {
+  return database.runAsync(
+    `INSERT INTO settings (key, value) VALUES (?, ?)
+     ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+    key,
+    JSON.stringify(value),
+  )
+}
+
 export async function setPreference<K extends PreferenceKey>(key: K, value: Preferences[K]) {
   preferences = { ...preferences, [key]: value }
 
@@ -133,12 +142,7 @@ export async function setPreference<K extends PreferenceKey>(key: K, value: Pref
     listener()
   }
 
-  await database.runAsync(
-    `INSERT INTO settings (key, value) VALUES (?, ?)
-     ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
-    key,
-    JSON.stringify(value),
-  )
+  await store(key, value)
 }
 
 /** The reader's display settings, which the display panel can put back as they started. */
@@ -183,12 +187,7 @@ export async function resetReaderPreferences() {
   }
 
   for (const key of changed) {
-    await database.runAsync(
-      `INSERT INTO settings (key, value) VALUES (?, ?)
-       ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
-      key,
-      JSON.stringify(readerDefaults[key]),
-    )
+    await store(key, readerDefaults[key])
   }
 }
 

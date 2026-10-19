@@ -2,7 +2,7 @@ import { type HTMLElement, parse } from 'node-html-parser'
 import { z } from 'zod'
 
 /** One file in a Library Genesis search, identified by its md5 as every mirror is. */
-export const libgenFileSchema = z.object({
+const libgenFileSchema = z.object({
   md5: z.string(),
   title: z.string(),
   authors: z.array(z.string()),
@@ -18,7 +18,7 @@ export const libgenFileSchema = z.object({
 export type LibgenFile = z.infer<typeof libgenFileSchema>
 
 function clean(text: string | undefined | null) {
-  const value = text?.replaceAll(' ', ' ').replace(/\s+/gu, ' ').trim()
+  const value = text?.replace(/\s+/gu, ' ').trim()
 
   return value ? value : null
 }

@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { HttpError } from '@/lib/http'
 
 /** Why Hardcover refused a request, for messages the listener can act on. */
-export type HardcoverFailure = 'rejectedKey' | 'missingScope' | 'rateLimited' | 'other'
+type HardcoverFailure = 'rejectedKey' | 'missingScope' | 'rateLimited' | 'other'
 
 export class HardcoverError extends HttpError {
   readonly reason: HardcoverFailure
@@ -29,7 +29,7 @@ export function hardcoverFailure(status: number, body: string) {
 
     reason = parsed.success ? parsed.data : null
   } catch {
-    reason = null
+    // A body that is not JSON, such as a gateway's page, is read as words below.
   }
 
   // A 403 says why in words: a missing permission, or the day's requests used up.

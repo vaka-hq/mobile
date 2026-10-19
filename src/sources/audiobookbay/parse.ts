@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { UnexpectedAnswerError } from '@/library/errors'
 
 /** One post in an AudioBookBay listing (search, latest or category). */
-export const abbListingSchema = z.object({
+const abbListingSchema = z.object({
   /** The post slug from `/abss/<slug>/`, stable across mirrors. */
   id: z.string(),
   title: z.string(),
@@ -26,20 +26,20 @@ export const abbListingPageSchema = z.object({
 
 export type AbbListingPage = z.infer<typeof abbListingPageSchema>
 
-export const abbFileSchema = z.object({
+const abbFileSchema = z.object({
   name: z.string(),
   size: z.string(),
 })
 
-export type AbbFile = z.infer<typeof abbFileSchema>
+type AbbFile = z.infer<typeof abbFileSchema>
 
-/** Everything AudioBookBay publishes about one audiobook without signing in. */
 /**
  * Raised whenever the book page parser learns to read more, so posts stored by an older version
  * are read again rather than waiting for their daily refresh.
  */
 export const abbParserVersion = 3
 
+/** Everything AudioBookBay publishes about one audiobook without signing in. */
 export const abbBookSchema = z.object({
   /** The parser version that read the post; posts stored before versions existed count as 1. */
   parser: z.number().default(1),
@@ -67,12 +67,12 @@ const slugPattern = /\/abss\/([^/?#]+)\/?/u
 
 const sizePattern = /^(.*\S)\s+([\d.,]+\s*[KMGT]Bs?)$/iu
 
-export function slugFromUrl(url: string) {
+function slugFromUrl(url: string) {
   return slugPattern.exec(url)?.[1] ?? null
 }
 
 function clean(text: string | undefined | null) {
-  const value = text?.replaceAll('\u00a0', ' ').replace(/\s+/gu, ' ').trim()
+  const value = text?.replace(/\s+/gu, ' ').trim()
 
   return value ? value : null
 }
@@ -90,7 +90,7 @@ export function splitTitle(value: string) {
 }
 
 /** "The Martian (Read by Wil Wheaton) [FIXED]" credits its narrator in the title itself. */
-export function narratorFromTitle(title: string) {
+function narratorFromTitle(title: string) {
   const credit = /\b(?:read|narrated|performed)\s+by\s+([^)\]]+)/iu.exec(title)?.[1]
 
   return clean(credit?.split(/\s+with\s+/iu)[0])

@@ -1,10 +1,10 @@
-export const locales = ['en', 'sv'] as const
+const locales = ['en', 'sv'] as const
 
-export type Locale = (typeof locales)[number]
+type Locale = (typeof locales)[number]
 
-export const sourceLocale: Locale = 'en'
+const sourceLocale: Locale = 'en'
 
-export const localeActivationStabilityMs = 250
+const localeActivationStabilityMs = 250
 
 export function resolveLocale(candidate: string | null | undefined): Locale {
   if (!candidate) {
@@ -16,7 +16,7 @@ export function resolveLocale(candidate: string | null | undefined): Locale {
   return language === 'sv' ? 'sv' : sourceLocale
 }
 
-export type StableLocaleActivation = {
+type StableLocaleActivation = {
   activate: (locale: Locale) => void
   candidate: Locale
   current: string

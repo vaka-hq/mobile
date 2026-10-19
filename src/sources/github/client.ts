@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { HttpError, request } from '@/lib/http'
 
 /** Where the app's releases are published. */
-export const releasesRepository = 'vaka-hq/mobile'
+const releasesRepository = 'vaka-hq/mobile'
 
 const assetSchema = z.object({
   name: z.string(),
@@ -44,8 +44,6 @@ const manifestSchema = z.object({
   versionCode: z.number().int().positive(),
   channel: z.enum(['stable', 'nightly']),
 })
-
-export type UpdateManifest = z.infer<typeof manifestSchema>
 
 async function readJson(url: string, headers: Record<string, string>, signal?: AbortSignal) {
   const { status, body } = await request(url, { headers, signal }, async (response) => ({

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { TorBoxFile } from './client'
 
-export const audioFormats = ['m4b', 'm4a', 'mp3'] as const
+const audioFormats = ['m4b', 'm4a', 'mp3'] as const
 
 export type AudioFormat = (typeof audioFormats)[number]
 

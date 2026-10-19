@@ -1,3 +1,4 @@
+import type { SQLiteDatabase } from 'expo-sqlite'
 import { z } from 'zod'
 import { type AbbBook, abbBookSchema } from '@/sources/audiobookbay/parse'
 import {
@@ -22,6 +23,7 @@ import {
   type WorkRecord,
   workIdOf,
 } from './model'
+import { readStored } from './request-cache'
 
 type BookRow = {
   id: string
@@ -78,17 +80,7 @@ type EntryRow = BookRow & {
 
 /** Cached JSON is re-validated on read; a stale or corrupt column is treated as missing. */
 function column<T extends z.ZodType>(value: string | null, schema: T): z.infer<T> | null {
-  if (value === null) {
-    return null
-  }
-
-  try {
-    const parsed = schema.safeParse(JSON.parse(value))
-
-    return parsed.success ? parsed.data : null
-  } catch {
-    return null
-  }
+  return value === null ? null : readStored(value, schema)
 }
 
 const matchState = z.enum(matchStates).catch('pending')
@@ -299,8 +291,12 @@ export async function getWork(id: string) {
 }
 
 /** Creates the book's row on first use, keeping Hardcover's details for the library. */
-async function ensureWork(id: string, hardcover: HardcoverWork | null) {
-  await database.runAsync(
+async function ensureWork(
+  id: string,
+  hardcover: HardcoverWork | null,
+  connection: SQLiteDatabase = database,
+) {
+  await connection.runAsync(
     `INSERT INTO works (id, hardcover_id, work, updated_at) VALUES (?, ?, ?, ?)
      ON CONFLICT (id) DO UPDATE SET work = coalesce(excluded.work, works.work),
      hardcover_id = coalesce(excluded.hardcover_id, works.hardcover_id),
@@ -375,7 +371,6 @@ export async function markPlayed(streamId: string) {
   )
 }
 
-/** Forgets a book with the progress and bookmarks of every stream of it. */
 /**
  * The works a book is kept under: its own and any upload's matched to the same Hardcover book,
  * which the listener may have played before the match. Removing the book removes them all.
@@ -511,10 +506,11 @@ type LibraryRow = EntryRow & {
 }
 
 /**
- * Books with the stream they are listened to from: the one played last, which can differ from the
- * source chosen on the book's page until the listener changes to it, else the chosen one.
+ * The library's books, the latest played or added first, with the stream they are listened to
+ * from: the one played last, which can differ from the source chosen on the book's page until the
+ * listener changes to it, else the chosen one.
  */
-async function libraryEntries(where: string, order: string, ...params: (string | number)[]) {
+export async function listLibrary() {
   const rows = await database.getAllAsync<LibraryRow>(
     `SELECT books.*, ${playbackColumns}, works.id AS w_id, works.hardcover_id AS w_hardcover_id,
      works.work AS w_work, works.stream_id AS w_stream_id, works.in_library AS w_in_library,
@@ -529,8 +525,7 @@ async function libraryEntries(where: string, order: string, ...params: (string |
         ORDER BY played.last_played_at DESC LIMIT 1),
        works.stream_id)
      LEFT JOIN playback ON playback.book_id = books.id
-     WHERE ${where} ORDER BY ${order}`,
-    ...params,
+     WHERE works.in_library = 1 ORDER BY coalesce(works.last_played_at, works.added_at) DESC`,
   )
 
   return rows.map((row): LibraryEntry => {
@@ -551,13 +546,6 @@ async function libraryEntries(where: string, order: string, ...params: (string |
       playback: book ? toPlaybackColumns(row) : null,
     }
   })
-}
-
-export function listLibrary() {
-  return libraryEntries(
-    'works.in_library = 1',
-    'coalesce(works.last_played_at, works.added_at) DESC',
-  )
 }
 
 /** The streams played most recently, for restoring the player after a cold start. */
@@ -737,8 +725,9 @@ export async function saveCachedResponse(key: string, value: string, expiresAt: 
 
 /**
  * Keeps the cache within bounds: answers expired for a month go, then the least recently used
- * until the rest fit the budget; and of the books and works kept only because they were browsed, the oldest
- * past a few hundred go. Books in the library, played, bookmarked or kept on the phone never do.
+ * until the rest fit the budget; and of the books and works kept only because they were browsed,
+ * the oldest past a few hundred go. Books in the library, played, bookmarked or kept on the phone
+ * never do.
  */
 export async function pruneCachedResponses() {
   const now = Date.now()
@@ -773,7 +762,7 @@ export async function pruneCachedResponses() {
 }
 
 /** A series whose books all belong in the library, with the books already added for it. */
-export type FollowedSeries = { id: number; name: string; knownBooks: number[]; addedAt: number }
+type FollowedSeries = { id: number; name: string; knownBooks: number[]; addedAt: number }
 
 type SeriesRow = { id: number; name: string; known_books: string; added_at: number }
 
@@ -843,8 +832,8 @@ const workStreams = `SELECT id FROM books WHERE id = (SELECT stream_id FROM work
 export async function markWorkFinished(id: string, hardcover: HardcoverWork | null) {
   const now = Date.now()
 
-  await ensureWork(id, hardcover)
   await database.withExclusiveTransactionAsync(async (txn) => {
+    await ensureWork(id, hardcover, txn)
     await txn.runAsync(
       `UPDATE works SET finished_at = ?, in_library = 1, added_at = coalesce(added_at, ?),
        updated_at = ? WHERE id = ?`,

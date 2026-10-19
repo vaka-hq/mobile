@@ -28,7 +28,7 @@ export const queryKeys = {
 }
 
 /** What changed: the library or a book's state, or only where listening stands. */
-export type LibraryChange = 'library' | 'listening'
+type LibraryChange = 'library' | 'listening'
 
 const changeListeners = new Set<(change: LibraryChange) => void>()
 

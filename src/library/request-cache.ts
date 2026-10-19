@@ -4,17 +4,19 @@ import type { z } from 'zod'
  * Where answers are kept; SQLite in the app, a map in tests. Expired rows read as missing to
  * `get`; `getStale` still reads them, for when a fresh answer cannot be had.
  */
-export type ResponseStore = {
+type ResponseStore = {
   get: (key: string) => Promise<string | null>
   getStale?: (key: string) => Promise<string | null>
   set: (key: string, value: string, expiresAt: number) => Promise<void>
   prune: () => Promise<void>
 }
 
-/** A stored answer read with `schema`; a row cut short or corrupted reads as missing. */
-function readStored<T extends z.ZodType>(text: string, schema: T) {
+/** Stored JSON read with `schema`; a value cut short, corrupted or of an old shape is null. */
+export function readStored<T extends z.ZodType>(text: string, schema: T): z.infer<T> | null {
   try {
-    return schema.safeParse(JSON.parse(text))
+    const parsed = schema.safeParse(JSON.parse(text))
+
+    return parsed.success ? parsed.data : null
   } catch {
     return null
   }
@@ -32,7 +34,7 @@ const pruneEvery = 25
  * Storing and trimming are best-effort: an answer loaded is returned even if keeping it fails.
  */
 export function createRequestCache(store: ResponseStore) {
-  let stored = 0
+  let saved = 0
 
   return async function cachedRequest<T extends z.ZodType>(
     key: string,
@@ -47,8 +49,8 @@ export function createRequestCache(store: ResponseStore) {
       if (stored !== null) {
         const parsed = readStored(stored, schema)
 
-        if (parsed?.success) {
-          return parsed.data
+        if (parsed !== null) {
+          return parsed
         }
       }
     }
@@ -61,18 +63,18 @@ export function createRequestCache(store: ResponseStore) {
       const stale = options.fresh ? null : await store.getStale?.(key).catch(() => null)
       const parsed = stale ? readStored(stale, schema) : null
 
-      if (parsed?.success) {
-        return parsed.data
+      if (parsed !== null) {
+        return parsed
       }
 
       throw error
     }
 
-    if (stored % pruneEvery === 0) {
+    if (saved % pruneEvery === 0) {
       await store.prune().catch(() => undefined)
     }
 
-    stored += 1
+    saved += 1
 
     await store.set(key, JSON.stringify(value), Date.now() + lifetimeMs).catch(() => undefined)
 

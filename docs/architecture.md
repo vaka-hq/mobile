@@ -174,6 +174,36 @@ answers name the problem: a rejected key, a missing `read:catalog` permission or
 Without a key the app works with AudioBookBay details. Hardcover's personal keys expire on the date
 chosen when creating them; replace the key in Settings when that happens.
 
+For Settings → Hardcover library the key also needs your library (`read:library` and
+`write:library`); `read:me:email` lets Settings show the account's email.
+
+## Hardcover library
+
+With Settings → Hardcover library on, the library follows your Hardcover shelves
+(`src/library/shelves.ts`). Hardcover is the source of truth, and nothing is ever deleted there.
+
+- **When:** at start, on returning to the app, ten seconds after the library changes (a book
+  added, played, paused, finished or removed) and every five minutes while listening. Each run reads
+  all the shelves in one request.
+- **Which side changed:** a baseline per book (`hardcover_shelf`) holds the shelf entry as the last
+  run left it. The pure planner (`src/library/shelf-sync.ts`, tested) compares the two: what changed
+  on Hardcover is applied here, even over listening done here since; what changed only here is sent
+  there. A book Hardcover first has keeps what Hardcover knows and gains what only this phone knew.
+- **Here from there:** shelved books (all but Ignored) come into the library; Read marks a book
+  finished; the open read's place moves listening, by share of the book when the recording and
+  Hardcover's edition differ in length. A book playing is left where the listener is; one open but
+  paused is moved in the player. A recording never played here starts at Hardcover's place. A book
+  taken off the shelves leaves the library, keeping its listening.
+- **There from here:** a book added here goes on the shelves as Want to Read, as Currently Reading
+  once played (with its place) or as Read once finished. Playing a book makes it Currently
+  Reading, playing a Read book again starts a new read, finishing it marks it Read, and listening
+  saves its place in the open read in the recording's own edition. Removing a book here changes
+  nothing there.
+- **How Hardcover keeps reads:** setting Currently Reading opens a read and setting Read finishes
+  it, so the app sets the status first and then only fills in the place, sending every field of the
+  read. Writes are paced under the 60-a-minute limit. A key for another account starts afresh, and
+  turning sync off forgets the baselines.
+
 ## Builds
 
 Every build is made locally; the app uses no Expo cloud services and has no over-the-air

@@ -68,10 +68,14 @@ function translate(path: string, dx: number, dy: number) {
 function numberPaths(seconds: number) {
   const glyphs = String(seconds)
     .split('')
-    .flatMap((digit) => {
+    .map((digit) => {
       const glyph = digitsByCharacter.get(digit)
 
-      return glyph ? [glyph] : []
+      if (!glyph) {
+        throw new Error(`No digit ${digit} is drawn for a skip of ${seconds} seconds`)
+      }
+
+      return glyph
     })
 
   const width = glyphs.reduce((sum, [w]) => sum + w, 0) + digitGap * (glyphs.length - 1)
@@ -103,11 +107,12 @@ function vector(pathData: string) {
 `
 }
 
+const directory = new URL('../assets/symbols/', import.meta.url)
+
 for (const [direction, arrow] of Object.entries(arrows)) {
   for (const seconds of intervals) {
     const name = `skip_${direction}_${seconds}`
     const pathData = [arrow, ...numberPaths(seconds)].join('')
-    const directory = new URL('../assets/symbols/', import.meta.url)
 
     await writeFile(new URL(`${name}.xml`, directory), vector(pathData))
     await writeFile(

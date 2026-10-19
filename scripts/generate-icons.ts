@@ -2,9 +2,10 @@
 // a midnight field, and writes every image made from it. Run with `vp run icons:generate`.
 //
 // Android only: the adaptive icon's field and mark as separate layers, a themed (monochrome)
-// layer, the flattened icon for older launchers, and the mark alone for the splash screen. The mark is drawn on the full 1024 canvas of an adaptive icon layer (108 dp),
-// inside its central safe zone. Keep `android.adaptiveIcon.backgroundColor` and the splash
-// screen's `backgroundColor` in `app.config.ts` at the colour this prints.
+// layer, the flattened icon for older launchers, and the mark alone for the splash screen. The
+// mark is drawn on the full 1024 canvas of an adaptive icon layer (108 dp), inside its central
+// safe zone. Keep `android.adaptiveIcon.backgroundColor` and the splash screen's
+// `backgroundColor` in `app.config.ts` at the colour this prints.
 import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'

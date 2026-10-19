@@ -1012,11 +1012,22 @@ export type NoticeProps = {
   message: string
   actionLabel?: string
   onAction?: () => void
+  /** Closes the notice with a button at its end, labelled `dismissLabel`. */
+  onDismiss?: () => void
+  dismissLabel?: string
   tone?: 'neutral' | 'error'
 }
 
 /** An inline message inside a screen, such as a failed request with its retry. */
-export function Notice({ glyph, message, actionLabel, onAction, tone = 'neutral' }: NoticeProps) {
+export function Notice({
+  glyph,
+  message,
+  actionLabel,
+  onAction,
+  onDismiss,
+  dismissLabel,
+  tone = 'neutral',
+}: NoticeProps) {
   const colors = useMaterialColors()
   const container = tone === 'error' ? colors.errorContainer : colors.surfaceContainerHigh
   const content = tone === 'error' ? colors.onErrorContainer : colors.onSurfaceVariant
@@ -1035,11 +1046,25 @@ export function Notice({ glyph, message, actionLabel, onAction, tone = 'neutral'
             {message}
           </Text>
         </ListItem.HeadlineContent>
-        {actionLabel && onAction ? (
+        {(actionLabel && onAction) || onDismiss ? (
           <ListItem.TrailingContent>
-            <TextButton onClick={onAction}>
-              <Text>{actionLabel}</Text>
-            </TextButton>
+            <Row verticalAlignment='center'>
+              {actionLabel && onAction ? (
+                <TextButton onClick={onAction}>
+                  <Text>{actionLabel}</Text>
+                </TextButton>
+              ) : null}
+              {onDismiss ? (
+                <IconButton onClick={onDismiss}>
+                  <Icon
+                    source={glyphs.close}
+                    size={24}
+                    tint={content}
+                    contentDescription={dismissLabel}
+                  />
+                </IconButton>
+              ) : null}
+            </Row>
           </ListItem.TrailingContent>
         ) : null}
       </ListItem>

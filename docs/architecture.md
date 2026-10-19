@@ -56,7 +56,9 @@ remembers the stream last chosen or played and opens with it.
    description and the audiobook edition are cached with the book. The edition is the one whose
    narrator matches the post (preferring its language, a cover and popularity), falling back to
    Hardcover's default audio edition.
-   With a Hardcover key, **Browse** finds books on Hardcover first. A book's page searches
+   With a Hardcover key, **Browse** finds books on Hardcover first; without one it finds uploads
+   and e-books, and a notice above the results, closed for good with its button, offers to add
+   one. A book's page searches
    AudioBookBay by title and author (the title alone when that finds little), keeps posts whose
    title contains the book's title and whose author matches, and opens up to 16 of them, three at
    a time, to read their narrators. Uploads are grouped by narrator under the matching Hardcover

@@ -21,7 +21,7 @@ import {
   useHardcoverSeriesSearch,
 } from '@/library/queries'
 import { useHardcoverKey } from '@/settings/hardcover-key'
-import { usePreferences } from '@/settings/preferences'
+import { setPreference, usePreferences } from '@/settings/preferences'
 import { type AbbCategorySlug, abbCategories } from '@/sources/audiobookbay/categories'
 import type { AbbFeed } from '@/sources/audiobookbay/client'
 import type { AbbListing } from '@/sources/audiobookbay/parse'
@@ -85,6 +85,36 @@ type PagedResults = {
 }
 
 /**
+ * Without a Hardcover key, a search finds only uploads and e-books, without book details: says so
+ * above the results, with the way to add one, until it is closed for good.
+ */
+function HardcoverNotice() {
+  const { t } = useLingui()
+  const router = useRouter()
+  const connected = Boolean(useHardcoverKey())
+  const { hardcoverNoticeDismissed } = usePreferences()
+
+  if (connected || hardcoverNoticeDismissed) {
+    return null
+  }
+
+  return (
+    <Notice
+      glyph='info'
+      message={t({
+        message:
+          'Add a Hardcover API key for a better search, with books and series, covers and details.',
+        comment: 'Browse notice when no Hardcover key is saved; Hardcover is a name',
+      })}
+      actionLabel={t({ message: 'Add key', comment: 'Browse notice button opening Settings' })}
+      onAction={() => router.navigate('/settings')}
+      dismissLabel={t({ message: 'Close', comment: 'Closes the Browse notice for good' })}
+      onDismiss={() => void setPreference('hardcoverNoticeDismissed', true)}
+    />
+  )
+}
+
+/**
  * Results that load page by page as the list reaches its end. Loading, a failure and finding
  * nothing each fill the whole body, centred; a later page failing says so at the list's foot.
  */
@@ -124,6 +154,7 @@ function PagedList({
       modifiers={[fillMaxSize()]}
       contentPadding={{ bottom: results.hasNextPage && !results.isFetchNextPageError ? 0 : 16 }}
     >
+      <HardcoverNotice />
       {children}
       {results.isFetchNextPageError ? (
         <Notice

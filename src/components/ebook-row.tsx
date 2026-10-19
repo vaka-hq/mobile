@@ -25,7 +25,7 @@ export function ebookSource(result: Pick<EbookResult, 'publisher' | 'extension' 
 }
 
 /** What sets a file apart from the book's other files: language, year, size and publisher. */
-export function ebookFacts(result: Pick<EbookResult, 'language' | 'year' | 'size' | 'publisher'>) {
+function ebookFacts(result: Pick<EbookResult, 'language' | 'year' | 'size' | 'publisher'>) {
   return [result.language, result.year, result.size, result.publisher].filter(Boolean).join(' · ')
 }
 
@@ -64,7 +64,6 @@ export function EbookResultRow({
   onPress,
 }: {
   result: EbookResult
-  /** The file the book is read in. */
   card?: CardPosition
   onPress: () => void
 }) {
@@ -100,8 +99,8 @@ export function EbookResultRow({
 }
 
 /**
- * Opens a file to read: at once when it is on the phone, else once it has been fetched into the
- * cache, provided the screen it was tapped on is still showing.
+ * Opens a file to read: at once when it is on the phone, else once it has been downloaded to stay,
+ * provided the screen it was tapped on is still showing.
  */
 export function useOpenEbook() {
   const router = useRouter()

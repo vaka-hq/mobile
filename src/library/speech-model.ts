@@ -1,5 +1,6 @@
 import { Directory, File, Paths } from 'expo-file-system'
 import { useSyncExternalStore } from 'react'
+import { stopIfAborted } from '@/lib/abort'
 import { getPreferences } from '@/settings/preferences'
 import { Speech } from '../../modules/platform'
 import { downloadResuming } from './resumable-download'
@@ -14,8 +15,8 @@ const modelName = 'vosk-model-small-en-us-0.15'
 
 const modelUrl = `https://alphacephei.com/vosk/models/${modelName}.zip`
 
-/** How large the download is, in bytes: offered in the setting, and how a complete one is known. */
-export const speechModelBytes = 41_205_931
+/** How large the download is, in bytes: for its progress, and how a complete one is known. */
+const speechModelBytes = 41_205_931
 
 export type SpeechModelState =
   | { status: 'missing' }
@@ -95,16 +96,25 @@ export function speechUnderstands(language: string | null | undefined) {
 
 let installing: Promise<void> | null = null
 
+/** Stops the install under way, as leaving the mode that uses the model does. */
+let stopInstall: AbortController | null = null
+
 /** Downloads and unpacks the model; a second call while one runs waits for it. */
 export function installSpeechModel() {
-  installing ??= install().finally(() => {
-    installing = null
-  })
+  if (!installing) {
+    const stop = new AbortController()
+
+    stopInstall = stop
+    installing = install(stop.signal).finally(() => {
+      installing = null
+      stopInstall = null
+    })
+  }
 
   return installing
 }
 
-async function install() {
+async function install(signal: AbortSignal) {
   if (!Speech) {
     set({ status: 'failed' })
     throw new Error('Speech recognition is not linked into this build')
@@ -123,31 +133,53 @@ async function install() {
 
     // What a failed attempt downloaded is kept, so choosing the mode again carries on from it.
     if (!download.exists || download.size < speechModelBytes) {
-      await downloadResuming(modelUrl, download, ({ bytesWritten, totalBytes }) => {
-        const now = Date.now()
+      await downloadResuming(
+        modelUrl,
+        download,
+        ({ bytesWritten, totalBytes }) => {
+          const now = Date.now()
 
-        if (now - lastUpdate > 300) {
-          lastUpdate = now
-          set({
-            status: 'downloading',
-            progress: bytesWritten / (totalBytes > 0 ? totalBytes : speechModelBytes),
-          })
-        }
-      })
+          if (!signal.aborted && now - lastUpdate > 300) {
+            lastUpdate = now
+            set({
+              status: 'downloading',
+              progress: bytesWritten / (totalBytes > 0 ? totalBytes : speechModelBytes),
+            })
+          }
+        },
+        signal,
+      )
     }
   } catch (error) {
-    set({ status: 'failed' })
+    // Stopped by leaving the mode, which takes what was downloaded with it.
+    if (signal.aborted) {
+      if (download.exists) {
+        download.delete()
+      }
+    } else {
+      set({ status: 'failed' })
+    }
+
     throw error
   }
 
-  // Unpacking takes a few seconds; the download is complete meanwhile.
-  set({ status: 'downloading', progress: 1 })
-
   try {
+    stopIfAborted(signal)
+    // Unpacking takes a few seconds; the download is complete meanwhile.
+    set({ status: 'downloading', progress: 1 })
     await Speech.installModel(download.uri, directory().uri)
+    stopIfAborted(signal)
     set({ status: 'ready' })
   } catch (error) {
-    set({ status: 'failed' })
+    // A model unpacked after the mode was left goes again.
+    if (signal.aborted) {
+      if (directory().exists) {
+        directory().delete()
+      }
+    } else {
+      set({ status: 'failed' })
+    }
+
     throw error
   } finally {
     if (download.exists) {
@@ -166,8 +198,10 @@ export function removeSpeechModel() {
     folder.delete()
   }
 
-  // A download cut short is kept to carry on from, unless the mode is left.
-  if (!installing && archive().exists) {
+  // An install under way stops and deletes what it brought; a download cut short earlier goes too.
+  if (stopInstall) {
+    stopInstall.abort()
+  } else if (archive().exists) {
     archive().delete()
   }
 

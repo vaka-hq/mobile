@@ -20,7 +20,7 @@ export class AnnasKeyError extends Error {
 class AnnasRefusal extends HttpError {}
 
 const fastDownload = z.object({
-  download_url: z.string().nullable(),
+  download_url: z.string().nullish(),
   error: z.string().nullish(),
 })
 
@@ -55,11 +55,16 @@ export async function annasDownload(
     throw new AnnasKeyError()
   }
 
-  if (!parsed.data.download_url) {
-    throw new AnnasRefusal(parsed.data.error ?? `Anna’s Archive answered ${status}`, status)
+  if (parsed.data.download_url) {
+    return { url: parsed.data.download_url.replace(/^http:/iu, 'https:') }
   }
 
-  return { url: parsed.data.download_url }
+  // Only a refusal in words is the API's own; anything else says nothing about the key.
+  if (parsed.data.error) {
+    throw new AnnasRefusal(parsed.data.error, status)
+  }
+
+  throw new HttpError(`Anna’s Archive answered ${status}`, status)
 }
 
 /**

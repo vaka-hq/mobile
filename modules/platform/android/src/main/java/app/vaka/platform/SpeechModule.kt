@@ -43,6 +43,8 @@ data class SnippetRequest(
   val duration: Double = 20.0,
   /** The unpacked model's directory. */
   val model: String = "",
+  /** Names the stretch for `cancelTranscription`. */
+  val id: String = "",
 )
 
 /** A word heard, with when it starts and ends in the file, in seconds. */
@@ -62,6 +64,11 @@ class AudioError(message: String) : JavaScriptThrowable(message) {
     get() = "ERR_SPEECH_AUDIO"
 }
 
+class TranscriptionCancelled : JavaScriptThrowable("The transcription was cancelled") {
+  override val code: String
+    get() = "ERR_SPEECH_CANCELLED"
+}
+
 /**
  * Turns a short stretch of an audiobook into words, offline, to find where listening and reading
  * meet. The audio is read from the file or stream directly, never from the microphone, and only
@@ -70,6 +77,9 @@ class AudioError(message: String) : JavaScriptThrowable(message) {
 @ExpoModule("Speech")
 class SpeechModule : Module() {
   private var loaded: Pair<String, Model>? = null
+
+  /** Stretches JavaScript gave up on, by ID, which stop at the next chunk of audio. */
+  private val cancelled = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
   /**
    * Unpacks a downloaded model archive into `directory`, dropping the archive's top folder, and
@@ -116,9 +126,10 @@ class SpeechModule : Module() {
    * same however long the stretch.
    */
   @JS
-  suspend fun transcribe(request: SnippetRequest): Transcript = withContext(Dispatchers.Default) {
+  suspend fun transcribe(request: SnippetRequest): Transcript = withContext(Dispatchers.IO) {
     val duration = request.duration.coerceIn(1.0, longestSnippet)
     val words = mutableListOf<HeardWord>()
+    val stopped = { request.id.isNotEmpty() && request.id in cancelled }
 
     withModel(pathOf(request.model)) { model ->
       Recognizer(model, speechRate.toFloat()).use { recognizer ->
@@ -137,14 +148,24 @@ class SpeechModule : Module() {
           }
         }
 
-        decode(request.source, request.headers, request.start, duration) { samples, size ->
-          if (recognizer.acceptWaveForm(samples, size)) collect(recognizer.result)
+        try {
+          decode(request.source, request.headers, request.start, duration, stopped) { samples, size ->
+            if (recognizer.acceptWaveForm(samples, size)) collect(recognizer.result)
+          }
+        } finally {
+          cancelled.remove(request.id)
         }
         collect(recognizer.finalResult)
       }
     }
 
     Transcript(words)
+  }
+
+  /** Stops the stretch named `id` part way, which then rejects with `ERR_SPEECH_CANCELLED`. */
+  @JS
+  fun cancelTranscription(id: String) {
+    cancelled.add(id)
   }
 
   /** Lets go of the model in memory, such as when it is deleted. */
@@ -179,19 +200,13 @@ class SpeechModule : Module() {
    * minute after its last use, for the next stretch of the same search, and is then let go.
    */
   private fun <T> withModel(path: String, block: (Model) -> T): T {
-    val model = synchronized(this) {
+    synchronized(this) {
       main.removeCallbacks(idleRelease)
       releaseWhenDone = false
       users++
-      try {
-        modelAt(path)
-      } catch (error: Throwable) {
-        users--
-        throw error
-      }
     }
     try {
-      return block(model)
+      return block(modelAt(path))
     } finally {
       synchronized(this) {
         users--
@@ -202,31 +217,42 @@ class SpeechModule : Module() {
     }
   }
 
+  /**
+   * The model at `path`, loaded once. Loading takes seconds, so it happens outside the lock, and
+   * letting go of the model meanwhile never waits on it.
+   */
   private fun modelAt(path: String): Model {
-    loaded?.takeIf { it.first == path }?.let { return it.second }
+    synchronized(this) { loaded?.takeIf { it.first == path }?.let { return it.second } }
     if (!File(path).isDirectory) throw ModelError("The speech model is not installed")
     LibVosk.setLogLevel(LogLevel.WARNINGS)
-    loaded?.second?.close()
-    loaded = null
     val model = try {
       Model(path)
     } catch (error: Exception) {
       throw ModelError("The speech model could not be loaded")
     }
-    loaded = path to model
+    synchronized(this) {
+      // Another stretch loaded the same model meanwhile: that one is kept.
+      loaded?.takeIf { it.first == path }?.let {
+        model.close()
+        return it.second
+      }
+      loaded?.second?.close()
+      loaded = path to model
+    }
     return model
   }
 
   /**
    * Decodes `duration` seconds from `start`, mono at the model's rate, handing it to `sink` in
    * short chunks as it goes. The file is read from the nearest point it can seek to before `start`;
-   * what comes before `start` is decoded and dropped.
+   * what comes before `start` is decoded and dropped. It gives up, throwing, once `stopped` says so.
    */
   private fun decode(
     source: String,
     headers: Map<String, String>,
     start: Double,
     duration: Double,
+    stopped: () -> Boolean,
     sink: (ShortArray, Int) -> Unit
   ) {
     val extractor = MediaExtractor()
@@ -253,10 +279,6 @@ class SpeechModule : Module() {
       val endUs = startUs + (duration * 1_000_000).toLong()
       extractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
 
-      val codec = MediaCodec.createDecoderByType(mime)
-      codec.configure(format, null, null, 0)
-      codec.start()
-
       var rate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
       var channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
       var float = false
@@ -265,8 +287,12 @@ class SpeechModule : Module() {
       var inputDone = false
       var outputDone = false
 
+      val codec = MediaCodec.createDecoderByType(mime)
       try {
+        codec.configure(format, null, null, 0)
+        codec.start()
         while (!outputDone) {
+          if (stopped()) throw TranscriptionCancelled()
           if (!inputDone) {
             val inputIndex = codec.dequeueInputBuffer(10_000)
             if (inputIndex >= 0) {
@@ -316,7 +342,8 @@ class SpeechModule : Module() {
         }
         resampler?.flush()
       } finally {
-        codec.stop()
+        // Stopping throws for a codec that never started or that failed; it is released anyway.
+        runCatching { codec.stop() }
         codec.release()
       }
     } finally {

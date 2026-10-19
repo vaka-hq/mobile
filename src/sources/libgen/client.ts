@@ -74,7 +74,8 @@ export async function libgenDownload(baseUrl: string, md5: string, signal?: Abor
     throw new HttpError('Library Genesis has no download for this book', null)
   }
 
-  const absolute = (path: string) => new URL(path, `${baseUrl}/`).toString()
+  // Over HTTPS, which release builds require, should the page link to a plain HTTP address.
+  const absolute = (path: string) => new URL(path, `${baseUrl}/`).href.replace(/^http:/u, 'https:')
 
   return {
     url: absolute(mirror.download),

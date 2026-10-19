@@ -11,8 +11,9 @@ import {
   useDeleteBookmark,
 } from '@/library/queries'
 import { bookPosition, chapterEnd, chapterIndexAt } from '@/library/timeline'
+import { getState } from '@/player/controller'
 import { playFrom } from '@/player/navigation'
-import { usePlayer } from '@/player/use-player'
+import { usePlayerValue } from '@/player/use-player'
 import { TextDialog } from '@/ui/dialogs'
 import { useErrorText } from '@/ui/errors'
 import { clock } from '@/ui/format'
@@ -21,38 +22,41 @@ import { CardItem, Crossfade, Empty } from '@/ui/primitives'
 import { Action } from '@/ui/screen'
 import { Sheet, SheetList, useOpenSheetBody } from '@/ui/sheets'
 
-export type BookSheetProps = {
+type BookSheetProps = {
   /** The stream whose chapters or bookmarks are listed. */
   bookId: string
   onDismiss: () => void
-  /** Runs once playback has moved to the chosen place, such as opening the full player. */
-  onPlay?: () => void
 }
 
-/** The book as the player knows it when it is playing, else as stored. */
+/**
+ * The book as the player knows it when it is playing, else as stored. Only the book is read from
+ * the player, not its position, which changes several times a second.
+ */
 function useShownBook(bookId: string) {
   const book = useBook(bookId)
-  const player = usePlayer()
-  const current = player.book?.id === bookId
-  const data = current && player.book ? player.book : book.data
+  const playing = usePlayerValue((state) => (state.book?.id === bookId ? state.book : null))
+  const data = playing ?? book.data
 
   return {
     data,
-    current,
-    player,
+    current: playing !== null,
     chapters: data?.chapters ?? [],
     durations: data?.durations ?? data?.tracks?.map(() => null) ?? [],
   }
 }
 
 /** The chapter list in a sheet, opened at the chapter playing; choosing one plays from it. */
-export function ChaptersSheet({ bookId, onDismiss, onPlay }: BookSheetProps) {
+export function ChaptersSheet({ bookId, onDismiss }: BookSheetProps) {
   const { t } = useLingui()
   const errorText = useErrorText()
   const labels = useLabels()
   const { showFeedback } = useFeedback()
-  const { data, current, player, chapters, durations } = useShownBook(bookId)
-  const active = current ? chapterIndexAt(chapters, player.track, player.position) : -1
+  const { data, current, chapters, durations } = useShownBook(bookId)
+
+  // The chapter playing, which changes far less often than the position it is found from.
+  const active = usePlayerValue((state) =>
+    current ? chapterIndexAt(chapters, state.track, state.position) : -1,
+  )
 
   return (
     <Sheet
@@ -85,9 +89,9 @@ export function ChaptersSheet({ bookId, onDismiss, onPlay }: BookSheetProps) {
                   detail={end !== null ? clock(end - chapter.start) : null}
                   onPress={() => {
                     close()
-                    playFrom(bookId, chapter.track, chapter.start)
-                      .then(onPlay)
-                      .catch((error: Error) => showFeedback(errorText(error)))
+                    playFrom(bookId, chapter.track, chapter.start).catch((error: Error) =>
+                      showFeedback(errorText(error)),
+                    )
                   }}
                 />
               )
@@ -100,7 +104,7 @@ export function ChaptersSheet({ bookId, onDismiss, onPlay }: BookSheetProps) {
 }
 
 /** Saved places in a book, with adding one at the current position while it plays. */
-export function BookmarksSheet({ bookId, onDismiss, onPlay }: BookSheetProps) {
+export function BookmarksSheet({ bookId, onDismiss }: BookSheetProps) {
   const { t, i18n } = useLingui()
   const errorText = useErrorText()
   const labels = useLabels()
@@ -111,7 +115,7 @@ export function BookmarksSheet({ bookId, onDismiss, onPlay }: BookSheetProps) {
   const bookmarkNote = useBookmarkNote(bookId)
   // The bookmark whose note is being written.
   const [noting, setNoting] = useState<Bookmark | null>(null)
-  const { current, player, chapters, durations } = useShownBook(bookId)
+  const { current, chapters, durations } = useShownBook(bookId)
   const list = bookmarks.data ?? []
   // What is visible of the sheet below its header when it opens, for centring the empty state.
   const openBody = useOpenSheetBody()
@@ -127,7 +131,14 @@ export function BookmarksSheet({ bookId, onDismiss, onPlay }: BookSheetProps) {
               message: 'Add bookmark',
               comment: 'Adds a bookmark at the current position',
             })}
-            onPress={() => addBookmark.mutate({ track: player.track, position: player.position })}
+            onPress={() => {
+              const { track, position } = getState()
+
+              addBookmark.mutate(
+                { track, position },
+                { onError: (error) => showFeedback(errorText(error)) },
+              )
+            }}
           />
         ) : null
       }
@@ -176,15 +187,19 @@ export function BookmarksSheet({ bookId, onDismiss, onPlay }: BookSheetProps) {
                           <Action
                             glyph='delete'
                             label={t({ message: 'Delete bookmark', comment: 'Removes a bookmark' })}
-                            onPress={() => deleteBookmark.mutate(bookmark.id)}
+                            onPress={() =>
+                              deleteBookmark.mutate(bookmark.id, {
+                                onError: (error) => showFeedback(errorText(error)),
+                              })
+                            }
                           />
                         </Row>
                       }
                       onPress={() => {
                         close()
-                        playFrom(bookId, bookmark.track, bookmark.position)
-                          .then(onPlay)
-                          .catch((error: Error) => showFeedback(errorText(error)))
+                        playFrom(bookId, bookmark.track, bookmark.position).catch((error: Error) =>
+                          showFeedback(errorText(error)),
+                        )
                       }}
                     />
                   )

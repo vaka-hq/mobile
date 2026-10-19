@@ -11,7 +11,7 @@ export const syncSourceIds = ['hardcover'] as const
 
 export type SyncSourceId = (typeof syncSourceIds)[number]
 
-/** Android's player accepts rates up to 2×. */
+/** The fastest the player goes; expo-audio is patched to play up to it, past its own 2×. */
 export const maxPlaybackSpeed = 3
 
 export const playbackSpeeds = [0.75, 0.9, 1, 1.1, 1.2, 1.25, 1.3, 1.5, 1.75, 2, 2.5, 3] as const
@@ -81,7 +81,7 @@ const preferencesSchema = z.object({
   updateDeclined: z.number().catch(0),
 })
 
-export type Preferences = z.infer<typeof preferencesSchema>
+type Preferences = z.infer<typeof preferencesSchema>
 
 type PreferenceKey = keyof Preferences
 
@@ -126,6 +126,15 @@ export function usePreferences() {
   return useSyncExternalStore(subscribe, getPreferences)
 }
 
+function store<K extends PreferenceKey>(key: K, value: Preferences[K]) {
+  return database.runAsync(
+    `INSERT INTO settings (key, value) VALUES (?, ?)
+     ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+    key,
+    JSON.stringify(value),
+  )
+}
+
 export async function setPreference<K extends PreferenceKey>(key: K, value: Preferences[K]) {
   preferences = { ...preferences, [key]: value }
 
@@ -133,12 +142,7 @@ export async function setPreference<K extends PreferenceKey>(key: K, value: Pref
     listener()
   }
 
-  await database.runAsync(
-    `INSERT INTO settings (key, value) VALUES (?, ?)
-     ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
-    key,
-    JSON.stringify(value),
-  )
+  await store(key, value)
 }
 
 /** The reader's display settings, which the display panel can put back as they started. */
@@ -183,12 +187,7 @@ export async function resetReaderPreferences() {
   }
 
   for (const key of changed) {
-    await database.runAsync(
-      `INSERT INTO settings (key, value) VALUES (?, ?)
-       ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
-      key,
-      JSON.stringify(readerDefaults[key]),
-    )
+    await store(key, readerDefaults[key])
   }
 }
 

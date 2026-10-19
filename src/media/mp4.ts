@@ -86,7 +86,8 @@ function movieDuration(bytes: Uint8Array) {
   const timescale = version === 1 ? uint32(bytes, 20) : uint32(bytes, 12)
   const duration = version === 1 ? uint64(bytes, 24) : uint32(bytes, 16)
 
-  return timescale > 0 ? duration / timescale : null
+  // A fragmented file leaves it 0, which is not known rather than empty.
+  return timescale > 0 && duration > 0 ? duration / timescale : null
 }
 
 /** Nero chapters: a flat list of 100ns start times and titles in `moov/udta/chpl`. */
@@ -154,6 +155,17 @@ type SampleTables = {
   offsets: number[]
 }
 
+/** A chapter track holds one sample per chapter, so a count past this is a corrupt table. */
+const maxSamples = 10_000
+
+/**
+ * The entry count of a table whose `size`-byte entries start at `start`, never more than its bytes
+ * hold, so a corrupt count cannot run a loop away.
+ */
+function entryCount(table: Uint8Array, start: number, size: number) {
+  return Math.min(uint32(table, start - 4), Math.floor((table.length - start) / size))
+}
+
 /** Sample start offsets from the chunk tables, as a player would locate them. */
 export function sampleLayout(
   stts: Uint8Array,
@@ -161,10 +173,12 @@ export function sampleLayout(
   stsc: Uint8Array,
   chunkOffsets: number[],
 ): SampleTables {
+  const uniformSize = uint32(stsz, 4)
+  const sampleCount = Math.min(uint32(stsz, 8), maxSamples)
   const durations: number[] = []
 
-  for (let entry = 0, offset = 8; entry < uint32(stts, 4); entry += 1, offset += 8) {
-    const count = uint32(stts, offset)
+  for (let entry = 0, offset = 8; entry < entryCount(stts, 8, 8); entry += 1, offset += 8) {
+    const count = Math.min(uint32(stts, offset), sampleCount - durations.length)
     const delta = uint32(stts, offset + 4)
 
     for (let sample = 0; sample < count; sample += 1) {
@@ -172,8 +186,6 @@ export function sampleLayout(
     }
   }
 
-  const uniformSize = uint32(stsz, 4)
-  const sampleCount = uint32(stsz, 8)
   const sizes: number[] = []
 
   for (let sample = 0; sample < sampleCount; sample += 1) {
@@ -182,7 +194,7 @@ export function sampleLayout(
 
   const runs: { firstChunk: number; samplesPerChunk: number }[] = []
 
-  for (let entry = 0, offset = 8; entry < uint32(stsc, 4); entry += 1, offset += 12) {
+  for (let entry = 0, offset = 8; entry < entryCount(stsc, 8, 12); entry += 1, offset += 12) {
     runs.push({ firstChunk: uint32(stsc, offset), samplesPerChunk: uint32(stsc, offset + 4) })
   }
 
@@ -246,11 +258,11 @@ async function quickTimeChapters(source: ByteSource, track: Track) {
   const chunkOffsets: number[] = []
 
   if (co64) {
-    for (let index = 0; index < uint32(co64, 4); index += 1) {
+    for (let index = 0; index < Math.min(entryCount(co64, 8, 8), maxSamples); index += 1) {
       chunkOffsets.push(uint64(co64, 8 + index * 8))
     }
   } else if (stco) {
-    for (let index = 0; index < uint32(stco, 4); index += 1) {
+    for (let index = 0; index < Math.min(entryCount(stco, 8, 4), maxSamples); index += 1) {
       chunkOffsets.push(uint32(stco, 8 + index * 4))
     }
   }

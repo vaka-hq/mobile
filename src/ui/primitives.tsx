@@ -1,7 +1,14 @@
 import { useLingui } from '@lingui/react/macro'
-import { type ReactNode, type Ref, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import {
-  alpha,
+  type ComponentProps,
+  type ReactNode,
+  type Ref,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react'
+import {
   animateContentSize,
   animated,
   background,
@@ -27,6 +34,7 @@ import {
   Box,
   Button,
   Card,
+  CircularProgressIndicator,
   Column,
   EnterTransition,
   ExitTransition,
@@ -41,6 +49,7 @@ import {
   ListItem,
   LoadingIndicator,
   Row,
+  Slider,
   Switch,
   Text,
   TextButton,
@@ -58,13 +67,12 @@ import {
   FitColumn,
   GatedList,
   HeaderField,
-  StepDots as NativeStepDots,
   TopAppBar,
   ViewportBox,
 } from '../../modules/ui'
 import { type Glyph, glyphs, skipGlyph } from './glyphs'
 
-export { PlayerFade, PlayPauseButton } from '../../modules/ui'
+export { PlayerFade, PlayPauseButton, StepDots } from '../../modules/ui'
 
 /** A cover image with what the source knows about it before it loads. */
 export type CoverArt = {
@@ -134,7 +142,6 @@ export function Cover({ uri, color, aspect, dimension, description, sharedKey, f
   )
 }
 
-/** A vertically scrolling list owning the screen body; every child is one lazy item. */
 export type ListProps = {
   children: ReactNode
   bottomPadding?: number
@@ -154,9 +161,9 @@ export type ListProps = {
 }
 
 /** A grouped list's padding above its first item, and the space between its items, in dp. */
-export const groupedListTop = 8
+const groupedListTop = 8
 
-export const groupedListGap = 20
+const groupedListGap = 20
 
 /** A vertically scrolling list owning the screen body; every child is one lazy item. */
 export function List({
@@ -172,18 +179,17 @@ export function List({
     return <LoadingPage />
   }
 
+  const contentPadding = grouped
+    ? { start: 16, end: 16, top: groupedListTop, bottom: Math.max(bottomPadding, 32) }
+    : cards
+      ? { start: 16, end: 16, top: 8, bottom: bottomPadding }
+      : { top: 4, bottom: bottomPadding }
+
+  const spacing = grouped ? groupedListGap : cards ? 2 : 0
+
   if (underHeader) {
     return (
-      <GatedList
-        contentPadding={
-          grouped
-            ? { start: 16, end: 16, top: groupedListTop, bottom: Math.max(bottomPadding, 32) }
-            : cards
-              ? { start: 16, end: 16, top: 8, bottom: bottomPadding }
-              : { top: 4, bottom: bottomPadding }
-        }
-        spacing={grouped ? groupedListGap : cards ? 2 : 0}
-      >
+      <GatedList contentPadding={contentPadding} spacing={spacing}>
         {children}
       </GatedList>
     )
@@ -192,16 +198,8 @@ export function List({
   const list = (
     <LazyColumn
       modifiers={[fillMaxSize()]}
-      contentPadding={
-        grouped
-          ? { start: 16, end: 16, top: groupedListTop, bottom: Math.max(bottomPadding, 32) }
-          : cards
-            ? { start: 16, end: 16, top: 8, bottom: bottomPadding }
-            : { top: 4, bottom: bottomPadding }
-      }
-      verticalArrangement={
-        grouped ? { spacedBy: groupedListGap } : cards ? { spacedBy: 2 } : undefined
-      }
+      contentPadding={contentPadding}
+      verticalArrangement={spacing > 0 ? { spacedBy: spacing } : undefined}
     >
       {children}
     </LazyColumn>
@@ -229,10 +227,7 @@ export type GroupRow = {
   /** One short line; rows without it stay single-line with the glyph centred. */
   value?: string
   glyph?: Glyph
-  /**
-   * A small mark after the text, such as a download already cached; `warning` draws it in red.
-   * With `drillIn` it sits before the chevron.
-   */
+  /** A small mark after the text, such as a download already cached; `warning` draws it in red. */
   badge?: { glyph: Glyph; description: string; warning?: boolean }
   /** The chosen row of a single-choice group, drawn in the secondary container colour. */
   selected?: boolean
@@ -250,10 +245,8 @@ export type GroupRow = {
   toggleHidden?: boolean
   /** Something about the row is still being found out: a small spinner at its end. */
   pending?: boolean
-  /** Shown faded and not tappable, such as a choice that is still being checked. */
-  disabled?: boolean
   onPress?: () => void
-  /** Held down, such as to show more about the row; works while disabled too. */
+  /** Held down, such as to show more about the row. */
   onLongPress?: () => void
 }
 
@@ -277,18 +270,13 @@ function cardCorners({ index, count, joinedAbove = false }: CardPosition) {
   })
 }
 
-/** Material's opacity for disabled content. */
-const disabledAlpha = 0.38
-
-/** A group row's tap and hold; a disabled row only answers the hold. */
+/** A group row's tap and hold. */
 function rowGestures(row: GroupRow) {
-  const onClick = row.disabled ? undefined : row.onPress
-
   if (row.onLongPress) {
-    return [combinedClickable({ onClick, onLongClick: row.onLongPress })]
+    return [combinedClickable({ onClick: row.onPress, onLongClick: row.onLongPress })]
   }
 
-  return onClick ? [clickable(onClick)] : []
+  return row.onPress ? [clickable(row.onPress)] : []
 }
 
 function GroupTitle({ title }: { title: string }) {
@@ -368,41 +356,16 @@ export function Group({
               ) : null}
               <ListItem.HeadlineContent>
                 {/* Two lines at most, so a long name such as a whole cast never grows the card. */}
-                <Text
-                  maxLines={2}
-                  overflow='ellipsis'
-                  modifiers={row.disabled ? [alpha(disabledAlpha)] : []}
-                >
+                <Text maxLines={2} overflow='ellipsis'>
                   {row.label}
                 </Text>
               </ListItem.HeadlineContent>
               {row.value ? (
                 <ListItem.SupportingContent>
-                  <Text
-                    color={colors.onSurfaceVariant}
-                    maxLines={1}
-                    overflow='ellipsis'
-                    modifiers={row.disabled ? [alpha(disabledAlpha)] : []}
-                  >
+                  <Text color={colors.onSurfaceVariant} maxLines={1} overflow='ellipsis'>
                     {row.value}
                   </Text>
                 </ListItem.SupportingContent>
-              ) : null}
-              {row.drillIn && !row.action ? (
-                <ListItem.TrailingContent>
-                  {/* A badge sits before the chevron, such as a recording kept on the phone. */}
-                  <Row verticalAlignment='center' horizontalArrangement={{ spacedBy: 8 }}>
-                    {row.badge ? (
-                      <Icon
-                        source={glyphs[row.badge.glyph]}
-                        size={20}
-                        tint={row.badge.warning ? colors.error : colors.primary}
-                        contentDescription={row.badge.description}
-                      />
-                    ) : null}
-                    <Icon source={glyphs.drillIn} size={24} tint={colors.onSurfaceVariant} />
-                  </Row>
-                </ListItem.TrailingContent>
               ) : null}
               {row.toggle !== undefined ? (
                 <ListItem.TrailingContent>
@@ -413,7 +376,6 @@ export function Group({
                   >
                     <Switch
                       value={row.toggle}
-                      enabled={!row.disabled}
                       onCheckedChange={() => (row.onToggle ?? row.onPress)?.()}
                     />
                   </AnimatedVisibility>
@@ -434,7 +396,11 @@ export function Group({
                     />
                   </IconButton>
                 </ListItem.TrailingContent>
-              ) : row.badge && !row.drillIn ? (
+              ) : row.drillIn ? (
+                <ListItem.TrailingContent>
+                  <Icon source={glyphs.drillIn} size={24} tint={colors.onSurfaceVariant} />
+                </ListItem.TrailingContent>
+              ) : row.badge ? (
                 <ListItem.TrailingContent>
                   <Icon
                     source={glyphs[row.badge.glyph]}
@@ -621,16 +587,95 @@ function RowButton({
 }
 
 /** One of the app's glyphs in the colour of the slot it sits in, such as a card's trailing mark. */
-export function GlyphIcon({ glyph, size: dimension = 24 }: { glyph: Glyph; size?: number }) {
-  return <Icon source={glyphs[glyph]} size={dimension} />
+export function GlyphIcon({ glyph, description }: { glyph: Glyph; description?: string }) {
+  return <Icon source={glyphs[glyph]} size={24} contentDescription={description} />
+}
+
+export type ToneTextProps = Omit<ComponentProps<typeof Text>, 'color'> & {
+  /**
+   * Supporting text, such as an author under a title, or text that stands out in the accent
+   * colour, such as the chapter playing; without it, the colour of the slot it sits in.
+   */
+  tone?: 'secondary' | 'accent'
+}
+
+/** Text in one of the app's tones rather than a named colour. */
+export function ToneText({ tone, ...props }: ToneTextProps) {
+  const colors = useMaterialColors()
+
+  return (
+    <Text
+      {...props}
+      color={
+        tone === 'secondary'
+          ? colors.onSurfaceVariant
+          : tone === 'accent'
+            ? colors.primary
+            : undefined
+      }
+    />
+  )
 }
 
 /**
- * Which step of a short sequence is showing: a dot for each, the current one a long pill in the
- * primary colour that glides onto the next dot, or back, as the step changes.
+ * A short status beside its glyph, such as whether a book can be streamed: a small spinner in the
+ * glyph's place while it is still being found out, and the glyph in red for a warning.
  */
-export function StepDots({ count, current }: { count: number; current: number }) {
-  return <NativeStepDots count={count} current={current} />
+export function StatusLine({
+  glyph,
+  message,
+  pending = false,
+  warning = false,
+}: {
+  glyph: Glyph
+  message: string
+  pending?: boolean
+  warning?: boolean
+}) {
+  const colors = useMaterialColors()
+
+  return (
+    <Row verticalAlignment='center' horizontalArrangement={{ spacedBy: 12 }}>
+      <Box contentAlignment='center' modifiers={[size(24, 24)]}>
+        {pending ? (
+          <CircularProgressIndicator strokeWidth={2} modifiers={[size(18, 18)]} />
+        ) : (
+          <Icon
+            source={glyphs[glyph]}
+            size={20}
+            tint={warning ? colors.error : colors.onSurfaceVariant}
+          />
+        )}
+      </Box>
+      <Text
+        color={colors.onSurfaceVariant}
+        style={{ typography: 'bodyMedium' }}
+        modifiers={[weight(1)]}
+      >
+        {message}
+      </Text>
+    </Row>
+  )
+}
+
+/** A filled button as wide as its column, with a glyph before its label. */
+export function WideButton({
+  glyph,
+  label,
+  enabled = true,
+  onPress,
+}: {
+  glyph: Glyph
+  label: string
+  enabled?: boolean
+  onPress: () => void
+}) {
+  return (
+    <Button onClick={onPress} enabled={enabled} modifiers={[fillMaxWidth()]}>
+      <Icon source={glyphs[glyph]} size={20} />
+      <Text modifiers={[padding(8, 0, 0, 0)]}>{label}</Text>
+    </Button>
+  )
 }
 
 /** The head of a setup step: its icon in a tonal circle, its title and a short line under it. */
@@ -793,13 +838,11 @@ export function ExpandableTextCard({
   title,
   summary,
   text,
-  collapsedLines = 6,
 }: {
   title?: string
   /** A short opening shown on its own until the card is expanded, such as a book's headline. */
   summary?: string | null
   text: string
-  collapsedLines?: number
 }) {
   const colors = useMaterialColors()
   const [expanded, setExpanded] = useState(false)
@@ -825,7 +868,7 @@ export function ExpandableTextCard({
         ) : null}
         {!summary || expanded ? (
           <Text
-            maxLines={expanded || !expandable ? undefined : collapsedLines}
+            maxLines={expanded || !expandable ? undefined : 6}
             overflow='ellipsis'
             style={{ typography: 'bodyMedium' }}
             modifiers={[fillMaxWidth()]}
@@ -927,11 +970,10 @@ export type InfoRowProps = {
   value: string
   glyph?: Glyph
   onPress?: () => void
-  trailing?: ReactNode
 }
 
-/** A label over its value, optionally tappable, for settings and book facts. */
-export function InfoRow({ label, value, glyph, onPress, trailing }: InfoRowProps) {
+/** A label over its value, optionally tappable, such as the match picker's “None of these”. */
+export function InfoRow({ label, value, glyph, onPress }: InfoRowProps) {
   const colors = useMaterialColors()
 
   return (
@@ -950,7 +992,6 @@ export function InfoRow({ label, value, glyph, onPress, trailing }: InfoRowProps
       <ListItem.SupportingContent>
         <Text color={colors.onSurfaceVariant}>{value}</Text>
       </ListItem.SupportingContent>
-      {trailing ? <ListItem.TrailingContent>{trailing}</ListItem.TrailingContent> : null}
     </ListItem>
   )
 }
@@ -1324,7 +1365,7 @@ export function SearchField({
         keyboardActions={{
           onSearch: (value) => {
             onSubmit?.(value)
-            void field.current?.blur()
+            void blur()
           },
         }}
         colors={{
@@ -1427,21 +1468,122 @@ export function SearchField({
   )
 }
 
-export type SkipIconProps = {
+export type SkipButtonProps = {
   direction: 'back' | 'forward'
   seconds: number
-  /** The icon's size in dp. */
-  dimension: number
   description: string
+  /** The mini player's smaller, tonal button; otherwise the full player's plain one. */
+  compact?: boolean
+  onPress: () => void
 }
 
-/** The skip control's icon: a circular arrow with the interval in its middle, as players show it. */
-export function SkipIcon({ direction, seconds, dimension, description }: SkipIconProps) {
-  return (
+/**
+ * The skip control: a circular arrow with the interval in its middle, as players show it, jumping
+ * back or forward by that interval.
+ */
+export function SkipButton({
+  direction,
+  seconds,
+  description,
+  compact = false,
+  onPress,
+}: SkipButtonProps) {
+  const icon = (
     <Icon
       source={glyphs[skipGlyph(direction, seconds)]}
-      size={dimension}
+      size={compact ? 22 : 32}
       contentDescription={description}
+    />
+  )
+
+  return compact ? (
+    <FilledTonalIconButton onClick={onPress} modifiers={[size(40, 40)]}>
+      {icon}
+    </FilledTonalIconButton>
+  ) : (
+    <IconButton onClick={onPress} modifiers={[size(56, 56)]}>
+      {icon}
+    </IconButton>
+  )
+}
+
+export type SeekBarProps = {
+  value: number
+  max: number
+  enabled: boolean
+  /** Under the bar's start and end, and optionally between them, such as the time played and left. */
+  start: string
+  middle?: string | null
+  end: string
+  onValueChange: (value: number) => void
+  onValueChangeFinished: () => void
+}
+
+/** A full-width slider through a span, such as a chapter, with its times beneath it. */
+export function SeekBar({
+  value,
+  max,
+  enabled,
+  start,
+  middle,
+  end,
+  onValueChange,
+  onValueChangeFinished,
+}: SeekBarProps) {
+  const colors = useMaterialColors()
+
+  return (
+    <Column modifiers={[fillMaxWidth()]}>
+      <Slider
+        value={value}
+        min={0}
+        max={max}
+        enabled={enabled}
+        onValueChange={onValueChange}
+        onValueChangeFinished={onValueChangeFinished}
+        modifiers={[fillMaxWidth()]}
+      />
+      <Row modifiers={[fillMaxWidth()]} verticalAlignment='center'>
+        <Text
+          color={colors.onSurfaceVariant}
+          style={{ typography: 'labelMedium' }}
+          modifiers={[weight(1)]}
+        >
+          {start}
+        </Text>
+        {middle ? (
+          <Text color={colors.onSurfaceVariant} style={{ typography: 'labelMedium' }}>
+            {middle}
+          </Text>
+        ) : null}
+        <Text
+          color={colors.onSurfaceVariant}
+          style={{ typography: 'labelMedium', textAlign: 'right' }}
+          modifiers={[weight(1)]}
+        >
+          {end}
+        </Text>
+      </Row>
+    </Column>
+  )
+}
+
+/**
+ * A flat 2 dp progress line along an edge, such as the mini player's top, on the container
+ * colour, with no stop mark or gap.
+ */
+export function EdgeProgress({ progress }: { progress: number }) {
+  const colors = useMaterialColors()
+
+  return (
+    <LinearProgressIndicator
+      progress={Math.min(1, progress)}
+      trackColor={colors.surfaceContainer}
+      drawStopIndicator={{ stopSize: 0 }}
+      gapSize={0}
+      // Flat ends: a round cap draws a dot at the start even with no progress at all.
+      strokeCap='butt'
+      modifiers={[fillMaxWidth(), height(2)]}
     />
   )
 }

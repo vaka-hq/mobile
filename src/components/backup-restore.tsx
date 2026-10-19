@@ -8,7 +8,6 @@ import {
   type BackupContents,
   BackupFormatError,
   pickBackup,
-  type RestoreSummary,
   restoreBackup,
 } from '@/library/backup'
 import { ConfirmDialog } from '@/ui/dialogs'
@@ -19,7 +18,7 @@ import { useErrorText } from '@/ui/errors'
  * the listener to confirm; `dialog` goes in the screen's tree. `onRestored` follows a restore,
  * such as the welcome screen moving on.
  */
-export function useBackupRestore(onRestored?: (summary: RestoreSummary) => void) {
+export function useBackupRestore(onRestored?: () => void) {
   const { t } = useLingui()
   const errorText = useErrorText()
   const { showFeedback } = useFeedback()
@@ -48,11 +47,10 @@ export function useBackupRestore(onRestored?: (summary: RestoreSummary) => void)
 
   async function restore(backup: Backup) {
     try {
-      const summary = await restoreBackup(backup)
+      const { books } = await restoreBackup(backup)
 
       // Progress, bookmarks and notes of any book may have changed, not only the library.
       void queryClient.invalidateQueries()
-      const books = summary.books
 
       showFeedback(
         t({
@@ -63,7 +61,7 @@ export function useBackupRestore(onRestored?: (summary: RestoreSummary) => void)
           comment: 'Backup restored, with how many library books it held',
         }),
       )
-      onRestored?.(summary)
+      onRestored?.()
     } catch (error) {
       failed(error instanceof Error ? error : null)
     }

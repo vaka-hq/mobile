@@ -1,13 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
-import { clickable, fillMaxWidth, height, padding, size, weight } from '@/lib/compose-modifiers'
-import {
-  Column,
-  FilledTonalIconButton,
-  LinearProgressIndicator,
-  Row,
-  Text,
-  useMaterialColors,
-} from '@/lib/compose-ui'
+import { clickable, fillMaxWidth, height, padding, weight } from '@/lib/compose-modifiers'
+import { Column, Row } from '@/lib/compose-ui'
 import { displayAuthors, displayCoverArt, displayTitle } from '@/library/display'
 import { seekBy, togglePlay } from '@/player/controller'
 import { expandPlayer, miniPlayerHeight, playerCoverKey } from '@/player/expansion'
@@ -15,7 +8,7 @@ import { useNowPlaying } from '@/player/use-player'
 import { usePreferences } from '@/settings/preferences'
 import { useErrorText } from '@/ui/errors'
 import { useLabels } from '@/ui/labels'
-import { Cover, PlayPauseButton, SkipIcon } from '@/ui/primitives'
+import { Cover, EdgeProgress, PlayPauseButton, SkipButton, ToneText } from '@/ui/primitives'
 
 /**
  * The collapsed player's content: the open book with its chapter progress and quick controls, at
@@ -24,7 +17,6 @@ import { Cover, PlayPauseButton, SkipIcon } from '@/ui/primitives'
  */
 export function MiniPlayer() {
   const { t } = useLingui()
-  const colors = useMaterialColors()
   const labels = useLabels()
   const errorText = useErrorText()
   const now = useNowPlaying()
@@ -40,15 +32,7 @@ export function MiniPlayer() {
 
   return (
     <Column modifiers={[fillMaxWidth(), height(miniPlayerHeight), clickable(expandPlayer)]}>
-      <LinearProgressIndicator
-        progress={Math.min(1, chapterProgress)}
-        trackColor={colors.surfaceContainer}
-        drawStopIndicator={{ stopSize: 0 }}
-        gapSize={0}
-        // Flat ends: a round cap draws a dot at the start even with no progress at all.
-        strokeCap='butt'
-        modifiers={[fillMaxWidth(), height(2)]}
-      />
+      <EdgeProgress progress={chapterProgress} />
       <Row
         verticalAlignment='center'
         // The filled buttons end as far from the right edge as the cover starts from the left.
@@ -57,13 +41,13 @@ export function MiniPlayer() {
       >
         <Cover {...displayCoverArt(now.book)} dimension={48} sharedKey={playerCoverKey} />
         <Column modifiers={[weight(1)]}>
-          <Text maxLines={1} overflow='ellipsis' style={{ typography: 'titleSmall' }}>
+          <ToneText maxLines={1} overflow='ellipsis' style={{ typography: 'titleSmall' }}>
             {displayTitle(now.book)}
-          </Text>
-          <Text
+          </ToneText>
+          <ToneText
+            tone='secondary'
             maxLines={1}
             overflow='ellipsis'
-            color={colors.onSurfaceVariant}
             style={{ typography: 'bodySmall' }}
           >
             {now.error
@@ -71,22 +55,18 @@ export function MiniPlayer() {
               : summary.chapterCount > 1
                 ? labels.chapter(summary.chapterTitle, summary.chapterIndex)
                 : labels.authors(displayAuthors(now.book))}
-          </Text>
+          </ToneText>
         </Column>
-        <FilledTonalIconButton
-          onClick={() => void seekBy(-skipBackSeconds)}
-          modifiers={[size(40, 40)]}
-        >
-          <SkipIcon
-            direction='back'
-            seconds={skipBackSeconds}
-            dimension={22}
-            description={t({
-              message: 'Skip back',
-              comment: 'Mini player: jump backwards by the skip interval',
-            })}
-          />
-        </FilledTonalIconButton>
+        <SkipButton
+          direction='back'
+          seconds={skipBackSeconds}
+          description={t({
+            message: 'Skip back',
+            comment: 'Mini player: jump backwards by the skip interval',
+          })}
+          compact
+          onPress={() => void seekBy(-skipBackSeconds)}
+        />
         <PlayPauseButton
           playing={now.playing || now.loading}
           buffering={now.loading}

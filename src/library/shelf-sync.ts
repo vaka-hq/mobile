@@ -47,8 +47,8 @@ export type ShelfAction =
   | { kind: 'addHere' }
   /** Hardcover has it read: mark it finished. */
   | { kind: 'finishHere' }
-  /** Hardcover's read is elsewhere: move listening there, as a share of the recording. */
-  | { kind: 'moveHere'; share: number | null; seconds: number }
+  /** Hardcover's read is elsewhere: move listening there, in seconds of the read's edition. */
+  | { kind: 'moveHere'; seconds: number }
   /**
    * Hardcover no longer has it read, with no place to move to: it is no longer finished here, and
    * starts again from the top, or from Hardcover's place once there is one.
@@ -149,11 +149,7 @@ function applyHere(
     remote.read.progressSeconds !== null &&
     !samePlace(local?.listening ?? null, remote.read)
   ) {
-    actions.push({
-      kind: 'moveHere',
-      share: readShare(remote.read),
-      seconds: remote.read.progressSeconds,
-    })
+    actions.push({ kind: 'moveHere', seconds: remote.read.progressSeconds })
   } else if (finishedHere && (!linked || remote.status !== 1)) {
     actions.push({ kind: 'restartHere' })
   }

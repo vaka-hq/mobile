@@ -110,7 +110,7 @@ const nativeAudio = requireOptionalNativeModule<{
 }>('ExpoAudio')
 
 /** Makes the notification's and lock screen's skip buttons jump as far as the app's do. */
-function applySkipIntervals() {
+export function applySkipIntervals() {
   const { skipBackSeconds, skipForwardSeconds } = getPreferences()
 
   nativeAudio?.setSkipIntervals?.(skipBackSeconds, skipForwardSeconds)
@@ -271,7 +271,7 @@ function durations() {
   return state.book?.durations ?? state.book?.tracks?.map(() => null) ?? []
 }
 
-export function currentChapterIndex() {
+function currentChapterIndex() {
   return chapterIndexAt(chapters(), state.track, state.position)
 }
 
@@ -383,7 +383,7 @@ function ensurePlayer() {
   return created
 }
 
-export async function configureAudio() {
+async function configureAudio() {
   await setAudioModeAsync({
     playsInSilentMode: true,
     shouldPlayInBackground: true,
@@ -403,12 +403,17 @@ async function loadTrack(track: number, position: number, freshUrl = false) {
     return
   }
 
+  // Taken before anything is awaited, so a seek made while the torrent is looked up again wins.
+  generation += 1
+
+  const current = generation
+
   // A book kept on the phone plays its own copy, with or without a connection. Retrying a
   // stream, the torrent is looked up again first, as it may have been added anew since.
   const book = freshUrl && !offlineTrackUri(opened, track) ? await currentTorrent(opened) : opened
   const file = book.tracks?.[track]
 
-  if (!file || state.book?.id !== book.id) {
+  if (!file || current !== generation || state.book?.id !== book.id) {
     return
   }
 
@@ -416,14 +421,11 @@ async function loadTrack(track: number, position: number, freshUrl = false) {
   const torrentId = book.torrentId
 
   if (!local && torrentId === null) {
+    wantsPlayback = false
     update({ loading: false, playing: false, error: new NotStreamableError() })
 
     return
   }
-
-  generation += 1
-
-  const current = generation
 
   loaded = null
   player?.pause()
@@ -751,8 +753,15 @@ export async function open(bookId: string, autoplay: boolean): Promise<boolean> 
     return false
   }
 
+  // A book opened paused lets the last one's player go, so the notification and headphone buttons
+  // cannot play it under the new book; one about to play keeps the player and swaps its source.
+  if (autoplay || wantsPlayback) {
+    player?.pause()
+  } else {
+    releasePlayer()
+  }
+
   wantsPlayback = false
-  player?.pause()
 
   heardAt = saved?.updatedAt ?? book.lastPlayedAt ?? 0
   written = saved
@@ -920,7 +929,23 @@ export async function seekTo(track: number, position: number) {
   finished = false
   pendingSeek = { track: target, position: clamped, until: Date.now() + 5000 }
 
-  if (target !== state.track || !loaded || loaded.track !== target || loaded.bookId !== book.id) {
+  if (!loaded && !wantsPlayback) {
+    // Nothing is in the player and nothing is to play, such as a book just opened: only the place
+    // moves, without touching the network, and playing loads it there. A load still under way
+    // would land at the old place, so it is dropped.
+    generation += 1
+    update({
+      track: target,
+      position: clamped,
+      loading: false,
+      duration: durations()[target] ?? null,
+    })
+  } else if (
+    target !== state.track ||
+    !loaded ||
+    loaded.track !== target ||
+    loaded.bookId !== book.id
+  ) {
     await loadTrack(target, clamped)
   } else {
     update({ position: clamped })
@@ -1011,18 +1036,12 @@ export function setSleepTimer(minutes: number | 'chapter' | null) {
  * Stops playback and releases the media session and its notification. The book is not restored
  * into the mini player on the next launch; playing it, or another book, brings the player back.
  */
-export async function close() {
-  const closedId = state.book?.id ?? ''
-
-  openToken += 1
-
-  // The player is let go even if saving the place fails.
-  await persist().catch(() => undefined)
-  clearSleepTimer()
-  wantsPlayback = false
-  generation += 1
-  // Released rather than kept: while a player stays bound to the media service, Android keeps its
-  // notification. The next book creates a new one.
+/**
+ * Lets the native player go. Released rather than kept: while a player stays bound to the media
+ * service, Android keeps its notification and its controls play what it holds. The next book
+ * creates a new one.
+ */
+function releasePlayer() {
   const released = player
 
   player = null
@@ -1035,6 +1054,19 @@ export async function close() {
   // Frees the native player and its media session now rather than whenever it is collected.
   released?.release()
   loaded = null
+}
+
+export async function close() {
+  const closedId = state.book?.id ?? ''
+
+  openToken += 1
+
+  // The player is let go even if saving the place fails.
+  await persist().catch(() => undefined)
+  clearSleepTimer()
+  wantsPlayback = false
+  generation += 1
+  releasePlayer()
   update(initialState)
   invalidateLibrary()
   await setPreference('closedBookId', closedId)
@@ -1062,7 +1094,11 @@ export async function switchStream(bookId: string) {
     ? bookPosition(played, state.track, state.position)
     : null
 
-  await open(bookId, false)
+  // Another book was opened, or the player closed, meanwhile; the place is not carried to it.
+  if (!(await open(bookId, false))) {
+    return
+  }
+
   setSpeed(speed)
 
   const next = state.book

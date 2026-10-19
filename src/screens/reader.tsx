@@ -99,7 +99,7 @@ export function ReaderScreen() {
   const systemDark = useAppColorScheme() === 'dark'
   const palette = readerPalette(preferences.readerTheme, systemDark)
   const insets = useSafeAreaInsets()
-  const { width } = useWindowDimensions()
+  const { width, height } = useWindowDimensions()
   const view = useRef<ReaderViewHandle>(null)
   // Counts the reader views that have reported ready: its Compose host can be replaced, such as
   // when the phone's palette changes, and each new view is handed the book again.
@@ -136,6 +136,7 @@ export function ReaderScreen() {
       easing: Easing.bezier(0.2, 0, 0, 1),
     })
   }, [chrome, overviewProgress])
+
   const [selection, setSelection] = useState<{ text: string; location: string } | null>(null)
   const [sheet, setSheet] = useState<'contents' | 'notes' | null>(null)
   // The display settings open over the page being read, the overview closing for them, and close
@@ -248,7 +249,6 @@ export function ReaderScreen() {
     }
   }, [styleKey])
 
-  const { height } = useWindowDimensions()
   const card = overviewCard(height, topInset.current, insets.bottom)
 
   // In the overview a tap anywhere on the page brings it back rather than turning it.
@@ -261,7 +261,11 @@ export function ReaderScreen() {
       gap: card.gap,
       radius: card.radius,
     })
+  }, [chrome, card.scale, card.shift, card.gap, card.radius])
 
+  // Opening the overview puts the display settings away; closing it forgets the place jumped
+  // from. Only as it opens or closes, not when the card is resized.
+  useEffect(() => {
     if (chrome) {
       setDisplaying(false)
 
@@ -272,7 +276,7 @@ export function ReaderScreen() {
     } else {
       setJumpedFrom(null)
     }
-  }, [chrome, card.scale, card.shift, card.gap, card.radius])
+  }, [chrome])
 
   // While the display settings cover the foot of the page, the reader centres its loading
   // indicator in the part left showing, as the book lays itself out again for a new setting.
@@ -807,7 +811,7 @@ export function ReaderScreen() {
   const minutesLeft = place?.sectionMinutesLeft ?? null
   const roundedMinutes = minutesLeft === null ? null : Math.round(minutesLeft)
 
-  // Pages left in the chapter when the book turns pages; reading time left when it scrolls.
+  // Pages left in the chapter once it is laid out; until then, the reading time left.
   const status =
     pagesLeft !== null
       ? pagesLeft === 0

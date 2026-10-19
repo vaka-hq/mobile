@@ -2,7 +2,7 @@ import { type HTMLElement, parse } from 'node-html-parser'
 import { z } from 'zod'
 
 /** One file in an Anna's Archive search, identified by its md5. */
-export const annasFileSchema = z.object({
+const annasFileSchema = z.object({
   md5: z.string(),
   title: z.string(),
   authors: z.array(z.string()),
@@ -17,9 +17,16 @@ export const annasFileSchema = z.object({
 export type AnnasFile = z.infer<typeof annasFileSchema>
 
 function clean(text: string | undefined | null) {
-  const value = text?.replaceAll(' ', ' ').replace(/\s+/gu, ' ').trim()
+  const value = text?.replace(/\s+/gu, ' ').trim()
 
   return value ? value : null
+}
+
+/** A cover's address over HTTPS, which release builds require; null when it has none. */
+function coverAddress(src: string | undefined, baseUrl: string) {
+  const href = src ? URL.parse(src, `${baseUrl}/`)?.href.replace(/^http:/u, 'https:') : null
+
+  return href?.startsWith('https://') ? href : null
 }
 
 const md5Path = /^\/md5\/([0-9a-f]{32})/iu
@@ -83,8 +90,6 @@ export function parseSearchPage(html: string, baseUrl: string): AnnasFile[] {
       .find((span) => (span.getAttribute('class') ?? '').includes('user-edit'))
       ?.closest('a')
 
-    const cover = scope.querySelector('img')?.getAttribute('src') ?? null
-
     const publisher = scope
       .querySelectorAll('span')
       .find((span) => (span.getAttribute('class') ?? '').includes('company'))
@@ -95,7 +100,7 @@ export function parseSearchPage(html: string, baseUrl: string): AnnasFile[] {
       title,
       authors: (clean(author?.text) ?? '').split(/[,;]/u).flatMap((name) => clean(name) ?? []),
       publisher: clean(publisher?.text),
-      coverUrl: cover ? new URL(cover, `${baseUrl}/`).toString() : null,
+      coverUrl: coverAddress(scope.querySelector('img')?.getAttribute('src'), baseUrl),
       ...factsOf(scope),
     })
   }

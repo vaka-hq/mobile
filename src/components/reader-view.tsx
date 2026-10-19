@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef } from 'react'
+import { type Ref, useImperativeHandle, useRef } from 'react'
 import { z } from 'zod'
 import { Host } from '@/components/host'
 import { BookView, type BookViewRef } from '../../modules/ui'
@@ -19,7 +19,7 @@ export type ReaderStyle = {
 }
 
 /** A highlight to draw: its place, its colour, and its text, to find it again if its place is gone. */
-export type ReaderAnnotation = { value: string; color: string; text?: string }
+type ReaderAnnotation = { value: string; color: string; text?: string }
 
 /** A command for the reader. */
 export type ReaderCommand =
@@ -110,7 +110,7 @@ const readerEvent = z.discriminatedUnion('type', [
     pageStart: z.string(),
     /** The bookmark on the page showing, if any. */
     bookmark: z.string().nullable(),
-    /** Pages left in the part being read, when the book turns pages. */
+    /** Pages left in the part being read, once its pages are laid out. */
     sectionPagesLeft: z.number().nullable(),
     fraction: z.number(),
     tocLabel: z.string().nullable(),
@@ -172,7 +172,7 @@ const readerEvent = z.discriminatedUnion('type', [
 export type ReaderEvent = z.infer<typeof readerEvent>
 
 /** Reads one message from the reader; anything that is not a known event is dropped. */
-export function parseReaderEvent(data: string): ReaderEvent | null {
+function parseReaderEvent(data: string): ReaderEvent | null {
   try {
     const parsed = readerEvent.safeParse(JSON.parse(data))
 
@@ -185,35 +185,39 @@ export function parseReaderEvent(data: string): ReaderEvent | null {
 export type ReaderViewHandle = { send: (command: ReaderCommand) => void }
 
 /**
- * The book itself, drawn natively in Compose: EPUB chapters laid out into pages or one scrolling
- * column. Commands go in through `send`; everything the reader sees comes out through `onEvent`.
+ * The book itself, drawn natively in Compose: EPUB chapters laid out into pages. Commands go in
+ * through `send`; everything the reader sees comes out through `onEvent`.
  */
-export const ReaderView = forwardRef<ReaderViewHandle, { onEvent: (event: ReaderEvent) => void }>(
-  function ReaderView({ onEvent }, ref) {
-    const book = useRef<BookViewRef>(null)
+export function ReaderView({
+  ref,
+  onEvent,
+}: {
+  ref?: Ref<ReaderViewHandle>
+  onEvent: (event: ReaderEvent) => void
+}) {
+  const book = useRef<BookViewRef>(null)
 
-    useImperativeHandle(ref, () => ({
-      // A command to a view already replaced is dropped; the new one reports ready and is sent
-      // the book again.
-      send: (command) => {
-        void book.current?.send(JSON.stringify(command)).catch(() => undefined)
-      },
-    }))
+  useImperativeHandle(ref, () => ({
+    // A command to a view already replaced is dropped; the new one reports ready and is sent the
+    // book again.
+    send: (command) => {
+      void book.current?.send(JSON.stringify(command)).catch(() => undefined)
+    },
+  }))
 
-    return (
-      <Host style={{ flex: 1 }}>
-        <BookView
-          ref={book}
-          style={{ flex: 1 }}
-          onMessage={(data) => {
-            const event = parseReaderEvent(data)
+  return (
+    <Host style={{ flex: 1 }}>
+      <BookView
+        ref={book}
+        style={{ flex: 1 }}
+        onMessage={(data) => {
+          const event = parseReaderEvent(data)
 
-            if (event) {
-              onEvent(event)
-            }
-          }}
-        />
-      </Host>
-    )
-  },
-)
+          if (event) {
+            onEvent(event)
+          }
+        }}
+      />
+    </Host>
+  )
+}

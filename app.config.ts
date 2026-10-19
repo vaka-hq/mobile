@@ -11,32 +11,28 @@ import {
 } from 'expo/config-plugins'
 import { appIdentity } from './config/app-identity.ts'
 
-const withAndroidReleaseShrinking: ConfigPlugin = (config) => {
-  config = withGradleProperties(config, (gradleConfig) => {
-    const releaseProperties = {
-      'android.r8.optimizedResourceShrinking': 'true',
-      'org.gradle.jvmargs': '-Xmx4096m -XX:MaxMetaspaceSize=1024m',
-    }
+/**
+ * Gives Gradle twice the template's memory, for R8 to minify release builds in. Android
+ * Gradle Plugin 9 already shrinks resources the optimised way, and release builds keep the
+ * template's optimised R8 rules, since it refuses the unoptimised ones.
+ */
+const withGradleMemory: ConfigPlugin = (config) =>
+  withGradleProperties(config, (gradleConfig) => {
+    const key = 'org.gradle.jvmargs'
+    const value = '-Xmx4096m -XX:MaxMetaspaceSize=1024m'
 
-    for (const [key, value] of Object.entries(releaseProperties)) {
-      const existing = gradleConfig.modResults.find(
-        (item) => item.type === 'property' && item.key === key,
-      )
+    const existing = gradleConfig.modResults.find(
+      (item) => item.type === 'property' && item.key === key,
+    )
 
-      if (existing?.type === 'property') {
-        existing.value = value
-      } else {
-        gradleConfig.modResults.push({ key, type: 'property', value })
-      }
+    if (existing?.type === 'property') {
+      existing.value = value
+    } else {
+      gradleConfig.modResults.push({ key, type: 'property', value })
     }
 
     return gradleConfig
   })
-
-  // Release builds keep the template's optimised R8 rules; Android Gradle Plugin 9 refuses the
-  // unoptimised ones.
-  return config
-}
 
 const releaseSigningMarker = '// Vaka: release signing'
 
@@ -103,6 +99,34 @@ gradle.taskGraph.whenReady { graph ->
 
       return gradleConfig
     })
+
+/**
+ * The release's name, such as `1.1.0` or a nightly's `1.1.0-nightly.20261001.42+c2fa9fc`, set by
+ * the release workflow; local builds are 0.0.1.
+ */
+const versionName = process.env.VAKA_VERSION_NAME ?? '0.0.1'
+
+/**
+ * Writes the release's whole name into `build.gradle`, where Android, and the app through
+ * expo-application, read it. The config's `version` keeps only its leading numbers, since
+ * expo-localization finds where its settings go by a `versionName` of numbers alone; this runs
+ * after it, as plugins wrapping the config run after those it lists.
+ */
+const withVersionName: ConfigPlugin = (config) =>
+  withAppBuildGradle(config, (gradleConfig) => {
+    const versionLine = /versionName "[^"]*"/u
+
+    if (!versionLine.test(gradleConfig.modResults.contents)) {
+      throw new Error('Unable to set the version name')
+    }
+
+    gradleConfig.modResults.contents = gradleConfig.modResults.contents.replace(
+      versionLine,
+      `versionName "${versionName}"`,
+    )
+
+    return gradleConfig
+  })
 
 const abiSplitsMarker = '// Vaka: one release APK per CPU architecture'
 
@@ -218,87 +242,85 @@ const withoutUpdatesSettings: ConfigPlugin = (config) =>
 export default ({ config }: ConfigContext): ExpoConfig => {
   const variant = appIdentity(process.env.APP_VARIANT)
 
-  return withAbiSplits(
-    withReleaseSigning(variant.variant === 'production')(
-      withoutUpdatesSettings(
-        withFreshExpoModuleList(
-          withAndroidStackTransitions(
-            withAndroidReleaseShrinking({
-              ...config,
-              name: variant.name,
-              slug: 'vaka',
-              // Release builds are named and numbered by the release workflow; local builds are 0.0.1.
-              version: process.env.VAKA_VERSION_NAME ?? '0.0.1',
-              platforms: ['android'],
-              orientation: 'portrait',
-              icon: './assets/images/icon.png',
-              scheme: variant.scheme,
-              userInterfaceStyle: 'automatic',
-              android: {
-                package: variant.androidPackage,
-                // The build time in minutes, from the release workflow, so every release, stable or
-                // nightly, installs over the builds before it.
-                versionCode: Number(process.env.VAKA_VERSION_CODE ?? 1),
-                allowBackup: false,
-                // Pulled in by libraries for things the app does not use: biometric unlock of the
-                // keystore, the Play install referrer and vibration, which haptic feedback does not need.
-                blockedPermissions: [
-                  'com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE',
-                  'com.google.android.gms.permission.AD_ID',
-                  'android.permission.USE_BIOMETRIC',
-                  'android.permission.USE_FINGERPRINT',
-                  'android.permission.VIBRATE',
-                  'android.permission.READ_EXTERNAL_STORAGE',
-                  'android.permission.RECORD_AUDIO',
-                  'android.permission.SYSTEM_ALERT_WINDOW',
-                  'android.permission.WRITE_EXTERNAL_STORAGE',
-                ],
-                predictiveBackGestureEnabled: true,
-                // Built by `vp run icons:generate`; the colour is the field's, which it prints.
-                adaptiveIcon: {
-                  backgroundColor: '#182445',
-                  backgroundImage: './assets/images/android-icon-background.png',
-                  foregroundImage: './assets/images/android-icon-foreground.png',
-                  monochromeImage: './assets/images/android-icon-monochrome.png',
-                },
-              },
-              plugins: [
-                [
-                  'expo-audio',
-                  {
-                    enableBackgroundPlayback: true,
-                    microphonePermission: false,
-                    recordAudioAndroid: false,
-                  },
-                ],
-                [
-                  'expo-build-properties',
-                  {
-                    android: {
-                      enableMinifyInReleaseBuilds: true,
-                      enableShrinkResourcesInReleaseBuilds: true,
-                      usePrecompiledHeaders: true,
-                    },
-                  },
-                ],
-                ['expo-localization', { supportedLocales: ['en', 'sv'] }],
-                ['expo-secure-store', { faceIDPermission: false }],
-                // The icon's mark on its midnight field, in light and dark mode alike.
-                [
-                  'expo-splash-screen',
-                  {
-                    image: './assets/images/splash-icon.png',
-                    imageWidth: 200,
+  return withVersionName(
+    withAbiSplits(
+      withReleaseSigning(variant.variant === 'production')(
+        withoutUpdatesSettings(
+          withFreshExpoModuleList(
+            withAndroidStackTransitions(
+              withGradleMemory({
+                ...config,
+                name: variant.name,
+                slug: 'vaka',
+                // Release builds are named and numbered by the release workflow (withVersionName).
+                version: /^\d+(?:\.\d+)*/u.exec(versionName)?.[0] ?? '0.0.1',
+                platforms: ['android'],
+                orientation: 'portrait',
+                icon: './assets/images/icon.png',
+                scheme: variant.scheme,
+                userInterfaceStyle: 'automatic',
+                android: {
+                  package: variant.androidPackage,
+                  // The build time in minutes, from the release workflow, so every release, stable or
+                  // nightly, installs over the builds before it.
+                  versionCode: Number(process.env.VAKA_VERSION_CODE ?? 1),
+                  allowBackup: false,
+                  // Pulled in by libraries for things the app does not use: biometric unlock of the
+                  // keystore, the Play install referrer and vibration, which haptic feedback does not need.
+                  blockedPermissions: [
+                    'com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE',
+                    'com.google.android.gms.permission.AD_ID',
+                    'android.permission.USE_BIOMETRIC',
+                    'android.permission.USE_FINGERPRINT',
+                    'android.permission.VIBRATE',
+                    'android.permission.READ_EXTERNAL_STORAGE',
+                    'android.permission.RECORD_AUDIO',
+                    'android.permission.SYSTEM_ALERT_WINDOW',
+                    'android.permission.WRITE_EXTERNAL_STORAGE',
+                  ],
+                  predictiveBackGestureEnabled: true,
+                  // Built by `vp run icons:generate`; the colour is the field's, which it prints.
+                  adaptiveIcon: {
                     backgroundColor: '#182445',
-                    dark: { image: './assets/images/splash-icon.png', backgroundColor: '#182445' },
+                    backgroundImage: './assets/images/android-icon-background.png',
+                    foregroundImage: './assets/images/android-icon-foreground.png',
+                    monochromeImage: './assets/images/android-icon-monochrome.png',
                   },
+                },
+                plugins: [
+                  ['expo-audio', { enableBackgroundPlayback: true, recordAudioAndroid: false }],
+                  [
+                    'expo-build-properties',
+                    {
+                      android: {
+                        enableMinifyInReleaseBuilds: true,
+                        enableShrinkResourcesInReleaseBuilds: true,
+                        usePrecompiledHeaders: true,
+                      },
+                    },
+                  ],
+                  ['expo-localization', { supportedLocales: ['en', 'sv'] }],
+                  'expo-secure-store',
+                  // The icon's mark on its midnight field, in light and dark mode alike.
+                  [
+                    'expo-splash-screen',
+                    {
+                      image: './assets/images/splash-icon.png',
+                      imageWidth: 200,
+                      backgroundColor: '#182445',
+                      dark: {
+                        image: './assets/images/splash-icon.png',
+                        backgroundColor: '#182445',
+                      },
+                    },
+                  ],
+                  'expo-router',
+                  'expo-sqlite',
+                  'expo-status-bar',
                 ],
-                'expo-router',
-                'expo-sqlite',
-                'expo-status-bar',
-              ],
-              experiments: { typedRoutes: true, reactCompiler: true },
-            }),
+                experiments: { typedRoutes: true, reactCompiler: true },
+              }),
+            ),
           ),
         ),
       ),

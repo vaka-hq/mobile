@@ -94,9 +94,7 @@ class EpubBook(
   private class ManifestItem(val href: String, val type: String, val properties: String)
 
   private class Reader(val zip: ZipFile) {
-    // A leading byte-order mark is dropped, which the XML parser would otherwise refuse.
-    fun text(path: String): String? =
-      readEntry(zip, path, maxTextBytes)?.toString(Charsets.UTF_8)?.removePrefix("\uFEFF")
+    fun text(path: String): String? = readEntry(zip, path, maxTextBytes)?.let(::decodeText)
 
     fun rootfile(): String? {
       val xml = text("META-INF/container.xml") ?: return null
@@ -154,7 +152,13 @@ class EpubBook(
         if (!item.type.contains("html") && !item.href.endsWith("html") && !item.href.endsWith(".htm")) {
           return@mapNotNull null
         }
-        val html = text(item.href) ?: return@mapNotNull null
+        // A chapter whose file cannot be read, such as a corrupt entry, stays as an empty one, so
+        // the book still opens and the chapters after it keep their places.
+        val html = try {
+          text(item.href)
+        } catch (_: Exception) {
+          ""
+        } ?: return@mapNotNull null
         ChapterParser(item.href, styles) { path -> text(path) }.parse(html)
       }
 
@@ -201,7 +205,7 @@ class EpubBook(
             "a", "span" -> if (linkTag == local(parser.name)) {
               linkTag = null
               val text = label.toString().replace(tocWhitespace, " ").trim()
-              if (text.isNotEmpty() && href != null) entries.add(TocEntry(text, href!!, maxOf(0, depth)))
+              if (text.isNotEmpty() && href != null) entries.add(TocEntry(text, href, maxOf(0, depth)))
             }
           }
         }
@@ -227,7 +231,7 @@ class EpubBook(
             "content" -> {
               val src = parser.attr("src")
               if (src != null && label != null) {
-                entries.add(TocEntry(label!!, resolvePath(base, src), depth))
+                entries.add(TocEntry(label, resolvePath(base, src), depth))
               }
             }
           }
@@ -265,6 +269,29 @@ private fun readEntry(zip: ZipFile, path: String, limit: Long): ByteArray? {
     }
     out.toByteArray()
   }
+}
+
+private val declaredEncoding = Regex("^\\s*<\\?xml[^>]*encoding\\s*=\\s*[\"']([A-Za-z0-9._-]+)[\"']")
+
+/**
+ * A document's text. EPUB allows UTF-8 and UTF-16, told by a byte-order mark or by the zero bytes
+ * of the opening `<`; older books also name an encoding of their own in the XML declaration. A
+ * leading byte-order mark is dropped, which the XML parser would otherwise refuse.
+ */
+private fun decodeText(bytes: ByteArray): String {
+  fun at(index: Int) = bytes.getOrNull(index)?.toInt()?.and(0xFF)
+  val charset = when {
+    at(0) == 0xFE && at(1) == 0xFF -> Charsets.UTF_16BE
+    at(0) == 0xFF && at(1) == 0xFE -> Charsets.UTF_16LE
+    at(0) == 0x00 && at(1) == 0x3C -> Charsets.UTF_16BE
+    at(0) == 0x3C && at(1) == 0x00 -> Charsets.UTF_16LE
+    else -> declaredEncoding.find(String(bytes, 0, minOf(bytes.size, 200), Charsets.ISO_8859_1))
+      ?.groupValues?.get(1)
+      ?.takeUnless { it.startsWith("utf-16", ignoreCase = true) }
+      ?.let { runCatching { java.nio.charset.Charset.forName(it) }.getOrNull() }
+      ?: Charsets.UTF_8
+  }
+  return String(bytes, charset).removePrefix("\uFEFF")
 }
 
 /** A place in the book: a chapter, a block in it and a character in that block. */
@@ -351,7 +378,6 @@ class TextBlock(
   val indentPercent: Float?,
   /** Text size relative to the body's, from the book's style sheet. */
   val size: Float,
-  val uppercase: Boolean,
   /** Space above and below, in em of the block's text, collapsing with its neighbours'. */
   val marginTop: Float,
   val marginBottom: Float

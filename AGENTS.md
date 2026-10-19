@@ -19,7 +19,8 @@ short: how the app works belongs in `docs/`.
 
 ## Layout
 
-- Expo Router route files live in `src/app/` and only forward to screens in `src/screens/`.
+- Expo Router route files live in `src/app/` and only forward to screens in `src/screens/`; the
+  layouts and the first-run redirect to the welcome screen are the only logic there.
 - `src/ui/` is the app's vocabulary of components; `src/components/` holds larger pieces shared
   by screens; `src/library/` is persistence, orchestration and the TanStack Query hooks;
   `src/sources/` has one client per external service; `src/player/` owns playback; `src/media/`
@@ -102,10 +103,12 @@ short: how the app works belongs in `docs/`.
   migration in `src/library/database.ts`; never edit shipped ones. Writes that belong together run
   in `withExclusiveTransactionAsync`.
 - Hardcover and TorBox are reached with the listener's own API keys, entered in Settings and
-  verified before they are stored. Keep secrets in `expo-secure-store`, never in SQLite or logs.
+  verified before they are stored. Keys restored from a backup are the exception, since restoring
+  works offline: the start-up check and Settings check them as soon as they are in place. Keep
+  secrets in `expo-secure-store`, never in SQLite or logs.
 - Library sync (`src/library/library-sync.ts`) keeps the library in step with one sync source at a
-  time, chosen in Settings → Library. A new source is one entry in `syncSources` (and its name in
-  Settings); choosing another source stops the one before. Hardcover's (`src/library/shelves.ts`,
+  time, chosen in Settings → Library. A new source is one entry in `syncSources` (with its ID in
+  `syncSourceIds` and its name in Settings); choosing another source stops the one before. Hardcover's (`src/library/shelves.ts`,
   with the pure, tested planner `shelf-sync.ts` and `shelf-store.ts`): Hardcover is the source of
   truth. The baseline per book
   (`hardcover_shelf`) tells which side changed; a change there wins over one here. Never delete
@@ -133,8 +136,8 @@ short: how the app works belongs in `docs/`.
   links as expiring: refresh stale links before resuming and recover from playback errors by
   requesting a fresh link at the current position, looking the torrent up again first.
 - expo-audio is patched (`patches/`, applied by pnpm on install) for a back buffer, a disk cache that the player
-  prefetches behind every seek, pausing when headphones are unplugged, and skip intervals for the
-  notification set from the app's settings. It is built from source for that
+  prefetches behind every seek, pausing when headphones are unplugged, skip intervals for the
+  notification set from the app's settings, and speeds up to 3×. It is built from source for that
   (`expo.autolinking` in `package.json`); keep both when upgrading it, editing the patch with
   `pnpm patch` and `pnpm patch-commit`.
 - Books kept on the phone (`src/library/offline.ts`) play from their local copy; the player and the
@@ -150,7 +153,8 @@ short: how the app works belongs in `docs/`.
   signed-in search and the `fast_download` API) or Library Genesis (no key). Choosing one only
   remembers it. On a book's page, a file not on the phone shows Download, which downloads it into
   the app's documents to stay, as the Storage sheet's download does; only then does it show Read,
-  which never downloads. Once downloaded, its contents are read from the file natively
+  which never downloads. Elsewhere (Library, Browse, the player) Read on a file not on the phone
+  downloads it the same way, to stay, and then opens it. Once downloaded, its contents are read from the file natively
   (`readBookSections`), so choosing to continue from listening finds the place in the question
   itself, before the reader opens. Copies cached to read by older builds are moved there at start.
 - Files found for a book are ranked in `src/library/ebook-rank.ts` (pure and tested): those by
@@ -161,7 +165,8 @@ short: how the app works belongs in `docs/`.
   `EpubHtml.kt` parse the EPUB with Android's zip and XML parsers, `BookLayout.kt` lays it out with
   Compose text and `BookView.kt` paginates and draws it, slides pages as they turn and draws the
   overview's row of cards. It takes JSON commands and reports JSON events, parsed with zod in
-  `src/components/reader-view.tsx`; its bars and sheets are Compose over it (`src/ui/reader.tsx`).
+  `src/components/reader-view.tsx`; its bars and sheets are Compose over it (`src/ui/reader.tsx`,
+  `src/components/reader-sheets.tsx`).
 - The book only turns pages; there is no scrolling layout. The display settings are not a sheet
   but a card over the foot of the page being read, the overview closing for it, so changes show at
   full size; the reader centres its loading indicator above the card.
@@ -204,7 +209,8 @@ short: how the app works belongs in `docs/`.
 
 ## Builds and devices
 
-- Every build is local; the app uses no Expo cloud services or over-the-air updates.
+- Builds are made with Gradle, locally or by the release workflow; the app uses no Expo cloud
+  services or over-the-air updates.
 - Do not edit the generated `android/` folder; use config plugins (`app.config.ts`) and
   `modules/`. Native dependency or module changes need `vp run generate` and a rebuild.
 - The variant (`APP_VARIANT`: development, preview, production) is fixed when `android/` is
@@ -216,7 +222,9 @@ short: how the app works belongs in `docs/`.
 - Releases are published by `.github/workflows/release.yml`: a pushed `v` tag makes a stable
   release named after it, and `main` becomes a nightly pre-release once a day when it has changed.
   The workflow sets the version name and code (`VAKA_VERSION_NAME`, `VAKA_VERSION_CODE`, the build
-  time in minutes); never set them in `app.config.ts`. Pin every action to a full commit SHA with
+  time in minutes); never set them in `app.config.ts`. A nightly's name is not a plain number,
+  which some config plugins expect, so the config's `version` keeps its leading numbers and
+  `withVersionName` writes the whole name into `build.gradle` after them. Pin every action to a full commit SHA with
   its version in a comment. The production app updates itself from these releases
   (`src/library/app-updates.ts`, `modules/platform`), reading each one's `update.json`; keep
   the asset names (`vaka-<name>-<abi>.apk`, `update.json`) in step with the app.

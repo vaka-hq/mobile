@@ -188,7 +188,6 @@ class BookLayout(
       indent = null,
       indentPercent = null,
       size = 1f,
-      uppercase = false,
       marginTop = 0f,
       marginBottom = 0f
     )

@@ -22,7 +22,9 @@ import {
   useWorkStreams,
 } from '@/library/queries'
 import { bookDuration } from '@/library/timeline'
-import { useNowPlaying } from '@/player/use-player'
+import type { PlayerState } from '@/player/controller'
+import { summarize } from '@/player/summary'
+import { usePlayerValue } from '@/player/use-player'
 import { useErrorText } from '@/ui/errors'
 import { useLabels } from '@/ui/labels'
 import {
@@ -38,6 +40,18 @@ import {
   TagGroup,
 } from '@/ui/primitives'
 import { Screen } from '@/ui/screen'
+
+/** Where the player is in the book playing now, when it is this one and its length is known. */
+function liveSummary(state: PlayerState, workId: string) {
+  if (!state.book || workIdOf(state.book) !== workId) {
+    return null
+  }
+
+  const summary = summarize(state.book, state.track, state.position, state.duration)
+  const total = summary.bookTotal
+
+  return total ? { bookElapsed: summary.bookElapsed, bookTotal: total } : null
+}
 
 /**
  * A Hardcover book: the book's own cover and details, Listen, Read and Add to library, and a row
@@ -79,15 +93,12 @@ export function WorkScreen() {
   // Only the way the book was followed last reads as picking it up: Resume on Listen after
   // listening, Continue on Read after reading, never both.
   const heardAt = useLastHeardAt(workId).data ?? null
-  const allEbooks = useEbooks()
 
-  const readAt = [...allEbooks.values()].reduce<number | null>(
-    (latest, ebook) =>
-      ebook.workId === workId && ebook.lastReadAt !== null
-        ? Math.max(latest ?? 0, ebook.lastReadAt)
-        : latest,
-    null,
-  )
+  const lastRead = [...useEbooks().values()]
+    .filter((ebook) => ebook.workId === workId && ebook.lastReadAt !== null)
+    .sort((a, b) => (b.lastReadAt ?? 0) - (a.lastReadAt ?? 0))[0]
+
+  const readAt = lastRead?.lastReadAt ?? null
 
   // A finished book, marked or listened to the end, starts over either way: neither button picks
   // it up, and its status says it is done.
@@ -97,22 +108,26 @@ export function WorkScreen() {
   const readLast = !finished && readAt !== null && readAt > (heardAt ?? 0)
 
   // How far into the book the listener is, the way it was followed last. The book playing now
-  // counts live; otherwise the saved place does.
-  const now = useNowPlaying()
+  // counts live, read only as finely as it is shown, in whole percents and minutes, so the page
+  // does not follow every tick; otherwise the saved place does.
+  const livePercent = usePlayerValue((state) => {
+    const live = liveSummary(state, workId)
+
+    return live ? Math.round((live.bookElapsed / live.bookTotal) * 100) : null
+  })
+
+  const liveMinutesLeft = usePlayerValue((state) => {
+    const live = liveSummary(state, workId)
+
+    return live ? Math.ceil(Math.max(0, live.bookTotal - live.bookElapsed) / 60) : null
+  })
 
   const live =
-    now && workIdOf(now.book) === workId && now.summary.bookTotal
-      ? {
-          progress: now.summary.bookElapsed / now.summary.bookTotal,
-          left: Math.max(0, now.summary.bookTotal - now.summary.bookElapsed),
-        }
+    livePercent !== null && liveMinutesLeft !== null
+      ? { progress: livePercent / 100, left: liveMinutesLeft * 60 }
       : null
 
   const heard = live ?? listening
-
-  const lastRead = [...allEbooks.values()]
-    .filter((ebook) => ebook.workId === workId && ebook.lastReadAt !== null)
-    .sort((a, b) => (b.lastReadAt ?? 0) - (a.lastReadAt ?? 0))[0]
 
   // One line, the status leading into the details: “Listening, 5 h 12 min left (32%)”.
   const heardPercent =
@@ -447,9 +462,9 @@ export function WorkScreen() {
  * chosen for the book, or the best one found, is downloaded first with Download, which then turns
  * into Read; Read asks where to start when listening went further, finding a place carried over
  * from listening in that same question, and opens the reader there. The row lists every file to
- * choose another, as the source row does for recordings.
+ * choose another, as the source row does for recordings. With `readLast`, reading was the last
+ * way the book was followed.
  */
-/** The Read button; with `readLast`, reading was the last way the book was followed. */
 function useReadAction(hardcoverId: number, readLast: boolean) {
   const { t, i18n } = useLingui()
   const router = useRouter()

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ProxiedHttp, type ProxyServer } from '../../modules/platform'
+import { stopIfAborted } from './abort'
 import { HttpError, type TextReader, withDeadline } from './http'
 
 /** The proxy refused the username and password. */
@@ -27,6 +28,8 @@ export function proxiedReader(server: ProxyServer): TextReader {
       const id = String(++lastRequestId)
       const cancel = () => native.cancel(id)
 
+      // The native request can only be cancelled once started, so an aborted one never starts.
+      stopIfAborted(deadline)
       deadline.addEventListener('abort', cancel)
 
       try {

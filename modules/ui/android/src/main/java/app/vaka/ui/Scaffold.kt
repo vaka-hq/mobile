@@ -115,41 +115,39 @@ fun FunctionalComposableScope.ScaffoldContent(props: ScaffoldProps, onSnackbarDi
     LocalTopAppBarScrollBehavior provides scrollBehavior,
     LocalCollapseAllowed provides collapseAllowed
   ) {
-  Scaffold(
-    modifier = Modifier.clearFocusOnTap().then(
-      if (scrollBehavior != null) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier
-    ),
-    // Material 3 screens sit on `surface`; `background` is the legacy role.
-    containerColor = props.containerColor.composeOrNull ?: MaterialTheme.colorScheme.surface,
-    contentWindowInsets = if (props.bottomInset) {
-      ScaffoldDefaults.contentWindowInsets
-    } else {
-      ScaffoldDefaults.contentWindowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
-    },
-    topBar = {
-      CompositionLocalProvider(LocalTopAppBarScrollBehavior provides scrollBehavior) {
+    Scaffold(
+      modifier = Modifier.clearFocusOnTap().then(
+        if (scrollBehavior != null) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier
+      ),
+      // Material 3 screens sit on `surface`; `background` is the legacy role.
+      containerColor = props.containerColor.composeOrNull ?: MaterialTheme.colorScheme.surface,
+      contentWindowInsets = if (props.bottomInset) {
+        ScaffoldDefaults.contentWindowInsets
+      } else {
+        ScaffoldDefaults.contentWindowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
+      },
+      topBar = {
         topBarSlotView?.renderSlot()
+      },
+      bottomBar = {
+        bottomBarSlotView?.renderSlot()
+      },
+      floatingActionButton = {
+        floatingActionButtonSlotView?.renderSlot()
+      },
+      snackbarHost = {
+        SnackbarHost(hostState = snackbarHostState)
       }
-    },
-    bottomBar = {
-      bottomBarSlotView?.renderSlot()
-    },
-    floatingActionButton = {
-      floatingActionButtonSlotView?.renderSlot()
-    },
-    snackbarHost = {
-      SnackbarHost(hostState = snackbarHostState)
+    ) { innerPadding ->
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .padding(innerPadding)
+          .consumeWindowInsets(innerPadding)
+      ) {
+        Children(UIComposableScope(), filter = { !isSlotView(it) })
+      }
     }
-  ) { innerPadding ->
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(innerPadding)
-        .consumeWindowInsets(innerPadding)
-    ) {
-      Children(UIComposableScope(), filter = { !isSlotView(it) })
-    }
-  }
   }
 }
 
@@ -203,18 +201,18 @@ fun FunctionalComposableScope.TopAppBarContent(props: AppBarProps, large: Boolea
 }
 
 /**
+ * How far the header over a screen's list has taken its scrolled colour, from 0 to 1, eased as the
+ * bar's own colour is, so what sits in it, such as a search field, follows both ways.
+ */
+val LocalHeaderRaised = compositionLocalOf { 0f }
+
+/**
  * A top bar made of whatever it holds, such as a title row with filter chips below, or a search
  * field with its chips: Material's small app bar with no height of its own, so it is as tall as
  * its content. With the Scaffold's enter-always behaviour it slides away as a list scrolls down
  * and returns on any scroll up, all of it together, and takes the scrolled container colour once
  * content passes under it. Its content runs edge to edge; chips bring their own padding.
  */
-/**
- * How far the header over a screen's list has taken its scrolled colour, from 0 to 1, eased as the
- * bar's own colour is, so what sits in it, such as a search field, follows both ways.
- */
-val LocalHeaderRaised = compositionLocalOf { 0f }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FunctionalComposableScope.HeaderAppBarContent() {

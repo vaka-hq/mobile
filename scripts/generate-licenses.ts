@@ -94,10 +94,12 @@ for (const library of nativeLibraries) {
   licences.push({ ...library, license: 'Apache-2.0', repository: null, text: apache })
 }
 
-// Packages from one repository share its licence; some are published without their own copy.
+// Packages from one repository share its licence; some are published without their own copy. One
+// that names no repository is left without, rather than given the native libraries' Apache text.
 for (const entry of licences) {
-  entry.text ??=
-    licences.find((other) => other.text && other.repository === entry.repository)?.text ?? null
+  entry.text ??= entry.repository
+    ? (licences.find((other) => other.text && other.repository === entry.repository)?.text ?? null)
+    : null
 }
 
 await writeFile(

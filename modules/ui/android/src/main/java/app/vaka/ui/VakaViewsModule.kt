@@ -120,14 +120,14 @@ class VakaViewsModule : Module() {
     }
 
     ExpoUIView<PlayerFadeProps>("PlayerFadeView") {
-      Content { props ->
-        PlayerFadeContent(props)
+      Content { _ ->
+        PlayerFadeContent()
       }
     }
 
     ExpoUIView<ViewportBoxProps>("ViewportBoxView") {
-      Content { props ->
-        ViewportBoxContent(props)
+      Content { _ ->
+        ViewportBoxContent()
       }
     }
 
@@ -152,7 +152,7 @@ class VakaViewsModule : Module() {
       }
     }
 
-        ExpoUIView<ShortNavigationBarProps>("ShortNavigationBarView") {
+    ExpoUIView<ShortNavigationBarProps>("ShortNavigationBarView") {
       val onTabSelected by Event<TabSelectedEvent>()
 
       Content { props ->

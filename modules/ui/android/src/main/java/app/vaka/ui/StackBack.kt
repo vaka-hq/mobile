@@ -31,10 +31,11 @@ import androidx.core.graphics.ColorUtils
 import androidx.dynamicanimation.animation.FloatValueHolder
 import androidx.dynamicanimation.animation.SpringAnimation
 import androidx.dynamicanimation.animation.SpringForce
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.swmansion.rnscreens.Screen
 import com.swmansion.rnscreens.ScreenStack
 import com.swmansion.rnscreens.ScreenStackFragmentWrapper
-import java.util.WeakHashMap
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -471,15 +472,23 @@ internal class StackBack private constructor(private val activity: ComponentActi
       },
     )
 
-    private val callbacks = WeakHashMap<ComponentActivity, StackBack>()
+    private val callbacks = HashMap<ComponentActivity, StackBack>()
 
     /**
      * The activity's callback, registered once and after React Native's, so it sees Back first
-     * while Compose back handlers registered later still come before it.
+     * while Compose back handlers registered later still come before it. The callback holds its
+     * activity, so it is let go of when the activity is destroyed.
      */
     fun of(activity: ComponentActivity): StackBack =
       callbacks.getOrPut(activity) {
-        StackBack(activity).also { activity.onBackPressedDispatcher.addCallback(activity, it) }
+        StackBack(activity).also {
+          activity.onBackPressedDispatcher.addCallback(activity, it)
+          activity.lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onDestroy(owner: LifecycleOwner) {
+              callbacks.remove(activity)
+            }
+          })
+        }
       }
   }
 }

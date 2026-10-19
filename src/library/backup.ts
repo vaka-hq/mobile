@@ -5,6 +5,7 @@ import { annasKey } from '@/settings/annas-key'
 import { hardcoverKey } from '@/settings/hardcover-key'
 import { getPreferences, setPreference } from '@/settings/preferences'
 import { torBoxKey } from '@/settings/torbox-key'
+import { normalizeBaseUrl } from '@/sources/audiobookbay/client'
 import { database } from './database'
 import { hasEbookFile, reloadEbooks } from './ebooks'
 import { isLanguage } from './languages'
@@ -514,7 +515,7 @@ export async function restoreBackup(backup: Backup): Promise<RestoreSummary> {
   }
 
   if (preferences.abbBaseUrl !== undefined) {
-    await setPreference('abbBaseUrl', preferences.abbBaseUrl)
+    await restoreAbbAddress(preferences.abbBaseUrl)
   }
 
   // A language this version does not offer is left as it is.
@@ -544,4 +545,17 @@ export async function restoreBackup(backup: Backup): Promise<RestoreSummary> {
     bookmarks,
     ebooks,
   }
+}
+
+/** The site's address kept as Settings keeps it, over HTTPS; what is no address is left out. */
+async function restoreAbbAddress(value: string) {
+  let address: string
+
+  try {
+    address = normalizeBaseUrl(value)
+  } catch {
+    return
+  }
+
+  await setPreference('abbBaseUrl', address)
 }

@@ -16,7 +16,7 @@ import { compareLanguages } from './languages'
 const maxPages = 2
 
 /** Enough posts to cover every narrator; each one costs a page load on AudioBookBay. */
-export const maxRecordings = 16
+const maxRecordings = 16
 
 /** Below this many uploads from the title-and-author search, the bare title is searched too. */
 const fewUploads = 3
@@ -102,7 +102,7 @@ export type NarratorGroup = {
 }
 
 /** The Hardcover recording read by this narrator, preferring the post's language and a cover. */
-export function recordingFor(
+function recordingFor(
   work: Pick<HardcoverWork, 'recordings'>,
   post: Pick<AbbBook, 'narrator' | 'language'>,
 ) {
@@ -196,11 +196,11 @@ export function groupByNarrator(
       right.posts.length - left.posts.length,
   )
 
+  uncredited.sort(bestFirst)
+
   if (uncredited.length > 0) {
     groups.push({ key: 'uncredited', narrators: [], recording: null, posts: uncredited })
   }
-
-  uncredited.sort(bestFirst)
 
   return groups
 }

@@ -16,8 +16,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.dp
 import expo.modules.kotlin.views.ComposeProps
 import expo.modules.kotlin.views.FunctionalComposableScope
+import expo.modules.kotlin.views.OptimizedComposeProps
 import kotlinx.coroutines.launch
 
+@OptimizedComposeProps
 data class StepDotsProps(val count: Int = 1, val current: Int = 0) : ComposeProps
 
 private val dotSize = 8.dp

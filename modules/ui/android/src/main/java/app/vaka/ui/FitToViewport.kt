@@ -26,10 +26,7 @@ import kotlin.math.roundToInt
 private val LocalViewportHeight = compositionLocalOf<Int?> { null }
 
 @OptimizedComposeProps
-data class ViewportBoxProps(
-  // Unused; props records need a field.
-  val unused: Boolean = false
-) : ComposeProps
+class ViewportBoxProps : ComposeProps
 
 /**
  * Wraps a scrolling list and tells the `FitColumn`s inside it how tall the list shows, in the
@@ -39,7 +36,7 @@ data class ViewportBoxProps(
  * moves only when something below, such as the mini player, comes or goes, and that counts.
  */
 @Composable
-fun FunctionalComposableScope.ViewportBoxContent(@Suppress("UNUSED_PARAMETER") props: ViewportBoxProps) {
+fun FunctionalComposableScope.ViewportBoxContent() {
   // The list's top in the window at rest, the lowest it has been, and where it is now.
   var restTop by remember { mutableFloatStateOf(Float.NaN) }
   var top by remember { mutableFloatStateOf(Float.NaN) }

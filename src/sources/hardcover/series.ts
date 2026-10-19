@@ -1,5 +1,5 @@
 /** One book's place in a series as Hardcover lists it, before duplicates are removed. */
-export type SeriesEntry<T> = {
+type SeriesEntry<T> = {
   position: number | null
   compilation: boolean
   /** Set on duplicate and translated records that point at the canonical book. */

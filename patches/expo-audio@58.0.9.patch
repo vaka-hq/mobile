@@ -61,7 +61,7 @@ index 6c81fce3dd518d3b82e3280940a001c7be84dd0a..b0c7a38dd7e7d170bdb282ef9db29a12
        }
      }
 diff --git a/android/src/main/java/expo/modules/audio/AudioPlayer.kt b/android/src/main/java/expo/modules/audio/AudioPlayer.kt
-index fb2d0b57fb8718df04e5c073b70837b2658f2c16..08f64d094d9c073a3240991401a2ecf187fa969d 100644
+index fb2d0b57fb8718df04e5c073b70837b2658f2c16..0add381ee45dc059936f7de63043819f8a3da599 100644
 --- a/android/src/main/java/expo/modules/audio/AudioPlayer.kt
 +++ b/android/src/main/java/expo/modules/audio/AudioPlayer.kt
 @@ -35,23 +35,32 @@ class AudioPlayer(
@@ -110,6 +110,16 @@ index fb2d0b57fb8718df04e5c073b70837b2658f2c16..08f64d094d9c073a3240991401a2ecf1
      }
      .build(),
    appContext = appContext,
+@@ -146,7 +155,8 @@ class AudioPlayer(
+   }
+ 
+   override fun setPlaybackRate(rate: Float) {
+-    val playbackRate = rate.coerceIn(0.1f, 2.0f)
++    // Vaka: audiobooks are listened to at up to 3×, which Media3 plays as well as 2×.
++    val playbackRate = rate.coerceIn(0.1f, 3.0f)
+     val pitch = if (preservesPitch) {
+       1f
+     } else {
 diff --git a/android/src/main/java/expo/modules/audio/StreamCache.kt b/android/src/main/java/expo/modules/audio/StreamCache.kt
 new file mode 100644
 index 0000000000000000000000000000000000000000..637b353eaf9b820b2b6b8369c30b527b8734787f

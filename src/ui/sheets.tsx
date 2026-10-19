@@ -35,8 +35,6 @@ export type SheetProps = {
   subtitle?: string | null
   /** A control at the end of the title row, such as adding a bookmark. */
   action?: ReactNode
-  /** Controls at the end of the title row that can close the sheet, such as a close button. */
-  closingActions?: (close: () => void) => ReactNode
   onDismiss: () => void
   /** The content; `close` animates the sheet away, after which `onDismiss` follows. */
   children: (close: () => void) => ReactNode
@@ -47,14 +45,7 @@ export type SheetProps = {
  * to half the screen, grows to full height as its content scrolls, and closes the same way from
  * Back, the scrim or a choice made inside it.
  */
-export function Sheet({
-  title,
-  subtitle,
-  action,
-  closingActions,
-  onDismiss,
-  children,
-}: SheetProps) {
+export function Sheet({ title, subtitle, action, onDismiss, children }: SheetProps) {
   const sheet = useRef<ModalSheetRef>(null)
   const close = () => void sheet.current?.hide()
   const colors = useMaterialColors()
@@ -72,7 +63,6 @@ export function Sheet({
             ) : null}
           </Column>
           {action}
-          {closingActions?.(close)}
         </Row>
         {children(close)}
       </Column>

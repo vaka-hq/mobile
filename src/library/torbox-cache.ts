@@ -3,6 +3,7 @@ import { magnetLink } from '@/sources/audiobookbay/parse'
 import type { AbbBook } from '@/sources/audiobookbay/parse'
 import { cachedHashes, torrentSwarm } from '@/sources/torbox/client'
 import { getCachedResponse, saveCachedResponse } from './repository'
+import { readStored } from './request-cache'
 
 const minute = 60 * 1000
 
@@ -21,17 +22,7 @@ function storeKey(hash: string) {
 async function remembered(hash: string) {
   const stored = await getCachedResponse(storeKey(hash))
 
-  if (stored === null) {
-    return null
-  }
-
-  try {
-    const parsed = z.boolean().safeParse(JSON.parse(stored))
-
-    return parsed.success ? parsed.data : null
-  } catch {
-    return null
-  }
+  return stored === null ? null : readStored(stored, z.boolean())
 }
 
 /**
@@ -137,17 +128,7 @@ export type Swarm = z.infer<typeof swarmSchema>
 async function rememberedSwarm(hash: string) {
   const stored = await getCachedResponse(swarmKey(hash))
 
-  if (stored === null) {
-    return null
-  }
-
-  try {
-    const parsed = swarmSchema.safeParse(JSON.parse(stored))
-
-    return parsed.success ? parsed.data : null
-  } catch {
-    return null
-  }
+  return stored === null ? null : readStored(stored, swarmSchema)
 }
 
 async function lookup(apiKey: string, magnet: string, thorough: boolean, signal?: AbortSignal) {

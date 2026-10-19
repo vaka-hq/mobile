@@ -53,12 +53,11 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,7 +83,6 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.input.pointer.util.addPointerInputChange
 import androidx.compose.ui.platform.LocalContext
@@ -112,11 +110,8 @@ import kotlin.math.roundToInt
 import kotlin.math.hypot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -184,12 +179,6 @@ private data class PageRef(val chapter: Int, val index: Int)
 private class Hit(val chapter: Int, val block: Int, val offset: Int)
 
 /**
- * The reader's state outside composition: the book, how it is laid out, where the reader is, and
- * the marks and selection drawn over the text. Chapters are laid out one at a time on a single
- * background thread, the one the reader is in first.
- */
-@OptIn(ExperimentalCoroutinesApi::class)
-/**
  * What the page's actions are called, in the reader's language, sent from JS: those TalkBack
  * offers, and those of the toolbar over selected text.
  */
@@ -203,6 +192,12 @@ private data class ReaderLabels(
   val share: String = "Share",
 )
 
+/**
+ * The reader's state outside composition: the book, how it is laid out, where the reader is, and
+ * the marks and selection drawn over the text. Chapters are laid out one at a time on a single
+ * background thread, the one the reader is in first, and the images near the page being read are
+ * decoded on it too.
+ */
 private class BookState(val scope: CoroutineScope, val post: (JSONObject) -> Unit) {
   var labels by mutableStateOf(ReaderLabels())
   var book by mutableStateOf<EpubBook?>(null)
@@ -266,10 +261,17 @@ private class BookState(val scope: CoroutineScope, val post: (JSONObject) -> Uni
   /** Where the page counts of the book in its current settings are kept, once counted. */
   var countKey: String? = null
 
-  /** Decoded images, kept to an eighth of the app's memory by their size in bytes. */
-  val images = object : LruCache<String, ImageBitmap>((Runtime.getRuntime().maxMemory() / 8).toInt()) {
-    override fun sizeOf(key: String, value: ImageBitmap) = value.asAndroidBitmap().byteCount
+  /**
+   * Decoded images, by path and the width they are drawn at, kept to an eighth of the app's memory
+   * by their size in bytes. They are decoded on the layout thread, never while a page draws.
+   */
+  private val images = object : LruCache<String, ImageBitmap>((Runtime.getRuntime().maxMemory() / 8).toInt()) {
+    override fun sizeOf(key: String, value: ImageBitmap) = value.asAndroidBitmap().allocationByteCount
   }
+  /** Images being decoded, and those that cannot be, so neither is asked for again; main thread only. */
+  private val imagesAsked = mutableSetOf<String>()
+  /** Raised as each image is decoded, so a page drawn before its image was ready draws again. */
+  private val imagesDecoded = mutableIntStateOf(0)
 
   val totalPages: Int get() = book?.chapters?.indices?.sumOf { pageCounts[it] ?: 0 } ?: 0
 
@@ -359,16 +361,22 @@ private class BookState(val scope: CoroutineScope, val post: (JSONObject) -> Uni
         }
       }
       if (pending[chapter] === layout) pending.remove(chapter)
-      if (pages != null && this@BookState.layout === layout) {
-        chapters[chapter] = pages
-        if (pageCounts[chapter] != pages.pages.size) {
-          // A kept count that no longer matches is corrected where it is kept too.
-          pageCounts[chapter] = pages.pages.size
-          saveCounts()
-        }
-        evict(chapter)
-        waiters.remove(chapter)?.forEach { it() }
+      if (this@BookState.layout !== layout) return@launch
+      if (pages == null) {
+        // Asked for after it was passed over, it is laid out after all.
+        if (!waiters[chapter].isNullOrEmpty()) ensure(chapter)
+        return@launch
       }
+      chapters[chapter] = pages
+      if (pageCounts[chapter] != pages.pages.size) {
+        // A kept count that no longer matches is corrected where it is kept too.
+        pageCounts[chapter] = pages.pages.size
+        saveCounts()
+      }
+      evict(chapter)
+      waiters.remove(chapter)?.forEach { it() }
+      // The images on its pages near the one being read are decoded as soon as it is laid out.
+      prefetchImages()
     }
   }
 
@@ -463,6 +471,8 @@ private class BookState(val scope: CoroutineScope, val post: (JSONObject) -> Uni
   /** Lays out the chapters either side of the one being read, so turning into them is instant. */
   fun prefetch() {
     val ref = page ?: return
+    // The page's images first, so they are decoded before the chapters beside it are laid out.
+    prefetchImages()
     ensure(ref.chapter - 1)
     ensure(ref.chapter + 1)
   }
@@ -563,16 +573,13 @@ private class BookState(val scope: CoroutineScope, val post: (JSONObject) -> Uni
     val book = book ?: return null
     val needle = text.trim().take(80)
     if (needle.isEmpty()) return null
-    for (chapter in book.chapters.indices) {
-      val blocks = book.chapters.getOrNull(chapter)?.blocks ?: continue
-      blocks.forEachIndexed { index, block ->
+    val length = text.trim().length
+    for ((chapter, content) in book.chapters.withIndex()) {
+      content.blocks.forEachIndexed { index, block ->
         if (block is TextBlock) {
           val at = block.text.indexOf(needle)
           if (at >= 0) {
-            val length = text.trim().length
-            val endBlock = index
-            val endOffset = minOf(block.text.length, at + length)
-            return BookRange(BookPos(chapter, index, at), BookPos(chapter, endBlock, endOffset))
+            return BookRange(BookPos(chapter, index, at), BookPos(chapter, index, minOf(block.text.length, at + length)))
           }
         }
       }
@@ -623,6 +630,8 @@ private class BookState(val scope: CoroutineScope, val post: (JSONObject) -> Uni
       val hits = mutableListOf<BookRange>()
       withContext(Dispatchers.Default) {
         outer@ for ((chapterIndex, chapter) in book.chapters.withIndex()) {
+          // A search given up for another stops here rather than reading on through the book.
+          ensureActive()
           for ((blockIndex, block) in chapter.blocks.withIndex()) {
             if (block !is TextBlock) continue
             var from = 0
@@ -666,33 +675,83 @@ private class BookState(val scope: CoroutineScope, val post: (JSONObject) -> Uni
     searchHits = emptyList()
   }
 
-  fun image(path: String, width: Float): ImageBitmap? {
-    if (width <= 0f) return null
-    images.get(path)?.let { return it }
-    val bytes = book?.bytes(path) ?: return null
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-    // An image Android cannot decode, such as an SVG, is left out.
-    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-    // Decoded no larger than it is drawn, and never beyond about four million pixels.
-    var sample = 1
-    while (sample < 64 && (bounds.outWidth / (sample * 2) >= width ||
-        bounds.outWidth.toLong() * bounds.outHeight / (sample.toLong() * sample) > 4_000_000L)
-    ) {
-      sample *= 2
+  /** Lets go of the last book's images; those still being decoded for it are dropped when done. */
+  fun forgetImages() {
+    images.evictAll()
+    imagesAsked.clear()
+  }
+
+  /**
+   * An image ready to draw, or null while it is decoded in the background, as one let go to save
+   * memory is decoded again; its box stays blank until then, and the page draws again once it is.
+   */
+  fun imageFor(item: PlacedImage): ImageBitmap? {
+    // Read while drawing, so that a page drawn without the image draws again as images arrive.
+    imagesDecoded.intValue
+    return images.get(imageKey(item)) ?: run {
+      decodeImage(item)
+      null
     }
-    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
-      ?: return null
-    return bitmap.asImageBitmap().also { images.put(path, it) }
+  }
+
+  private fun imageKey(item: PlacedImage) = "${item.path}|${item.width.roundToInt()}"
+
+  /** Decodes an image on the layout thread, at the size of its box on the page. */
+  private fun decodeImage(item: PlacedImage) {
+    val book = book ?: return
+    val key = imageKey(item)
+    if (images.get(key) != null || !imagesAsked.add(key)) return
+    scope.launch {
+      val image = withContext(worker) {
+        runCatching { book.bytes(item.path)?.let { decodeBitmap(it, item.width, item.height) } }.getOrNull()
+      }
+      // Another book opened meanwhile has let go of this one's images.
+      if (this@BookState.book !== book) return@launch
+      // One that cannot be decoded stays asked for, so it is not tried again on every frame.
+      if (image == null) return@launch
+      images.put(key, image)
+      imagesAsked.remove(key)
+      imagesDecoded.intValue++
+    }
+  }
+
+  /** Decodes the images on the pages the row of cards shows around the page being read. */
+  private fun prefetchImages() {
+    val ref = page ?: return
+    val near = generateSequence(ref) { previous(it) }.take(3) + generateSequence(next(ref)) { next(it) }.take(2)
+    near.forEach { pageAt(it)?.items?.forEach { item -> if (item is PlacedImage) decodeImage(item) } }
   }
 }
 
 /**
- * The reader: EPUB chapters laid out with Compose text into pages that slide as they turn, or one
- * long scrolling column. The app sends it commands as JSON and it reports what happens as JSON
- * events, which drive the reader screen's bars, sheets, marks and search.
+ * An image decoded no larger than about twice its box on the page, which is never wider than the
+ * text nor taller than the page, and never beyond about four million pixels; null when Android
+ * cannot decode it, such as an SVG.
  */
-@OptIn(FlowPreview::class, ExperimentalMaterial3ExpressiveApi::class)
+private fun decodeBitmap(bytes: ByteArray, width: Float, height: Float): ImageBitmap? {
+  val boxWidth = width.roundToInt().coerceAtLeast(1)
+  val boxHeight = height.roundToInt().coerceAtLeast(1)
+  val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+  BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+  if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+  var sample = 1
+  while (sample < 64 && (
+      (bounds.outWidth / (sample * 2) >= boxWidth && bounds.outHeight / (sample * 2) >= boxHeight) ||
+        bounds.outWidth.toLong() * bounds.outHeight / (sample.toLong() * sample) > 4_000_000L
+      )
+  ) {
+    sample *= 2
+  }
+  val options = BitmapFactory.Options().apply { inSampleSize = sample }
+  return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)?.asImageBitmap()
+}
+
+/**
+ * The reader: EPUB chapters laid out with Compose text into pages that slide as they turn. The
+ * app sends it commands as JSON and it reports what happens as JSON events, which drive the
+ * reader screen's bars, sheets, marks and search.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FunctionalComposableScope.BookViewContent(
   send: AsyncFunctionHandle<String>,
@@ -896,7 +955,7 @@ private suspend fun handle(state: BookState, message: JSONObject, cache: File) {
       state.source = file.name
       state.cacheDir = cache
       state.book?.close()
-      state.images.evictAll()
+      state.forgetImages()
       state.book = book
       state.tocPositions = book.toc.mapNotNull { entry -> book.resolve(entry.href)?.let { it to entry } }
       val annotations = message.optJSONArray("annotations") ?: JSONArray()
@@ -942,7 +1001,9 @@ private suspend fun handle(state: BookState, message: JSONObject, cache: File) {
     "findPassage" -> {
       val book = state.book
       val found = book?.let {
-        findPassage(it, stringsOf(message.optJSONArray("words")), message.optDouble("fraction").toFloat(), message.optString("anchor") != "start")
+        val words = stringsOf(message.optJSONArray("words"))
+        val fraction = message.optDouble("fraction").toFloat()
+        withContext(Dispatchers.Default) { findPassage(it, words, fraction, message.optString("anchor") != "start") }
       }
       if (found != null) {
         navigate(state, found)
@@ -1398,7 +1459,9 @@ private fun PagedBook(state: BookState, layout: BookLayout, style: BookStyle, wi
       }
       .pointerInput(state, width, backEdgeLeft, backEdgeRight) {
         // A long press selects the word under it, with the buzz Android gives it, and dragging on
-        // extends the selection with a tick at each character it reaches, under a magnifier.
+        // extends the selection with a tick at each character it reaches, under a magnifier,
+        // keeping the word pressed whichever way it goes.
+        var pressed: BookRange? = null
         fun finish() {
           magnifierAt = Offset.Unspecified
           state.selecting = false
@@ -1406,26 +1469,31 @@ private fun PagedBook(state: BookState, layout: BookLayout, style: BookStyle, wi
         }
         detectDragGesturesAfterLongPress(
           onDragStart = { point ->
+            pressed = null
             if (state.overview || curl != null) return@detectDragGesturesAfterLongPress
             if (point.x < backEdgeLeft || point.x > width - backEdgeRight) return@detectDragGesturesAfterLongPress
             val hit = hitAt(point) ?: return@detectDragGesturesAfterLongPress
+            val word = wordAt(state, hit)
+            pressed = word
             state.longPressed = true
             state.selecting = true
-            state.selection = wordAt(state, hit)
+            state.selection = word
             view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             magnifierAt = magnifierSource(state, layout, point, BookPos(hit.chapter, hit.block, hit.offset))
           },
           onDrag = { change, _ ->
-            val start = state.selection?.start ?: return@detectDragGesturesAfterLongPress
+            val word = pressed ?: return@detectDragGesturesAfterLongPress
+            if (state.selection == null) return@detectDragGesturesAfterLongPress
             val hit = hitAt(change.position) ?: return@detectDragGesturesAfterLongPress
             val pos = BookPos(hit.chapter, hit.block, hit.offset)
-            moveSelection(rangeBetween(start, pos))
+            moveSelection(if (pos < word.start) BookRange(pos, word.end) else BookRange(word.start, maxOf(pos, word.end)))
             magnifierAt = magnifierSource(state, layout, change.position, pos)
             change.consume()
           },
           onDragEnd = { finish() },
           // Android takes the touch over, as its back gesture does: nothing stays selected.
           onDragCancel = {
+            pressed = null
             magnifierAt = Offset.Unspecified
             state.selecting = false
             state.longPressed = false
@@ -1446,14 +1514,15 @@ private fun PagedBook(state: BookState, layout: BookLayout, style: BookStyle, wi
           down.consume()
           state.longPressed = true
           state.selecting = true
+          // The other end stays put, even once the handle is dragged past it.
+          val fixed = if (grabbed.index == 0) selection.end else selection.start
           drag(down.id) { change ->
             // The handle hangs below the text, so the point above it is the one it marks.
             val point = change.position - Offset(0f, handleRadius * 2)
             val hit = hitAt(point)
-            val current = state.selection
-            if (hit != null && current != null) {
+            if (hit != null && state.selection != null) {
               val pos = BookPos(hit.chapter, hit.block, hit.offset)
-              moveSelection(if (grabbed.index == 0) rangeBetween(current.end, pos) else rangeBetween(current.start, pos))
+              moveSelection(rangeBetween(fixed, pos))
               magnifierAt = magnifierSource(state, layout, point, pos)
             }
             change.consume()
@@ -1911,7 +1980,7 @@ private fun DrawScope.drawPage(
     page.items.forEach { item ->
       when (item) {
         is PlacedText -> drawTextItem(state, style, page.chapter, item, selection, dark)
-        is PlacedImage -> state.image(item.path, item.width)?.let { image ->
+        is PlacedImage -> state.imageFor(item)?.let { image ->
           drawImage(
             image,
             dstOffset = IntOffset(item.left.toInt(), item.top.toInt()),
@@ -1981,6 +2050,9 @@ private fun DrawScope.drawTextItem(
 /** How many words of the page's opening the app keeps, to find the place in the audiobook. */
 private const val passageWords = 60
 
+private val whitespaceRun = Regex("\\s+")
+private val wordRun = Regex("\\S+")
+
 /** A word as matched between the audio and the text: lower case, letters and digits only. */
 private fun matchWord(word: String) = word.lowercase().filter { it.isLetterOrDigit() }
 
@@ -2000,7 +2072,7 @@ private fun passageAt(book: EpubBook, from: BookPos): String {
     }
     val text = (blocks[block] as? TextBlock)?.text
     if (text != null) {
-      words.addAll(text.substring(offset.coerceIn(0, text.length)).split(Regex("\\s+")).filter { it.isNotBlank() })
+      words.addAll(text.substring(offset.coerceIn(0, text.length)).split(whitespaceRun).filter { it.isNotBlank() })
     }
     block++
     offset = 0
@@ -2023,7 +2095,7 @@ private fun findPassage(book: EpubBook, heard: List<String>, fraction: Float, at
   for (chapter in (middle - 1).coerceAtLeast(0)..(middle + 1).coerceAtMost(book.chapters.size - 1)) {
     book.chapters[chapter].blocks.forEachIndexed { blockIndex, block ->
       val words = (block as? TextBlock)?.text ?: return@forEachIndexed
-      Regex("\\S+").findAll(words).forEach { match ->
+      wordRun.findAll(words).forEach { match ->
         val word = matchWord(match.value)
         if (word.isNotEmpty()) {
           text.add(word)

@@ -2,6 +2,7 @@ import { plural } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
+import { useFeedback } from '@/lib/feedback'
 import { splitTitle } from '@/library/display'
 import { useEbooks } from '@/library/ebooks'
 import { hardcoverWorkId } from '@/library/model'
@@ -12,6 +13,7 @@ import {
   useSeriesInLibrary,
 } from '@/library/queries'
 import { ConfirmDialog } from '@/ui/dialogs'
+import { useErrorText } from '@/ui/errors'
 import { CardItem, Empty, Loading } from '@/ui/primitives'
 import { Action } from '@/ui/screen'
 import { Sheet, SheetList } from '@/ui/sheets'
@@ -33,6 +35,8 @@ export function SeriesSheet({
 }) {
   const { t } = useLingui()
   const router = useRouter()
+  const errorText = useErrorText()
+  const { showFeedback } = useFeedback()
   const series = useHardcoverSeries(seriesId)
   const toggle = useSeriesInLibrary(series.data)
   const saved = useFollowedSeries().data?.some((item) => item.id === seriesId) ?? false
@@ -101,6 +105,10 @@ export function SeriesSheet({
         })
   }
 
+  function follow(inLibrary: boolean) {
+    toggle.mutate(inLibrary, { onError: (error) => showFeedback(errorText(error)) })
+  }
+
   const current = books.findIndex((book) => book.id === currentBookId)
   const missing = books.filter((book) => !library.has(book.id)).length
   const held = books.length - missing
@@ -122,7 +130,7 @@ export function SeriesSheet({
           message: 'Remove',
           comment: 'Confirms removing a series from the library',
         })}
-        onConfirm={() => toggle.mutate(false)}
+        onConfirm={() => follow(false)}
         onDismiss={() => setAsking(false)}
       />
     ) : (
@@ -137,7 +145,7 @@ export function SeriesSheet({
             'Explains adding a whole series: the books not in the library yet, and later ones',
         })}
         confirmLabel={t({ message: 'Add', comment: 'Confirms adding a series to the library' })}
-        onConfirm={() => toggle.mutate(true)}
+        onConfirm={() => follow(true)}
         onDismiss={() => setAsking(false)}
       />
     )

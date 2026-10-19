@@ -97,7 +97,7 @@ const local = { staleTime: Number.POSITIVE_INFINITY, retry: false } as const
 
 /**
  * When a book was last listened to, on whichever recording: the time its place was last saved,
- * or null. Refreshed with the library, which every save while playing refreshes.
+ * or null. Refreshed with the library, which pausing or closing the player refreshes.
  */
 export function useLastHeardAt(workId: string) {
   return useQuery({
@@ -195,8 +195,10 @@ export function useHardcoverMatch(book: BookRecord | undefined, connected: boole
 
 /** A stream's TorBox status, polled while it downloads; shared by every screen showing it. */
 function torBoxStatusQuery(book: BookRecord | undefined, apiKey: string | null) {
+  const queryKey = [...queryKeys.torbox(book?.id ?? ''), apiKey]
+
   return {
-    queryKey: [...queryKeys.torbox(book?.id ?? ''), apiKey],
+    queryKey,
     queryFn: async ({ signal }: { signal: AbortSignal }) => {
       if (!book) {
         throw new Error('No book to check')
@@ -204,7 +206,11 @@ function torBoxStatusQuery(book: BookRecord | undefined, apiKey: string | null) 
 
       const status = await torBoxStatus(book, signal)
 
-      if (status.kind === 'ready') {
+      // Only on becoming ready, not on every check of a book that already was.
+      if (
+        status.kind === 'ready' &&
+        queryClient.getQueryData<TorBoxStatus>(queryKey)?.kind !== 'ready'
+      ) {
         invalidateBook(book.id)
         // Finished in the listener's TorBox, it is cached there now; source lists follow.
         void queryClient.invalidateQueries({ queryKey: ['torbox-cached'] })
@@ -291,8 +297,9 @@ export function useSetWorkInLibrary(id: string, hardcover: HardcoverWork | null)
 
 /**
  * Takes a book out of the library, with its progress, bookmarks and what the phone kept of it,
- * its e-books' files, places and notes too, under every work it is kept as. The player lets go of it first if it plays any of its streams,
- * so it cannot save the place again, or put the book back, once it is gone.
+ * its e-books' files, places and notes too, under every work it is kept as. The player lets go of
+ * it first if it plays any of its streams, so it cannot save the place again, or put the book
+ * back, once it is gone.
  */
 async function removeFromLibrary(id: string) {
   for (const work of await worksOfBook(id)) {
@@ -306,6 +313,10 @@ async function removeFromLibrary(id: string) {
 
     await removeWorkFromLibrary(work)
     await forgetReadingOf(work)
+
+    for (const stream of streams) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks(stream) })
+    }
 
     // Its e-books go with it: each file on the phone, its place, highlights, notes and bookmarks.
     for (const ebook of listEbooks().filter((item) => item.workId === work)) {
@@ -341,7 +352,7 @@ export async function deleteEbookFile(md5: string) {
 }
 
 /** An audiobook downloaded to the phone, with whether the listener finished it. */
-export type DownloadedAudiobook = { id: string; book: BookRecord | null; finished: boolean }
+type DownloadedAudiobook = { id: string; book: BookRecord | null; finished: boolean }
 
 /**
  * The audiobooks downloaded to the phone, or on their way, each with whether its book was
@@ -406,7 +417,7 @@ export function useMarkWork(id: string, hardcover: HardcoverWork | null) {
 
       // Each recording's page reads when it was last played from its own cached copy.
       for (const streamId of streams ?? []) {
-        invalidateBook(streamId)
+        void queryClient.invalidateQueries({ queryKey: queryKeys.book(streamId) })
       }
     },
   })
@@ -416,7 +427,7 @@ export function useMarkWork(id: string, hardcover: HardcoverWork | null) {
  * Picks the stream a Hardcover book plays and remembers it. The stream takes that book's details
  * for its recording, so the player and notification show the right cover and narrator.
  */
-export function useChooseStream(id: string, hardcover: HardcoverWork | null) {
+function useChooseStream(id: string, hardcover: HardcoverWork | null) {
   return useMutation({
     mutationFn: async (streamId: string) => {
       if (hardcover) {
@@ -429,7 +440,6 @@ export function useChooseStream(id: string, hardcover: HardcoverWork | null) {
     },
     onSettled: (_data, _error, streamId) => {
       invalidateBook(streamId)
-      invalidateLibrary()
       void queryClient.invalidateQueries({ queryKey: queryKeys.hardcover(streamId) })
     },
   })
@@ -464,7 +474,6 @@ export function useChooseHardcover(bookId: string) {
     mutationFn: (hardcoverId: number | null) => chooseHardcover(bookId, hardcoverId),
     onSettled: () => {
       invalidateBook(bookId)
-      void queryClient.invalidateQueries({ queryKey: queryKeys.works })
       void queryClient.invalidateQueries({ queryKey: queryKeys.hardcover(bookId) })
     },
   })
@@ -673,7 +682,7 @@ export function useCancelDownload() {
   })
 }
 
-export function useHardcoverWork(id: number) {
+function useHardcoverWork(id: number) {
   return useQuery({
     queryKey: queryKeys.hardcoverWork(id),
     queryFn: ({ signal }) => hardcoverWork(id, signal),
@@ -690,7 +699,7 @@ const postLimit = concurrencyLimit(3)
  * Opened posts share the book cache, so tapping one opens at once. TorBox's cache is checked for
  * all of them in one request once they have loaded.
  */
-export function useRecordings(work: HardcoverWork | undefined, include: (string | null)[] = []) {
+function useRecordings(work: HardcoverWork | undefined, include: (string | null)[] = []) {
   const { abbBaseUrl } = usePreferences()
   const apiKey = useTorBoxKey()
 
@@ -905,7 +914,7 @@ export function useWorkStreams(hardcoverId: number, preferred: string | null) {
 }
 
 /** EPUBs of a book on Anna's Archive and Library Genesis. */
-export function useEbookSearch(query: string, enabled = true) {
+function useEbookSearch(query: string, enabled = true) {
   // A new member key searches Anna's Archive too, so it searches again.
   const annas = Boolean(useAnnasKey())
   const trimmed = query.trim()
@@ -941,7 +950,7 @@ export function useDownloadEbook() {
 }
 
 /** Makes a file the one a Hardcover book is read in; nothing is downloaded. */
-export function useChooseEbook(workId: string) {
+function useChooseEbook(workId: string) {
   return useMutation({ mutationFn: (result: EbookResult) => chooseEbook(result, workId) })
 }
 
@@ -949,7 +958,7 @@ export function useChooseEbook(workId: string) {
  * Downloads a book's e-book to read it, kept on the phone as the Storage sheet keeps one, and puts
  * the book in the library, as listening does.
  */
-export function useFetchEbook(workId: string, hardcover: HardcoverWork | null) {
+function useFetchEbook(workId: string, hardcover: HardcoverWork | null) {
   return useMutation({
     mutationFn: async (result: EbookResult) => {
       await setWorkInLibrary(workId, hardcover, true)
@@ -960,14 +969,14 @@ export function useFetchEbook(workId: string, hardcover: HardcoverWork | null) {
 }
 
 /** Keeps a book's e-book on the phone to read offline. */
-export function useKeepEbook(workId: string) {
+function useKeepEbook(workId: string) {
   return useMutation({
     mutationFn: (result: EbookResult) => downloadEbook(result, workId),
   })
 }
 
 /** Where finding e-books for a book has got to, for one clear status while none is chosen. */
-export type EbookFinding = 'searching' | 'failed' | 'none' | null
+type EbookFinding = 'searching' | 'failed' | 'none' | null
 
 /**
  * A Hardcover book's e-book: the file last chosen for it, or else the best one found, searched

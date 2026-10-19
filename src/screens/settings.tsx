@@ -18,7 +18,7 @@ import {
   useUpdateState,
 } from '@/library/app-updates'
 import { exportBackup, hasSecrets } from '@/library/backup'
-import { clearEbookCache, ebookBytes, ebookCacheBytes, useEbooks } from '@/library/ebooks'
+import { ebookBytes, useEbooks } from '@/library/ebooks'
 import { invalidateLibrary } from '@/library/invalidation'
 import { isLanguage } from '@/library/languages'
 import {
@@ -33,7 +33,7 @@ import { offlineBytes, useOfflineBooks } from '@/library/offline'
 import { cachedMetadataSize, clearCachedMetadata } from '@/library/repository'
 import { installSpeechModel, removeSpeechModel, useSpeechModel } from '@/library/speech-model'
 import { forgetStreamUrls } from '@/library/streams'
-import { audioCacheSize, clearAudioCache } from '@/player/controller'
+import { applySkipIntervals, audioCacheSize, clearAudioCache } from '@/player/controller'
 import { type AbbProxy, setAbbProxy, useAbbProxy } from '@/settings/abb-proxy'
 import {
   connectAnnas,
@@ -47,6 +47,7 @@ import { annasKey, useAnnasKey } from '@/settings/annas-key'
 import { hardcoverKey, useHardcoverKey } from '@/settings/hardcover-key'
 import { useKeyProblems } from '@/settings/key-problems'
 import {
+  getPreferences,
   playbackSpeeds,
   type SyncSourceId,
   setPreference,
@@ -141,7 +142,10 @@ export function SettingsScreen() {
         t({ message: 'Speech model ready', comment: 'The speech model finished downloading' }),
       )
     } catch (error) {
-      showFeedback(errorText(error instanceof Error ? error : null))
+      // Leaving the mode stops the download; that is no failure to tell.
+      if (getPreferences().readingSync === 'words') {
+        showFeedback(errorText(error instanceof Error ? error : null))
+      }
     }
   }
 
@@ -165,8 +169,7 @@ export function SettingsScreen() {
     queryFn: async () => {
       const [metadata, audio] = await Promise.all([cachedMetadataSize(), audioCacheSize()])
 
-      // E-books fetched only to read are cached too; kept ones are counted with the downloads.
-      return metadata + audio + ebookCacheBytes()
+      return metadata + audio
     },
     staleTime: 0,
   })
@@ -206,6 +209,8 @@ export function SettingsScreen() {
   const seconds = (value: number) =>
     t({ message: `${value} seconds`, comment: 'Skip interval option, for example “30 seconds”' })
 
+  const keyProblems = useKeyProblems()
+
   /** Resolves with a problem to show in the dialog, or null once the key is saved. */
   async function saveTorBoxKey(value: string) {
     try {
@@ -224,11 +229,7 @@ export function SettingsScreen() {
     }
   }
 
-  const keyProblems = useKeyProblems()
-  const hardcoverProblem = keyProblems.hardcover
-
   const proxySetup = useProxySetup()
-  const proxyProblem = proxySetup.problem
 
   /** Resolves with a problem to show in the dialog, or null once the proxy works and is saved. */
   async function saveProxy(values: ProxyFields) {
@@ -253,7 +254,7 @@ export function SettingsScreen() {
     : proxyCheck.isPending
       ? t({ message: 'Checking…', comment: 'AudioBookBay proxy row while testing the proxy' })
       : proxyCheck.error
-        ? proxyProblem(proxyCheck.error)
+        ? proxySetup.problem(proxyCheck.error)
         : `${abbProxy.host}:${abbProxy.port}`
 
   const torBoxValue = !apiKey
@@ -292,7 +293,7 @@ export function SettingsScreen() {
     : hardcoverCheck.isPending
       ? t({ message: 'Checking…', comment: 'Hardcover row while verifying the key' })
       : hardcoverCheck.error
-        ? hardcoverProblem(hardcoverCheck.error)
+        ? keyProblems.hardcover(hardcoverCheck.error)
         : (hardcoverCheck.data?.email ??
           (hardcoverCheck.data?.username ? `@${hardcoverCheck.data.username}` : null) ??
           t({ message: 'Connected', comment: 'Hardcover row with a valid key' }))
@@ -879,11 +880,12 @@ export function SettingsScreen() {
           selected={
             dialog === 'skipBack' ? preferences.skipBackSeconds : preferences.skipForwardSeconds
           }
+          // The notification's buttons jump the new distance at once, not from the next file.
           onSelect={(value) =>
             void setPreference(
               dialog === 'skipBack' ? 'skipBackSeconds' : 'skipForwardSeconds',
               value,
-            )
+            ).then(applySkipIntervals)
           }
           onDismiss={() => setDialog(null)}
         />
@@ -1066,7 +1068,7 @@ export function SettingsScreen() {
           })}
           confirmLabel={t({ message: 'Clear', comment: 'Confirms clearing the cache' })}
           onConfirm={() => {
-            Promise.all([clearCachedMetadata(), clearAudioCache(), clearEbookCache()])
+            Promise.all([clearCachedMetadata(), clearAudioCache()])
               .then(() => {
                 queryClient.clear()
                 invalidateLibrary()

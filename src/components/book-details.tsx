@@ -4,20 +4,13 @@ import { type ReactNode, useEffect, useRef } from 'react'
 import { useWindowDimensions } from 'react-native'
 import { useCancelDownloadPrompt } from '@/components/cancel-download'
 import { useDownloadGuard } from '@/components/download-guard'
-import { animateContentSize, fillMaxWidth, padding, size, weight } from '@/lib/compose-modifiers'
+import { animateContentSize, fillMaxWidth } from '@/lib/compose-modifiers'
 import {
   AnimatedVisibility,
-  Box,
-  Button,
-  CircularProgressIndicator,
   Column,
   EnterTransition,
   ExitTransition,
-  Icon,
   LinearProgressIndicator,
-  Row,
-  Text,
-  useMaterialColors,
 } from '@/lib/compose-ui'
 import { useFeedback } from '@/lib/feedback'
 import type { TorBoxStatus } from '@/library/books'
@@ -31,9 +24,17 @@ import { usePlayerValue } from '@/player/use-player'
 import { useTorBoxKey } from '@/settings/torbox-key'
 import type { HardcoverBook } from '@/sources/hardcover/client'
 import { useErrorText } from '@/ui/errors'
-import { glyphs } from '@/ui/glyphs'
 import { useLabels } from '@/ui/labels'
-import { Cover, type CoverArt, Group, type GroupRow, type SpringAction } from '@/ui/primitives'
+import {
+  Cover,
+  type CoverArt,
+  Group,
+  type GroupRow,
+  type SpringAction,
+  StatusLine,
+  ToneText,
+  WideButton,
+} from '@/ui/primitives'
 
 export type BookHeaderProps = {
   title: string
@@ -60,7 +61,6 @@ export function BookHeader({
   fitted = false,
 }: BookHeaderProps) {
   const { t } = useLingui()
-  const colors = useMaterialColors()
   const labels = useLabels()
   const { width } = useWindowDimensions()
 
@@ -71,38 +71,38 @@ export function BookHeader({
   const credits = (
     <Column modifiers={[fillMaxWidth(), animateContentSize()]}>
       <Column verticalArrangement={{ spacedBy: 2 }}>
-        <Text style={{ typography: 'headlineMedium' }}>{title}</Text>
+        <ToneText style={{ typography: 'headlineMedium' }}>{title}</ToneText>
         {subtitle ? (
-          <Text color={colors.onSurfaceVariant} style={{ typography: 'titleMedium' }}>
+          <ToneText tone='secondary' style={{ typography: 'titleMedium' }}>
             {subtitle}
-          </Text>
+          </ToneText>
         ) : null}
       </Column>
       <Column verticalArrangement={{ spacedBy: 2 }}>
         {authors.length > 0 || released ? (
-          <Text color={colors.primary} style={{ typography: 'titleMedium' }}>
+          <ToneText tone='accent' style={{ typography: 'titleMedium' }}>
             {[authors.length > 0 ? labels.authors(authors) : null, released]
               .filter(Boolean)
               .join(' · ')}
-          </Text>
+          </ToneText>
         ) : null}
         {narrators.length > 0 ? (
-          <Text color={colors.onSurfaceVariant} style={{ typography: 'bodyMedium' }}>
+          <ToneText tone='secondary' style={{ typography: 'bodyMedium' }}>
             {t({
               message: `Narrated by ${narratedBy}`,
               comment: 'Narrator credit under the author on the book page',
             })}
-          </Text>
+          </ToneText>
         ) : null}
         {series ? (
-          <Text color={colors.onSurfaceVariant} style={{ typography: 'bodyMedium' }}>
+          <ToneText tone='secondary' style={{ typography: 'bodyMedium' }}>
             {series.position !== null
               ? t({
                   message: `Book ${series.position} of ${series.name}`,
                   comment: 'Position in a book series, for example “Book 2 of The Expanse”',
                 })
               : series.name}
-          </Text>
+          </ToneText>
         ) : null}
       </Column>
     </Column>
@@ -183,46 +183,29 @@ function useStatusMessage(status: TorBoxStatus | undefined) {
   }
 }
 
-export type ListenPanelProps = {
-  /** The stream to play; null while a book's streams are still being found. */
-  book: BookRecord | null
-  /** Shown instead of the TorBox status while there is no stream. */
-  waitingMessage?: string
-  /** Runs before listening starts, such as remembering the stream for its book. */
-  beforeListen?: () => Promise<void>
-}
-
 /**
- * The listen area keeps one layout from the first frame: a status line and a full-width button
- * whose text and state change in place, so checking TorBox never pushes the page around.
+ * What both Listen buttons share: whether the player holds the book and plays it, its TorBox
+ * status, and starting it, which plays or pauses the book already in the mini player.
  */
-export function ListenPanel({ book, waitingMessage, beforeListen }: ListenPanelProps) {
+function useListen(book: BookRecord | null, beforeListen?: () => Promise<void>) {
   const { t } = useLingui()
   const errorText = useErrorText()
-  const router = useRouter()
-  const colors = useMaterialColors()
   const { showFeedback } = useFeedback()
-  const apiKey = useTorBoxKey()
 
   // Which book the player holds and whether it plays, not its position, which ticks constantly.
-  const player = {
-    book: usePlayerValue((state) => state.book),
-    playing: usePlayerValue((state) => state.playing),
-  }
+  const playerBook = usePlayerValue((state) => state.book)
+  const playing = usePlayerValue((state) => state.playing)
 
   const status = useTorBoxStatus(book ?? undefined)
   const start = useStartListening(book?.id ?? '')
   const cancelPrompt = useCancelDownloadPrompt()
   const downloadGuard = useDownloadGuard()
-  const current = book !== null && player.book?.id === book.id
-  const statusText = useStatusMessage(status.data)
+  const current = book !== null && playerBook?.id === book.id
   const kind = status.data?.kind
   // A book kept on the phone plays whatever TorBox answers, or if it cannot be reached.
   const onPhone = useOfflineBooks().get(book?.id ?? '')?.status === 'done'
 
   useReadyNotice(kind)
-  const waiting = book === null
-  const checking = !waiting && Boolean(apiKey) && status.isPending && !status.error
 
   function listen() {
     // The book already in the mini player just plays or pauses here; the full player stays shut.
@@ -244,13 +227,20 @@ export function ListenPanel({ book, waitingMessage, beforeListen }: ListenPanelP
       // An upload TorBox lacks is downloaded, which may replace a download in progress.
       void downloadGuard.guard(kind === 'notCached' && !onPhone, book?.abb.infoHash ?? '', () => {
         // The player stays out of sight while the book loads and the listener may be asked where
-        // to start; playing, it fades in open, otherwise the mini player shows as it was.
+        // to start; playing, it fades in open, otherwise the mini player shows as it was. Followed
+        // on the promise, since `mutate`'s callbacks are dropped once the page has closed.
         beginStarting()
-        start.mutate(undefined, {
-          onSuccess: (result) => {
+        void start.mutateAsync().then(
+          (result) => {
             if (result === 'playing') {
               fadeInPlayer()
-            } else if (result === 'downloading') {
+
+              return
+            }
+
+            endStarting()
+
+            if (result === 'downloading') {
               showFeedback(
                 t({
                   message: 'Downloading. You can listen once it has finished.',
@@ -259,16 +249,44 @@ export function ListenPanel({ book, waitingMessage, beforeListen }: ListenPanelP
               )
             }
           },
-          onError: (error) => showFeedback(errorText(error)),
-          onSettled: (result) => {
-            if (result !== 'playing') {
-              endStarting()
-            }
+          (error: Error) => {
+            endStarting()
+            showFeedback(errorText(error))
           },
-        })
+        )
       })
     })()
   }
+
+  return {
+    playerBook,
+    playing,
+    current,
+    status,
+    kind,
+    onPhone,
+    start,
+    cancelPrompt,
+    downloadGuard,
+    listen,
+  }
+}
+
+/**
+ * The listen area keeps one layout from the first frame: a status line and a full-width button
+ * whose text and state change in place, so checking TorBox never pushes the page around.
+ */
+export function ListenPanel({ book }: { book: BookRecord }) {
+  const { t } = useLingui()
+  const errorText = useErrorText()
+  const router = useRouter()
+  const apiKey = useTorBoxKey()
+
+  const { playing, current, status, kind, onPhone, start, cancelPrompt, downloadGuard, listen } =
+    useListen(book)
+
+  const statusText = useStatusMessage(status.data)
+  const checking = Boolean(apiKey) && status.isPending && !status.error
 
   const message = !apiKey
     ? t({
@@ -276,11 +294,9 @@ export function ListenPanel({ book, waitingMessage, beforeListen }: ListenPanelP
         comment:
           'Book page notice when the streaming service key is not set; do not name the service',
       })
-    : waiting
-      ? (waitingMessage ?? '')
-      : status.error
-        ? errorText(status.error)
-        : statusText
+    : status.error
+      ? errorText(status.error)
+      : statusText
 
   const glyph = !apiKey
     ? 'key'
@@ -297,14 +313,14 @@ export function ListenPanel({ book, waitingMessage, beforeListen }: ListenPanelP
         enabled: true,
         run: () => router.navigate('/settings'),
       }
-    : status.error && !waiting && !onPhone
+    : status.error && !onPhone
       ? {
           glyph: 'refresh' as const,
           label: t({ message: 'Retry', comment: 'Retries a failed action' }),
           enabled: true,
           run: () => void status.refetch(),
         }
-      : kind === 'downloading' && book && !current
+      : kind === 'downloading' && !current
         ? {
             glyph: 'clear' as const,
             label: t({ message: 'Cancel download', comment: 'Stops a TorBox download' }),
@@ -325,27 +341,25 @@ export function ListenPanel({ book, waitingMessage, beforeListen }: ListenPanelP
               run: listen,
             }
           : {
-              glyph: current && player.playing ? ('pause' as const) : ('play' as const),
+              glyph: current && playing ? ('pause' as const) : ('play' as const),
               label: start.isPending
                 ? t({
                     message: 'Preparing…',
                     comment: 'Play button while TorBox prepares the stream',
                   })
-                : current && player.playing
+                : current && playing
                   ? t({
                       message: 'Pause',
                       comment: 'Listen button pausing the book that is playing',
                     })
-                  : current || book?.lastPlayedAt
+                  : current || book.lastPlayedAt
                     ? t({
                         message: 'Resume',
                         comment: 'Continue listening from the saved position',
                       })
                     : t({ message: 'Listen', comment: 'Starts streaming the audiobook' }),
               enabled:
-                !waiting &&
-                !start.isPending &&
-                (current || onPhone || kind === 'ready' || kind === 'cached'),
+                !start.isPending && (current || onPhone || kind === 'ready' || kind === 'cached'),
               run: listen,
             }
 
@@ -354,26 +368,12 @@ export function ListenPanel({ book, waitingMessage, beforeListen }: ListenPanelP
       modifiers={[fillMaxWidth(), animateContentSize()]}
       verticalArrangement={{ spacedBy: 12 }}
     >
-      <Row verticalAlignment='center' horizontalArrangement={{ spacedBy: 12 }}>
-        <Box contentAlignment='center' modifiers={[size(24, 24)]}>
-          {checking || (waiting && apiKey) ? (
-            <CircularProgressIndicator strokeWidth={2} modifiers={[size(18, 18)]} />
-          ) : (
-            <Icon
-              source={glyphs[glyph]}
-              size={20}
-              tint={glyph === 'warning' ? colors.error : colors.onSurfaceVariant}
-            />
-          )}
-        </Box>
-        <Text
-          color={colors.onSurfaceVariant}
-          style={{ typography: 'bodyMedium' }}
-          modifiers={[weight(1)]}
-        >
-          {message}
-        </Text>
-      </Row>
+      <StatusLine
+        glyph={glyph}
+        message={message}
+        pending={checking}
+        warning={glyph === 'warning'}
+      />
       <AnimatedVisibility
         visible={kind === 'downloading'}
         enterTransition={EnterTransition.fadeIn().plus(EnterTransition.expandVertically())}
@@ -384,10 +384,12 @@ export function ListenPanel({ book, waitingMessage, beforeListen }: ListenPanelP
           modifiers={[fillMaxWidth()]}
         />
       </AnimatedVisibility>
-      <Button onClick={action.run} enabled={action.enabled} modifiers={[fillMaxWidth()]}>
-        <Icon source={glyphs[action.glyph]} size={20} />
-        <Text modifiers={[padding(8, 0, 0, 0)]}>{action.label}</Text>
-      </Button>
+      <WideButton
+        glyph={action.glyph}
+        label={action.label}
+        enabled={action.enabled}
+        onPress={action.run}
+      />
       {cancelPrompt.dialog}
       {downloadGuard.dialog}
     </Column>
@@ -421,27 +423,22 @@ export function useListenAction({
   const { showFeedback } = useFeedback()
   const apiKey = useTorBoxKey()
 
-  // Which book the player holds and whether it plays, not its position, which ticks constantly.
-  const player = {
-    book: usePlayerValue((state) => state.book),
-    playing: usePlayerValue((state) => state.playing),
-  }
-
-  const status = useTorBoxStatus(book ?? undefined)
-  const start = useStartListening(book?.id ?? '')
-  const cancelPrompt = useCancelDownloadPrompt()
-  const downloadGuard = useDownloadGuard()
-  const current = book !== null && player.book?.id === book.id
-
-  const onPhone = useOfflineBooks().get(book?.id ?? '')?.status === 'done'
+  const {
+    playerBook,
+    playing,
+    current,
+    status,
+    kind,
+    onPhone,
+    start,
+    cancelPrompt,
+    downloadGuard,
+    listen,
+  } = useListen(book, beforeListen)
 
   // The book is playing, but from another source than the one now chosen.
   const otherSource =
-    book !== null && player.book !== null && !current && workIdOf(player.book) === workIdOf(book)
-
-  const kind = status.data?.kind
-
-  useReadyNotice(kind)
+    book !== null && playerBook !== null && !current && workIdOf(playerBook) === workIdOf(book)
 
   const switchSource = useSwitchStream((switched, error) => {
     if (error) {
@@ -466,52 +463,6 @@ export function useListenAction({
         {downloadGuard.dialog}
       </>
     ),
-  }
-
-  function listen() {
-    // The book already in the mini player just plays or pauses here; the full player stays shut.
-    if (current) {
-      togglePlay()
-
-      return
-    }
-
-    void (async () => {
-      try {
-        await beforeListen?.()
-      } catch (error) {
-        showFeedback(errorText(error instanceof Error ? error : null))
-
-        return
-      }
-
-      // An upload TorBox lacks is downloaded, which may replace a download in progress.
-      void downloadGuard.guard(kind === 'notCached' && !onPhone, book?.abb.infoHash ?? '', () => {
-        // The player stays out of sight while the book loads and the listener may be asked where
-        // to start; playing, it fades in open, otherwise the mini player shows as it was.
-        beginStarting()
-        start.mutate(undefined, {
-          onSuccess: (result) => {
-            if (result === 'playing') {
-              fadeInPlayer()
-            } else if (result === 'downloading') {
-              showFeedback(
-                t({
-                  message: 'Downloading. You can listen once it has finished.',
-                  comment: 'Feedback after adding an uncached audiobook',
-                }),
-              )
-            }
-          },
-          onError: (error) => showFeedback(errorText(error)),
-          onSettled: (result) => {
-            if (result !== 'playing') {
-              endStarting()
-            }
-          },
-        })
-      })
-    })()
   }
 
   function listenAction(): SpringAction {
@@ -625,9 +576,9 @@ export function useListenAction({
     }
 
     return {
-      glyph: current && player.playing ? 'pause' : 'play',
+      glyph: current && playing ? 'pause' : 'play',
       label:
-        current && player.playing
+        current && playing
           ? t({ message: 'Pause', comment: 'Listen button pausing the book that is playing' })
           : // When the page decides, even the book in the mini player resumes only after listening
             // was the last way it was followed.

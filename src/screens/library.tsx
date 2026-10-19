@@ -173,33 +173,35 @@ function LibraryRow({
   const failed = (error: Error) => showFeedback(errorText(error))
   const { book, playback } = entry
 
-  // Only the row of the book open in the player follows it live; the rest ignore its ticks.
-  const player = usePlayerValue((state) =>
-    book !== null && state.book?.id === book.id ? state : null,
+  // Only the row of the book open in the player follows it, and only as finely as it shows it:
+  // whether it plays and the whole minutes left, not every tick of the position.
+  const current = usePlayerValue((state) => book !== null && state.book?.id === book.id)
+
+  const playing = usePlayerValue(
+    (state) => book !== null && state.book?.id === book.id && (state.playing || state.loading),
   )
+
+  const liveMinutesLeft = usePlayerValue((state) => {
+    if (book === null || state.book?.id !== book.id) {
+      return null
+    }
+
+    const live = summarize(book, state.track, state.position, state.duration)
+
+    return live.bookTotal === null ? null : Math.ceil((live.bookTotal - live.bookElapsed) / 60)
+  })
 
   const shown = displayEntry(entry)
   const { title } = shown
-  const current = player !== null
-  const playing = player !== null && (player.playing || player.loading)
   const duration = book ? displayDuration(book) : null
 
   // The open book follows the player live; the others show their saved progress.
-  const live =
-    book && player ? summarize(book, player.track, player.position, player.duration) : null
+  const progress = !current && book ? listeningProgress(book, playback) : null
 
-  const progress = live
-    ? live.bookTotal
-      ? live.bookElapsed / live.bookTotal
-      : null
-    : book
-      ? listeningProgress(book, playback)
-      : null
-
-  const left = live
-    ? live.bookTotal !== null
-      ? live.bookTotal - live.bookElapsed
-      : null
+  const left = current
+    ? liveMinutesLeft === null
+      ? null
+      : liveMinutesLeft * 60
     : progress !== null && duration !== null
       ? duration * (1 - progress)
       : null

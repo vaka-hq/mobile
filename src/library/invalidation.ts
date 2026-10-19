@@ -28,7 +28,7 @@ export const queryKeys = {
 }
 
 /** What changed: the library or a book's state, or only where listening stands. */
-export type LibraryChange = 'library' | 'listening'
+type LibraryChange = 'library' | 'listening'
 
 const changeListeners = new Set<(change: LibraryChange) => void>()
 
@@ -47,10 +47,18 @@ function notify(change: LibraryChange) {
   }
 }
 
-export function invalidateLibrary() {
+/**
+ * Shows the library afresh without telling the listeners of a change, for library sync's own
+ * changes, which must not start another run.
+ */
+export function refreshLibrary() {
   void queryClient.invalidateQueries({ queryKey: queryKeys.library })
   void queryClient.invalidateQueries({ queryKey: queryKeys.works })
   void queryClient.invalidateQueries({ queryKey: queryKeys.followedSeries })
+}
+
+export function invalidateLibrary() {
+  refreshLibrary()
   notify('library')
 }
 

@@ -1,3 +1,4 @@
+import { concurrencyLimit } from '@/lib/limit'
 import { readMediaInfo } from '@/media/media-info'
 import { getPreferences } from '@/settings/preferences'
 import { requireTorBoxKey } from '@/settings/torbox-key'
@@ -277,34 +278,8 @@ export async function torBoxStatus(given: BookRecord, signal?: AbortSignal): Pro
 }
 
 /** Adds the torrent to the listener's TorBox; cached torrents become streamable at once. */
-export async function addToTorBox(book: BookRecord) {
+async function addToTorBox(book: BookRecord) {
   return createTorrent(requireTorBoxKey(), magnetLink(book.abb), book.abb.title)
-}
-
-async function mapLimited<T, R>(
-  items: T[],
-  limit: number,
-  work: (item: T, index: number) => Promise<R>,
-) {
-  const results: R[] = []
-  let next = 0
-
-  async function worker() {
-    while (next < items.length) {
-      const index = next
-
-      next += 1
-      const item = items[index]
-
-      if (item !== undefined) {
-        results[index] = await work(item, index)
-      }
-    }
-  }
-
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
-
-  return results
 }
 
 /** Beyond this many files, lengths are estimated from the bitrate and corrected during playback. */
@@ -342,18 +317,23 @@ export async function prepareTimeline(book: BookRecord) {
   }
 
   const failures: Error[] = []
+  const limit = concurrencyLimit(4)
 
-  const infos = await mapLimited(book.tracks, 4, async (track) => {
-    try {
-      const { url } = await streamUrl(torrentId, track.fileId)
+  const infos = await Promise.all(
+    book.tracks.map((track) =>
+      limit(async () => {
+        try {
+          const { url } = await streamUrl(torrentId, track.fileId)
 
-      return await readMediaInfo(url, track.format)
-    } catch (error) {
-      failures.push(error instanceof Error ? error : new Error(String(error)))
+          return await readMediaInfo(url, track.format)
+        } catch (error) {
+          failures.push(error instanceof Error ? error : new Error(String(error)))
 
-      return null
-    }
-  })
+          return null
+        }
+      }),
+    ),
+  )
 
   // Nothing could be read, most likely a network problem: keep the timeline unset so the next
   // visit tries again, instead of storing file-name chapters for good.
@@ -449,7 +429,7 @@ function isFinished(torrent: TorBoxTorrent) {
 }
 
 /** A torrent in the listener's TorBox, as far as showing its download goes. */
-export type TorBoxDownload = { torrentId: number; progress: number; finished: boolean }
+type TorBoxDownload = { torrentId: number; progress: number; finished: boolean }
 
 /** The listener's TorBox torrents by lowercased info hash, for showing download progress. */
 export async function torBoxDownloads(signal?: AbortSignal) {

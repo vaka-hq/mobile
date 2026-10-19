@@ -15,7 +15,7 @@ import { streamUrl } from './streams'
  * streaming. Progress lives in memory while a download runs and in `offline_books` for good.
  */
 
-export const offlineStatuses = ['downloading', 'done', 'failed'] as const
+const offlineStatuses = ['downloading', 'done', 'failed'] as const
 
 export type OfflineStatus = (typeof offlineStatuses)[number]
 
@@ -142,8 +142,29 @@ export async function keepOffline(bookId: string) {
     return
   }
 
+  const controller = new AbortController()
+
+  // Taken before anything is awaited, so a second call does not download the same files at once.
+  running.set(bookId, controller)
+
+  try {
+    await download(bookId, controller)
+  } finally {
+    // A download started again after this one was stopped keeps its own entry.
+    if (running.get(bookId) === controller) {
+      running.delete(bookId)
+    }
+  }
+}
+
+async function download(bookId: string, controller: AbortController) {
   const book = await getBook(bookId)
   const tracks = book?.tracks
+
+  // Removed meanwhile; there is nothing to download.
+  if (controller.signal.aborted) {
+    return
+  }
 
   if (!book || !tracks || book.torrentId === null) {
     const earlier = offlineBook(bookId)
@@ -158,9 +179,6 @@ export async function keepOffline(bookId: string) {
 
   const torrentId = book.torrentId
   const total = tracks.reduce((sum, track) => sum + track.size, 0)
-  const controller = new AbortController()
-
-  running.set(bookId, controller)
 
   // Removing the book stops the download; nothing is saved after that, so no record comes back.
   const record = async (entry: OfflineBook) => {
@@ -219,11 +237,6 @@ export async function keepOffline(bookId: string) {
     await save({ bookId, status: 'failed', bytes: offlineBook(bookId)?.bytes ?? 0, total })
 
     throw error
-  } finally {
-    // A download started again after this one was stopped keeps its own entry.
-    if (running.get(bookId) === controller) {
-      running.delete(bookId)
-    }
   }
 }
 

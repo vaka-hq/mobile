@@ -57,9 +57,8 @@ export function WorkStreamsScreen() {
     null,
   )
 
-  const playing = usePlayerValue((state) => state.book)
   // While the book plays, picking here changes the source it plays from.
-  const changing = playing !== null && workIdOf(playing) === workId
+  const changing = usePlayerValue((state) => state.book !== null && workIdOf(state.book) === workId)
   const cancelPrompt = useCancelDownloadPrompt()
   const listings = recordings.listings
   const apiKey = useTorBoxKey()
@@ -177,7 +176,7 @@ export function WorkStreamsScreen() {
           .filter(Boolean)
           .join(' · '),
         selected: post.id === selectedId,
-        badge: recordings.cached?.has(post.infoHash.toLowerCase())
+        badge: cached?.has(hash)
           ? {
               glyph: 'cached' as const,
               description: t({

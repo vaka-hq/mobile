@@ -12,7 +12,7 @@ import {
   setShelfStatus,
 } from '@/sources/hardcover/client'
 import { hardcoverWorks } from './catalog'
-import { invalidateLibrary } from './invalidation'
+import { refreshLibrary } from './invalidation'
 import type { SyncProblem } from './library-sync'
 import { hardcoverWorkId, workIdOf } from './model'
 import {
@@ -102,12 +102,8 @@ async function carryOut(
   for (const action of actions) {
     switch (action.kind) {
       case 'addHere':
-        // A book known here already has its details; one new here needs them fetched.
-        if (details || book?.hasDetails) {
-          await addFromShelves(workId, details)
-          changedHere = true
-        }
-
+        await addFromShelves(workId, details)
+        changedHere = true
         break
       case 'finishHere':
         await finishFromShelves(workId, details)
@@ -191,9 +187,11 @@ async function carryOut(
 
         if (entry && read) {
           const seconds = Math.round(action.seconds)
+          // A place in no edition of its own stays in the read's, rather than clearing it there.
+          const editionId = action.editionId ?? read.editionId
 
           const saved = await write(async () => {
-            await saveReadProgress(read, action.editionId, seconds)
+            await saveReadProgress(read, editionId, seconds)
 
             return true
           })
@@ -207,9 +205,9 @@ async function carryOut(
             read: {
               ...read,
               progressSeconds: seconds,
-              editionId: action.editionId ?? read.editionId,
+              editionId,
               editionSeconds:
-                action.editionId === null || action.editionId === read.editionId
+                editionId === read.editionId
                   ? read.editionSeconds
                   : (book?.local.listening?.recordingSeconds ?? null),
             },
@@ -237,8 +235,8 @@ async function detailsFor(plans: Map<number, ShelfAction[]>, books: Map<number, 
 }
 
 /**
- * One run: reads all the shelves in one request and carries out each book's plan. Throws for a
- * run that could not get through, such as without a key or with one lacking library access.
+ * One run: reads all the shelves, 500 entries a request, and carries out each book's plan. Throws
+ * for a run that could not get through, such as without a key or with one lacking library access.
  */
 export async function syncHardcoverShelves() {
   if (!hardcoverKey.get()) {
@@ -306,7 +304,7 @@ export async function syncHardcoverShelves() {
   }
 
   if (changedHere) {
-    invalidateLibrary()
+    refreshLibrary()
   }
 
   // Said once the run is over, so the listener learns their key cannot change the shelves.

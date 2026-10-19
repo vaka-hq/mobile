@@ -2,7 +2,7 @@ import { type HTMLElement, parse } from 'node-html-parser'
 import { z } from 'zod'
 
 /** One file in a Library Genesis search, identified by its md5 as every mirror is. */
-export const libgenFileSchema = z.object({
+const libgenFileSchema = z.object({
   md5: z.string(),
   title: z.string(),
   authors: z.array(z.string()),
@@ -18,7 +18,7 @@ export const libgenFileSchema = z.object({
 export type LibgenFile = z.infer<typeof libgenFileSchema>
 
 function clean(text: string | undefined | null) {
-  const value = text?.replaceAll(' ', ' ').replace(/\s+/gu, ' ').trim()
+  const value = text?.replace(/\s+/gu, ' ').trim()
 
   return value ? value : null
 }
@@ -67,7 +67,8 @@ function fileFrom(cells: HTMLElement[]): LibgenFile | null {
     title: title ?? '',
     authors: (text(1) ?? '').split(/[,;]/u).flatMap((author) => clean(author) ?? []),
     publisher: full ? text(2) : null,
-    year: full ? text(3) : null,
+    // The year cell sometimes holds dates or several, such as “2020:10:01 23:00:00+00:00, 2025”.
+    year: full ? (text(3)?.match(/\b(?:1[5-9]|20)\d\d\b/u)?.[0] ?? null) : null,
     language: full ? text(4) : null,
     size: full ? text(6) : null,
     extension: full ? (text(7)?.toLowerCase() ?? null) : null,

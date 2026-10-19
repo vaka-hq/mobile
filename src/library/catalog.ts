@@ -28,7 +28,7 @@ import {
   pruneCachedResponses,
   saveCachedResponse,
 } from './repository'
-import { createRequestCache } from './request-cache'
+import { createRequestCache, readStored } from './request-cache'
 
 const cachedRequest = createRequestCache({
   get: getCachedResponse,
@@ -141,14 +141,13 @@ function hardcoverWorkKey(id: number) {
   return `hardcover:book:v6:${id}`
 }
 
-/** A Hardcover book with its audiobook editions; `fresh` skips the cache for a manual refresh. */
-export function hardcoverWork(id: number, signal?: AbortSignal, options: { fresh?: boolean } = {}) {
+/** A Hardcover book with its audiobook editions. */
+export function hardcoverWork(id: number, signal?: AbortSignal) {
   return cachedRequest(
     hardcoverWorkKey(id),
     cacheLifetimes.hardcoverBook,
     hardcoverWorkSchema,
     () => fetchHardcoverWork(id, signal),
-    options,
   )
 }
 
@@ -166,7 +165,7 @@ export async function hardcoverWorks(ids: number[], signal?: AbortSignal) {
   await Promise.all(
     ids.map(async (id) => {
       const stored = await getCachedResponse(hardcoverWorkKey(id))
-      const parsed = stored === null ? null : readCachedWork(stored)
+      const parsed = stored === null ? null : readStored(stored, hardcoverWorkSchema)
 
       if (parsed) {
         found.set(id, parsed)
@@ -199,16 +198,6 @@ export async function hardcoverWorks(ids: number[], signal?: AbortSignal) {
   return found
 }
 
-function readCachedWork(text: string) {
-  try {
-    const parsed = hardcoverWorkSchema.safeParse(JSON.parse(text))
-
-    return parsed.success ? parsed.data : null
-  } catch {
-    return null
-  }
-}
-
 /**
  * Books fetched together; should Hardcover refuse the query itself, one by one instead, side by
  * side, leaving out any that fail.
@@ -230,11 +219,6 @@ async function fetchWorks(ids: number[], signal?: AbortSignal) {
 }
 
 /** The book as one posted recording presents it, from the cached Hardcover book. */
-export async function hardcoverBook(
-  id: number,
-  hints: RecordingHints,
-  signal?: AbortSignal,
-  options: { fresh?: boolean } = {},
-) {
-  return bookForRecording(await hardcoverWork(id, signal, options), hints)
+export async function hardcoverBook(id: number, hints: RecordingHints, signal?: AbortSignal) {
+  return bookForRecording(await hardcoverWork(id, signal), hints)
 }

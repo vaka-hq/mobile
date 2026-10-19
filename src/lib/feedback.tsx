@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react'
 
-export type AppFeedback = {
+type AppFeedback = {
   id: number
   message: string
 }
@@ -13,12 +13,14 @@ type FeedbackContextValue = {
 
 const FeedbackContext = createContext<FeedbackContextValue | null>(null)
 
+let lastFeedbackId = 0
+
 /** Short confirmations and failures, shown as a snackbar by the visible screen's Scaffold. */
 export function FeedbackProvider({ children }: { children: ReactNode }) {
   const [feedback, setFeedback] = useState<AppFeedback | null>(null)
 
   const showFeedback = useCallback((message: string) => {
-    setFeedback({ id: Date.now(), message })
+    setFeedback({ id: ++lastFeedbackId, message })
   }, [])
 
   const clearFeedback = useCallback((id: number) => {

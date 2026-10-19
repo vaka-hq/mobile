@@ -69,7 +69,8 @@ export function utf8(bytes: Uint8Array) {
       length = 4
     }
 
-    text += String.fromCodePoint(codePoint)
+    // A malformed four-byte sequence can decode past Unicode's end, where `fromCodePoint` throws.
+    text += String.fromCodePoint(codePoint > 0x10ffff ? 0xfffd : codePoint)
     index += length
   }
 

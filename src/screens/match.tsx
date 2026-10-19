@@ -83,7 +83,19 @@ export function MatchScreen() {
             onChange={setQuery}
           />
         ) : null}
-        {results.isFetching && !results.data ? (
+        {book.error && !book.data ? (
+          <Empty
+            glyph='warning'
+            height='fill'
+            title={t({
+              message: 'This audiobook could not be opened',
+              comment: 'Book load failure title',
+            })}
+            message={errorText(book.error)}
+            actionLabel={t({ message: 'Retry', comment: 'Retries a failed action' })}
+            onAction={() => void book.refetch()}
+          />
+        ) : results.isFetching && !results.data ? (
           <LoadingPage />
         ) : (
           <LazyColumn modifiers={[fillMaxWidth(), weight(1)]} contentPadding={{ bottom: 24 }}>

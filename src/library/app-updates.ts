@@ -216,6 +216,14 @@ export async function installUpdate() {
     })
   } catch {
     download = null
+
+    // What a stopped or failed download wrote is of no use.
+    try {
+      directory.delete()
+    } catch {
+      // Left for the next download, which starts by emptying the folder.
+    }
+
     set(
       controller.signal.aborted
         ? { phase: 'available', update }

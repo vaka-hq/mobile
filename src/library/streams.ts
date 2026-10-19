@@ -5,9 +5,9 @@ import { requestDownloadUrl } from '@/sources/torbox/client'
  * TorBox CDN links are signed and short-lived without a documented lifetime. Links are reused
  * for at most this long, and any playback failure requests a fresh one immediately.
  */
-export const streamUrlLifetimeMs = 60 * 60 * 1000
+const streamUrlLifetimeMs = 60 * 60 * 1000
 
-export type StreamUrl = {
+type StreamUrl = {
   url: string
   fetchedAt: number
 }

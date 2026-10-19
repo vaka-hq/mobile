@@ -94,21 +94,19 @@ export function BookScreen() {
       navigation='back'
       collapseOnScroll
       actions={
-        <>
-          <Action
-            glyph={inLibrary ? 'added' : 'add'}
-            label={
-              inLibrary
-                ? t({ message: 'Remove from library', comment: 'Toggle on the book page' })
-                : t({ message: 'Add to library', comment: 'Toggle on the book page' })
+        <Action
+          glyph={inLibrary ? 'added' : 'add'}
+          label={
+            inLibrary
+              ? t({ message: 'Remove from library', comment: 'Toggle on the book page' })
+              : t({ message: 'Add to library', comment: 'Toggle on the book page' })
+          }
+          onPress={() => {
+            if (shown) {
+              libraryToggle.toggle(inLibrary)
             }
-            onPress={() => {
-              if (shown) {
-                libraryToggle.toggle(inLibrary)
-              }
-            }}
-          />
-        </>
+          }}
+        />
       }
     >
       <List grouped bottomPadding={32} loading={book.isPending || matching || redirecting}>

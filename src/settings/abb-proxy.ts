@@ -1,6 +1,5 @@
 import { useSyncExternalStore } from 'react'
 import { z } from 'zod'
-import type { ProxyServer } from '../../modules/platform'
 import { createSecureValue } from './secure-value'
 
 const abbProxySchema = z.object({
@@ -51,8 +50,4 @@ export function useAbbProxy() {
 
 export async function setAbbProxy(proxy: AbbProxy | null) {
   await stored.set(proxy ? JSON.stringify(proxy) : null)
-}
-
-export function abbProxyServer(proxy: AbbProxy): ProxyServer {
-  return proxy
 }

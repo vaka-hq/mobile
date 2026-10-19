@@ -105,14 +105,14 @@ export function SettingsScreen() {
   )
 
   const syncLabels = {
-    off: t({ message: 'Off', comment: 'Sync setting: not carried over' }),
+    off: t({ message: 'Off', comment: 'Handoff setting: not carried over' }),
     chapters: t({
       message: 'Approximate',
-      comment: 'Sync setting: the place is estimated from its share of the chapter',
+      comment: 'Handoff setting: the place is estimated from its share of the chapter',
     }),
     words: t({
       message: 'Exact',
-      comment: 'Sync setting: the exact sentence is found by listening to the words',
+      comment: 'Handoff setting: the exact sentence is found by listening to the words',
     }),
   }
 
@@ -434,8 +434,9 @@ export function SettingsScreen() {
               key: 'syncSource',
               glyph: 'library',
               label: t({
-                message: 'Sync source',
-                comment: 'Setting for which service the library is kept in step with',
+                message: 'Provider',
+                comment:
+                  'Setting for which service the library is kept in step with, such as Hardcover',
               }),
               value: sourceName,
               onPress: () => setDialog('syncSource'),
@@ -536,20 +537,20 @@ export function SettingsScreen() {
               key: 'readingSync',
               glyph: 'readingSync',
               label: t({
-                message: 'Sync',
+                message: 'Handoff',
                 comment:
-                  'Setting for carrying the place between the audiobook and the e-book of the same book',
+                  'Setting for handing the place over between the audiobook and the e-book of the same book, when switching from one to the other',
               }),
               value:
                 preferences.readingSync === 'words' && speechModel.status === 'downloading'
                   ? t({
                       message: `Downloading speech model · ${speechProgress}`,
-                      comment: 'Sync setting while its speech model downloads',
+                      comment: 'Handoff setting while its speech model downloads',
                     })
                   : preferences.readingSync === 'words' && speechModel.status !== 'ready'
                     ? t({
                         message: 'Speech model missing. Choose again to download it.',
-                        comment: 'Sync setting when its speech model failed to download',
+                        comment: 'Handoff setting when its speech model failed to download',
                       })
                     : syncLabels[preferences.readingSync],
               onPress: () => setDialog('readingSync'),
@@ -741,7 +742,10 @@ export function SettingsScreen() {
       ) : null}
       {dialog === 'syncSource' ? (
         <ChoiceDialog
-          title={t({ message: 'Sync source', comment: 'Dialog title' })}
+          title={t({
+            message: 'Provider',
+            comment: 'Dialog title: which service the library is kept in step with',
+          })}
           options={syncSourceIds.map((id) => ({ value: id, label: sourceNames[id] }))}
           selected={preferences.syncSource}
           onSelect={(id) => void chooseSyncSource(id)}
@@ -812,9 +816,9 @@ export function SettingsScreen() {
       {dialog === 'readingSync' ? (
         <ChoiceDialog
           title={t({
-            message: 'Sync',
+            message: 'Handoff',
             comment:
-              'Dialog title: how the place is carried between the audiobook and the e-book of the same book',
+              'Dialog title: how the place is handed over between the audiobook and the e-book of the same book',
           })}
           options={[
             { value: 'off' as const, label: syncLabels.off },

@@ -122,7 +122,7 @@ Selecting text works as it does elsewhere on Android, with a vibration, the magn
 floating text toolbar, whose Highlight and Note the app carries out. Its
 display settings are a card over the page. Listening and reading keep their own places and meet
 when the listener says so: the switch buttons carry the place over, and opening one after newer
-progress in the other asks where to start. The exact mode listens to a few seconds of the audio
+progress in the other asks where to start; Settings → Handoff sets how closely. The exact mode listens to a few seconds of the audio
 with the offline Vosk recogniser (`modules/speech`) to find the words on the page. Its model is
 downloaded when the mode is chosen, picking up where a dropped connection left off rather than
 starting over.
@@ -179,7 +179,7 @@ For library sync with Hardcover the key also needs your library (`read:library` 
 
 ## Library sync
 
-Settings → Library keeps the library in step with one sync source at a time: Sync source picks
+Settings → Library keeps the library in step with one sync source at a time: Provider picks
 it, and the Sync library switch turns syncing on or off. Holding the switch's row while it is on
 syncs everything again from the source. Sources are listed in `src/library/library-sync.ts`,
 which also decides when runs happen; choosing another source stops the one before and forgets what

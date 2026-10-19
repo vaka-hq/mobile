@@ -381,7 +381,7 @@ msgstr "Alla som har filen kan använda dem."
 msgid "API key"
 msgstr "API-nyckel"
 
-#. Sync setting: the place is estimated from its share of the chapter
+#. Handoff setting: the place is estimated from its share of the chapter
 #: src/screens/settings.tsx
 msgid "Approximate"
 msgstr "Ungefärlig"
@@ -1053,7 +1053,7 @@ msgstr "Laddar ned · {percent} %"
 msgid "Downloading {percent}%"
 msgstr "Laddar ned {percent} %"
 
-#. Sync setting while its speech model downloads
+#. Handoff setting while its speech model downloads
 #: src/screens/settings.tsx
 msgid "Downloading speech model · {speechProgress}"
 msgstr "Laddar ned talmodell · {speechProgress}"
@@ -1155,7 +1155,7 @@ msgstr "Esperanto"
 msgid "Estonian"
 msgstr "Estniska"
 
-#. Sync setting: the exact sentence is found by listening to the words
+#. Handoff setting: the exact sentence is found by listening to the words
 #: src/screens/settings.tsx
 msgid "Exact"
 msgstr "Exakt"
@@ -1280,6 +1280,12 @@ msgstr "Grekiska"
 #: src/ui/reader.tsx
 msgid "Green"
 msgstr "Grön"
+
+#. Dialog title: how the place is handed over between the audiobook and the e-book of the same book
+#. Setting for handing the place over between the audiobook and the e-book of the same book, when switching from one to the other
+#: src/screens/settings.tsx
+msgid "Handoff"
+msgstr "Överlämning"
 
 #. Name of the book metadata service
 #. Name of the book metadata service
@@ -1945,8 +1951,8 @@ msgstr "Inget sparat än"
 msgid "Nothing to add"
 msgstr "Inget att lägga till"
 
+#. Handoff setting: not carried over
 #. Sleep timer option
-#. Sync setting: not carried over
 #: src/screens/settings.tsx
 #: src/ui/sheets.tsx
 msgid "Off"
@@ -2140,6 +2146,12 @@ msgstr "Föregående sida"
 #: src/screens/work-streams.tsx
 msgid "Probably dead: no one is sharing it"
 msgstr "Troligen död: ingen delar den"
+
+#. Dialog title: which service the library is kept in step with
+#. Setting for which service the library is kept in step with, such as Hardcover
+#: src/screens/settings.tsx
+msgid "Provider"
+msgstr "Leverantör"
 
 #. Text field label, like isp.decodo.com
 #: src/screens/settings.tsx
@@ -2625,7 +2637,7 @@ msgstr "Det gick inte att söka efter källor. Försök igen om en stund."
 msgid "Spanish"
 msgstr "Spanska"
 
-#. Sync setting when its speech model failed to download
+#. Handoff setting when its speech model failed to download
 #: src/screens/settings.tsx
 msgid "Speech model missing. Choose again to download it."
 msgstr "Talmodellen saknas. Välj igen för att ladda ned den."
@@ -2701,22 +2713,10 @@ msgstr "Byter till lyssning"
 msgid "Switching to reading"
 msgstr "Byter till läsning"
 
-#. Dialog title: how the place is carried between the audiobook and the e-book of the same book
-#. Setting for carrying the place between the audiobook and the e-book of the same book
-#: src/screens/settings.tsx
-msgid "Sync"
-msgstr "Synk"
-
 #. Switch keeping the library in step with the sync source
 #: src/screens/settings.tsx
 msgid "Sync library"
 msgstr "Synka biblioteket"
-
-#. Dialog title
-#. Setting for which service the library is kept in step with
-#: src/screens/settings.tsx
-msgid "Sync source"
-msgstr "Synkkälla"
 
 #. Library sync row with when it last synced, such as “Synced 14:05”
 #: src/screens/settings.tsx

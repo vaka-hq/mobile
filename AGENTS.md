@@ -85,8 +85,8 @@ short: how the app works belongs in `docs/`.
   `useTabsShown` (`src/components/tabs-shown.ts`), which answers for the screen a committed swipe
   returns to.
 - The tab bar floats above the stack (`BottomBar`, in the root layout), not in the tabs' screen,
-  so screens slide past it: it slides down and fades as a screen opens over the tabs and comes
-  back as they return, and the tabs keep room for it.
+  so screens slide past it: it fades out as a screen opens over the tabs and in as they return,
+  and the tabs keep room for it.
 - Android colour roles follow Material 3: screens on `surface`, containers on
   `surfaceContainerHigh`, sheets on the default `surfaceContainerLow`, text `onSurface` and
   `onSurfaceVariant`. Colour comes from the dynamic palette; covers are the only imagery.

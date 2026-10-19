@@ -30,7 +30,7 @@ function TabIcon({ tab }: { tab: Tab }) {
 /**
  * The Material 3 Expressive short navigation bar under the tabs; the mini player floats above it
  * in the player layer. It floats above the stack rather than in the tabs' screen, so screens slide
- * past it without it: it slides away as another screen opens over the tabs and back as they
+ * past it without it: it fades out as another screen opens over the tabs and in as they
  * return, and the tabs keep room for it.
  */
 export function BottomBar() {
@@ -38,7 +38,7 @@ export function BottomBar() {
   const router = useRouter()
   const pathname = usePathname()
   const shown = useTabsShown()
-  // The tab shown last stays selected while the bar slides away under another screen.
+  // The tab shown last stays selected while the bar fades out under another screen.
   const [current, setCurrent] = useState<TabName>(pathname === '/browse' ? 'browse' : 'library')
 
   useEffect(() => {
@@ -85,12 +85,8 @@ export function BottomBar() {
         <Column>
           <AnimatedVisibility
             visible={shown}
-            enterTransition={EnterTransition.fadeIn().plus(
-              EnterTransition.slideInVertically({ initialOffsetY: 1 }),
-            )}
-            exitTransition={ExitTransition.fadeOut().plus(
-              ExitTransition.slideOutVertically({ targetOffsetY: 1 }),
-            )}
+            enterTransition={EnterTransition.fadeIn()}
+            exitTransition={ExitTransition.fadeOut()}
           >
             <ShortNavigationBar
               labels={[library.label, browse.label]}

@@ -116,11 +116,9 @@ fun FunctionalComposableScope.ScaffoldContent(props: ScaffoldProps, onSnackbarDi
     LocalCollapseAllowed provides collapseAllowed
   ) {
   Scaffold(
-    modifier = if (scrollBehavior != null) {
-      Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-    } else {
-      Modifier
-    },
+    modifier = Modifier.clearFocusOnTap().then(
+      if (scrollBehavior != null) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier
+    ),
     // Material 3 screens sit on `surface`; `background` is the legacy role.
     containerColor = props.containerColor.composeOrNull ?: MaterialTheme.colorScheme.surface,
     contentWindowInsets = if (props.bottomInset) {

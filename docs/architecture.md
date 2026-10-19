@@ -29,8 +29,8 @@ remembers the stream last chosen or played and opens with it.
   the `ShortNavigationBar` under the tabs, the `ModalSheet` behind every bottom sheet, connected
   button groups, `CoverImage` (Coil, covers decoded at display size with a placeholder in their
   dominant colour), and the native e-book reader, `BookView`. Each screen is one Compose tree
-  inside a `Host`; the tab bar has its own in the tabs' screen, held still while the tabs slide
-  (`StillView`), and the mini player is in the player layer's.
+  inside a `Host`; the tab bar has its own in the tabs' screen, and the mini player is in the
+  player layer's.
 - `modules/platform` holds the native work beyond the interface: the offline Vosk recogniser run
   on a stretch of audio, for finding a reading place in a recording; reading pages through an HTTP
   proxy; and checking a downloaded update and handing it to Android's installer.

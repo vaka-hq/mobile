@@ -84,10 +84,6 @@ short: how the app works belongs in `docs/`.
   swipe's animation has ended, so the mini player, which follows the tabs, asks
   `useTabsShown` (`src/components/tabs-shown.ts`), which answers for the screen a committed swipe
   returns to.
-- The tab bar is part of the tabs' screen, so a screen opening over them covers it and one
-  closing reveals it, but it holds still while the tabs slide: `StillView` (`modules/ui`) draws
-  it back by as far as the stack's view animation has moved the screen. A back swipe's preview
-  moves the screen as a card, and the bar with it.
 - Android colour roles follow Material 3: screens on `surface`, containers on
   `surfaceContainerHigh`, sheets on the default `surfaceContainerLow`, text `onSurface` and
   `onSurfaceVariant`. Colour comes from the dynamic palette; covers are the only imagery.

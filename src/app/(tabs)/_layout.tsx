@@ -3,7 +3,6 @@ import { View } from 'react-native'
 import { BottomBar } from '@/components/bottom-bar'
 import { miniPlayerHeight, setTabBarHeight } from '@/player/expansion'
 import { usePlayerValue } from '@/player/use-player'
-import { StillView } from '../../../modules/ui'
 
 export default function TabsLayout() {
   const loaded = usePlayerValue((state) => state.book !== null)
@@ -14,11 +13,8 @@ export default function TabsLayout() {
         <TabSlot style={{ flex: 1 }} />
         {/* Room for the mini player, which floats above the tab bar in the player layer. */}
         {loaded ? <View style={{ height: miniPlayerHeight }} /> : null}
-        {/* The tab bar stays put while the tabs slide under a screen opening or closing over them. */}
         <View onLayout={(event) => setTabBarHeight(event.nativeEvent.layout.height)}>
-          <StillView>
-            <BottomBar />
-          </StillView>
+          <BottomBar />
         </View>
       </View>
       <TabList style={{ display: 'none' }}>

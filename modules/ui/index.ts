@@ -28,7 +28,6 @@ export {
   ShortNavigationBar,
   SideReveal,
   StepDots,
-  StillView,
   TopAppBar,
   ViewportBox,
 } from './src/views'

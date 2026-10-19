@@ -23,8 +23,7 @@ function TabIcon({ tab }: { tab: Tab }) {
 
 /**
  * The Material 3 Expressive short navigation bar under the tabs; the mini player floats above it
- * in the player layer. It is part of the tabs' screen, so a screen opening over them covers it and
- * one closing reveals it, but it holds still while the tabs slide (`StillView`).
+ * in the player layer.
  */
 export function BottomBar() {
   const { t } = useLingui()

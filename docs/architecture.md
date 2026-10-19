@@ -29,7 +29,7 @@ remembers the stream last chosen or played and opens with it.
   the `ShortNavigationBar` under the tabs, the `ModalSheet` behind every bottom sheet, connected
   button groups, `CoverImage` (Coil, covers decoded at display size with a placeholder in their
   dominant colour), and the native e-book reader, `BookView`. Each screen is one Compose tree
-  inside a `Host`; the tab bar and mini player share another.
+  inside a `Host`; the tab bar has its own, and the mini player is in the player layer's.
 - `modules/platform` holds the native work beyond the interface: the offline Vosk recogniser run
   on a stretch of audio, for finding a reading place in a recording; reading pages through an HTTP
   proxy; and checking a downloaded update and handing it to Android's installer.
@@ -65,16 +65,19 @@ remembers the stream last chosen or played and opens with it.
    a time, to read their narrators. Uploads are grouped by narrator under the matching Hardcover
    audiobook edition (publisher, year, length, language), M4B first, and TorBox's cache is checked
    for all of them in one request. The book page plays the chosen stream: the one picked there,
-   the one opened from a post, the remembered one, or else the most read narrator's recording
-   from its best source (one TorBox has cached, else M4B over M4A over MP3, higher bitrate, newer).
-   The book page shows Hardcover's cover and details with Listen and Add to library as connected
-   spring buttons; one row opens the narrator and source choice (`work/[id]/streams`). Choosing or playing a stream links it to the book with that recording's
+   the one opened from a post, the remembered one, else an upload TorBox has cached in the first
+   language's recordings, else the most read narrator's best (the whole book over an abridged
+   one, M4B over M4A over MP3, higher bitrate, newer).
+   The book page shows Hardcover's cover and details with Listen, Read and Add to library as
+   connected spring buttons; the rows below open the narrator and source choice
+   (`work/[id]/streams`) and the e-book choice. Choosing or playing a stream links it to the book with that recording's
    edition and remembers it. Posts opened from AudioBookBay results go to their Hardcover book
    with that stream chosen; unmatched posts show, and are collected, on their own. A recording
    matched to the wrong book can be matched again from the book page's menu (**Wrong book?**).
    Before a search, Browse shows Hardcover: this month's trending books, or a genre's books ordered by
-   how many readers gave them that genre (genre chips are Hardcover's most used genres). The
-   AudioBookBay chip searches posts directly, as without a key. The Series chip searches Hardcover
+   how many readers gave them that genre (genre chips are Hardcover's most used genres); without a
+   key it shows AudioBookBay's latest uploads and categories. The Audiobooks chip searches posts
+   directly, as without a key, and E-books searches files to read. The Series chip searches Hardcover
    series (dropping the empty ones Hardcover keeps for narrators); a series lists one book per
    position in reading order, without omnibus editions, translations or duplicate records.
    Every search pages in as the list scrolls.
@@ -95,8 +98,8 @@ remembers the stream last chosen or played and opens with it.
    media notification and lock screen controls (play/pause, skip back and forward by the intervals
    set in Settings, seek). It pauses when headphones are unplugged or Bluetooth disconnects. Tracks
    change by swapping the source, so the session survives multi-file books. expo-audio is patched
-   (`patches/`) for a back buffer, a disk cache prefetched behind every seek, the pause on unplug
-   and the skip intervals.
+   (`patches/`) for a back buffer, a disk cache prefetched behind every seek, the pause on unplug,
+   the skip intervals and speeds up to 3×.
 6. **Expiring links**: TorBox links are signed and temporary. Links are reused for at most an hour;
    resuming after that reloads the source at the saved position first, and any playback error
    requests a fresh link, looking the torrent up again in case it was added anew, and resumes where
@@ -104,13 +107,15 @@ remembers the stream last chosen or played and opens with it.
    Settings when the key is missing or refused).
 
 Progress is saved every five seconds while playing, on pause, on track changes and when the app
-leaves the foreground. The last unfinished book is restored, paused, on launch.
+leaves the foreground. The book played last is restored, paused, on launch, unless it was
+finished or taken out of the library.
 
 ## Preferred language
 
 A language chosen in Settings, English by default, ranks every list of sources: recordings and
-their default, e-book files, and Browse's results come in that language first, then English,
-then the others by name.
+their default, e-book files (after those by the book's author), and Browse's results come in
+that language first, then English, then the others by name. Browse ranks each page on its own, so
+nothing shown moves, and the latest uploads stay newest first.
 
 ## E-books and the reader
 
@@ -135,7 +140,8 @@ Storage sheet, where tapping it tries again. Settings → Storage lists download
 e-books and clears caches.
 
 A backup (Settings → Backup) holds the library, progress, bookmarks and notes, followed series, e-book
-places and highlights, and preferences; keys and the proxy sign-in only when the listener says so.
+places and highlights, and the playback, reader and language preferences; keys and the proxy
+sign-in only when the listener says so.
 Restoring shows what the file holds first and merges without overwriting newer data. The welcome
 screen can restore a backup too.
 
@@ -155,11 +161,14 @@ per stream, and preferences. Cached JSON is validated with the same
 zod schemas as the network boundary. AudioBookBay details refresh once a day. Every other
 AudioBookBay and Hardcover catalogue answer goes through one request cache (`request_cache`,
 parsed JSON validated again on read, failures never stored): the latest uploads for 15 minutes,
-searches and genre pages for 2 hours, Hardcover searches and books for a day. When a fresh answer
-cannot be had, such as offline, the last one kept is used however old it is, so a book's page
-still opens. Refreshing a Hardcover match skips it; key checks and TorBox are never cached.
-Settings → Clear cached data forgets browsed books, cached answers and links but keeps the library,
-progress and bookmarks. Multi-step writes run in exclusive transactions.
+listings and searches for 2 hours, Hardcover's trending books for 3 hours, Hardcover searches,
+books and genre pages for a day and its genres for a week. When a fresh answer cannot be had,
+such as offline, the last one kept is used, so a book's page still opens; expired answers go a
+month after expiring, or sooner once the cache passes 16 MB. TorBox's cache and seeding answers
+are kept briefly (`src/library/torbox-cache.ts`); key checks are never cached. Settings → Clear
+cached data forgets browsed books, cached answers, streamed audio and e-book copies read without
+being downloaded, but keeps the library, progress and bookmarks. Multi-step writes run in
+exclusive transactions.
 
 The API keys and the proxy sign-in live in `expo-secure-store`; one that can no longer be
 decrypted, such as after the keystore was reset, reads as missing instead of stopping the app.
@@ -169,7 +178,8 @@ decrypted, such as after the keystore was reset, reads as missing instead of sto
 Create a personal API key at hardcover.app → Settings → Hardcover API with catalogue read access
 (`read:catalog`) and paste it into Settings → Hardcover; a pasted `Bearer ` prefix is accepted.
 The key is verified with a one-book catalogue query before it is stored, and a stored key is
-re-checked whenever Settings opens, so an expired or revoked key shows up there. Hardcover's
+checked again when Settings opens and the last check is over five minutes old, so an expired or
+revoked key shows up there. Hardcover's
 answers name the problem: a rejected key, a missing `read:catalog` permission or the rate limit.
 Without a key the app works with AudioBookBay details. Hardcover's personal keys expire on the date
 chosen when creating them; replace the key in Settings when that happens.
@@ -198,7 +208,7 @@ truth, and nothing is ever deleted there.
 
 - **When:** at start, on returning to the app, ten seconds after the library changes (a book
   added, played, paused, finished or removed) and every five minutes while listening. Each run reads
-  all the shelves in one request.
+  all the shelves at once, 500 entries a request.
 - **Which side changed:** a baseline per book (`hardcover_shelf`) holds the shelf entry as the last
   run left it. The pure planner (`src/library/shelf-sync.ts`, tested) compares the two: what changed
   on Hardcover is applied here, even over listening done here since; what changed only here is sent
@@ -223,8 +233,8 @@ truth, and nothing is ever deleted there.
 
 ## Builds
 
-Every build is made locally; the app uses no Expo cloud services and has no over-the-air
-updates, so every change ships in a build. The variant is chosen when the Android project is
+Builds are made with Gradle, on a computer or by GitHub Actions; the app uses no Expo cloud
+services and has no over-the-air updates, so every change ships in a build. The variant is chosen when the Android project is
 generated: `APP_VARIANT=<variant> vp run generate` writes that variant's package, name and
 scheme into `android/`, and Gradle is given the same `APP_VARIANT`, since a release build bundles
 the JavaScript and reads the config again. Any variant builds as debug or release; a preview

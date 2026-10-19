@@ -19,7 +19,8 @@ short: how the app works belongs in `docs/`.
 
 ## Layout
 
-- Expo Router route files live in `src/app/` and only forward to screens in `src/screens/`.
+- Expo Router route files live in `src/app/` and only forward to screens in `src/screens/`; the
+  layouts and the first-run redirect to the welcome screen are the only logic there.
 - `src/ui/` is the app's vocabulary of components; `src/components/` holds larger pieces shared
   by screens; `src/library/` is persistence, orchestration and the TanStack Query hooks;
   `src/sources/` has one client per external service; `src/player/` owns playback; `src/media/`
@@ -104,8 +105,8 @@ short: how the app works belongs in `docs/`.
 - Hardcover and TorBox are reached with the listener's own API keys, entered in Settings and
   verified before they are stored. Keep secrets in `expo-secure-store`, never in SQLite or logs.
 - Library sync (`src/library/library-sync.ts`) keeps the library in step with one sync source at a
-  time, chosen in Settings → Library. A new source is one entry in `syncSources` (and its name in
-  Settings); choosing another source stops the one before. Hardcover's (`src/library/shelves.ts`,
+  time, chosen in Settings → Library. A new source is one entry in `syncSources` (with its ID in
+  `syncSourceIds` and its name in Settings); choosing another source stops the one before. Hardcover's (`src/library/shelves.ts`,
   with the pure, tested planner `shelf-sync.ts` and `shelf-store.ts`): Hardcover is the source of
   truth. The baseline per book
   (`hardcover_shelf`) tells which side changed; a change there wins over one here. Never delete
@@ -133,8 +134,8 @@ short: how the app works belongs in `docs/`.
   links as expiring: refresh stale links before resuming and recover from playback errors by
   requesting a fresh link at the current position, looking the torrent up again first.
 - expo-audio is patched (`patches/`, applied by pnpm on install) for a back buffer, a disk cache that the player
-  prefetches behind every seek, pausing when headphones are unplugged, and skip intervals for the
-  notification set from the app's settings. It is built from source for that
+  prefetches behind every seek, pausing when headphones are unplugged, skip intervals for the
+  notification set from the app's settings, and speeds up to 3×. It is built from source for that
   (`expo.autolinking` in `package.json`); keep both when upgrading it, editing the patch with
   `pnpm patch` and `pnpm patch-commit`.
 - Books kept on the phone (`src/library/offline.ts`) play from their local copy; the player and the
@@ -161,7 +162,8 @@ short: how the app works belongs in `docs/`.
   `EpubHtml.kt` parse the EPUB with Android's zip and XML parsers, `BookLayout.kt` lays it out with
   Compose text and `BookView.kt` paginates and draws it, slides pages as they turn and draws the
   overview's row of cards. It takes JSON commands and reports JSON events, parsed with zod in
-  `src/components/reader-view.tsx`; its bars and sheets are Compose over it (`src/ui/reader.tsx`).
+  `src/components/reader-view.tsx`; its bars and sheets are Compose over it (`src/ui/reader.tsx`,
+  `src/components/reader-sheets.tsx`).
 - The book only turns pages; there is no scrolling layout. The display settings are not a sheet
   but a card over the foot of the page being read, the overview closing for it, so changes show at
   full size; the reader centres its loading indicator above the card.
@@ -204,7 +206,8 @@ short: how the app works belongs in `docs/`.
 
 ## Builds and devices
 
-- Every build is local; the app uses no Expo cloud services or over-the-air updates.
+- Builds are made with Gradle, locally or by the release workflow; the app uses no Expo cloud
+  services or over-the-air updates.
 - Do not edit the generated `android/` folder; use config plugins (`app.config.ts`) and
   `modules/`. Native dependency or module changes need `vp run generate` and a rebuild.
 - The variant (`APP_VARIANT`: development, preview, production) is fixed when `android/` is

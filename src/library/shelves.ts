@@ -235,8 +235,8 @@ async function detailsFor(plans: Map<number, ShelfAction[]>, books: Map<number, 
 }
 
 /**
- * One run: reads all the shelves in one request and carries out each book's plan. Throws for a
- * run that could not get through, such as without a key or with one lacking library access.
+ * One run: reads all the shelves, 500 entries a request, and carries out each book's plan. Throws
+ * for a run that could not get through, such as without a key or with one lacking library access.
  */
 export async function syncHardcoverShelves() {
   if (!hardcoverKey.get()) {

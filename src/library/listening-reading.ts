@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { stopIfAborted } from '@/lib/abort'
 import { getPreferences, usePreferences } from '@/settings/preferences'
-import { Speech } from '../../modules/platform'
+import { type SnippetRequest, Speech } from '../../modules/platform'
 import { type Ebook, learnSections, listEbooks } from './ebooks'
 import { type BookRecord, workIdOf } from './model'
 import { offlineTrackUri } from './offline'
@@ -87,8 +87,40 @@ function hearsExactly(language: string | null | undefined) {
   )
 }
 
+let lastHearing = 0
+
+/** The words in a stretch of the audio; aborting `signal` stops the hearing part way. */
+async function hear(request: SnippetRequest, signal?: AbortSignal) {
+  if (!Speech) {
+    return []
+  }
+
+  const native = Speech
+  const id = String(++lastHearing)
+  const cancel = () => native.cancelTranscription(id)
+
+  signal?.addEventListener('abort', cancel)
+
+  try {
+    return (await native.transcribe({ ...request, id })).words
+  } catch (error) {
+    if (signal) {
+      stopIfAborted(signal)
+    }
+
+    throw error
+  } finally {
+    signal?.removeEventListener('abort', cancel)
+  }
+}
+
 /** The words heard just before listening stopped, to find that place in the text. */
-async function heardBeforeStop(book: BookRecord, track: number, position: number) {
+async function heardBeforeStop(
+  book: BookRecord,
+  track: number,
+  position: number,
+  signal?: AbortSignal,
+) {
   const model = speechModelUri()
   const source = Speech ? await trackSource(book, track) : null
   const start = Math.max(0, position - heardBefore)
@@ -97,7 +129,7 @@ async function heardBeforeStop(book: BookRecord, track: number, position: number
     return null
   }
 
-  const { words } = await Speech.transcribe({ source, start, duration: position - start, model })
+  const words = await hear({ source, start, duration: position - start, model }, signal)
 
   return words.map((word) => word.word)
 }
@@ -144,9 +176,12 @@ export async function prepareReadingPlace(ebook: Ebook, workId: string, signal: 
   }
 
   const words = hearsExactly(ebook.language ?? heard.book.abb.language)
-    ? await heardBeforeStop(heard.book, heard.playback.track, heard.playback.position).catch(
-        () => null,
-      )
+    ? await heardBeforeStop(
+        heard.book,
+        heard.playback.track,
+        heard.playback.position,
+        signal,
+      ).catch(() => null)
     : null
 
   stopIfAborted(signal)
@@ -411,7 +446,7 @@ async function hearPassage(
       return null
     }
 
-    const { words } = await Speech.transcribe({ source, start, duration: heardAround, model })
+    const words = await hear({ source, start, duration: heardAround, model }, signal)
 
     if (signal) {
       stopIfAborted(signal)

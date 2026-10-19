@@ -13,6 +13,8 @@ export type SnippetRequest = {
   duration: number
   /** The unpacked model's directory, as a file URI. */
   model: string
+  /** Names the stretch for `cancelTranscription`. */
+  id?: string
 }
 
 type SpeechModule = {
@@ -23,9 +25,12 @@ type SpeechModule = {
   installModel(archive: string, directory: string): Promise<void>
   /**
    * The words spoken in a stretch of an audiobook, offline. Rejects with `ERR_SPEECH_MODEL` when
-   * the model is missing or broken, and `ERR_SPEECH_AUDIO` when the audio cannot be read.
+   * the model is missing or broken, `ERR_SPEECH_AUDIO` when the audio cannot be read, and
+   * `ERR_SPEECH_CANCELLED` once cancelled.
    */
   transcribe(request: SnippetRequest): Promise<{ words: HeardWord[] }>
+  /** Stops the stretch with this `id` part way through. */
+  cancelTranscription(id: string): void
   /** Lets go of the model in memory; it is otherwise kept a minute after its last use. */
   releaseModel(): void
 }

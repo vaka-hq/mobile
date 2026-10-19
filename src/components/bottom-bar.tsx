@@ -3,7 +3,7 @@ import { useTabTrigger } from 'expo-router/ui'
 import { Host } from '@/components/host'
 import { Column, Icon } from '@/lib/compose-ui'
 import { glyphs } from '@/ui/glyphs'
-import { ShortNavigationBar } from '../../modules/android-components'
+import { ShortNavigationBar } from '../../modules/ui'
 
 type TabName = 'library' | 'browse'
 

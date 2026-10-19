@@ -13,7 +13,7 @@ import {
 } from '@/player/expansion'
 import { usePlayerValue } from '@/player/use-player'
 import { PlayerContent } from '@/screens/player'
-import { ExpandingPlayer } from '../../modules/android-components'
+import { ExpandingPlayer } from '../../modules/ui'
 
 const tabPaths = new Set(['/', '/browse'])
 

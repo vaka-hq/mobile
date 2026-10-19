@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { z } from 'zod'
-import type { ProxyServer } from '../../modules/proxied-http'
+import type { ProxyServer } from '../../modules/platform'
 import { createSecureValue } from './secure-value'
 
 const abbProxySchema = z.object({

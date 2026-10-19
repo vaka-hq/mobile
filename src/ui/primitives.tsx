@@ -61,10 +61,10 @@ import {
   StepDots as NativeStepDots,
   TopAppBar,
   ViewportBox,
-} from '../../modules/android-components'
+} from '../../modules/ui'
 import { type Glyph, glyphs, skipGlyph } from './glyphs'
 
-export { PlayerFade, PlayPauseButton } from '../../modules/android-components'
+export { PlayerFade, PlayPauseButton } from '../../modules/ui'
 
 /** A cover image with what the source knows about it before it loads. */
 export type CoverArt = {

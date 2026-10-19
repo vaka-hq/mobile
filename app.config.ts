@@ -33,25 +33,9 @@ const withAndroidReleaseShrinking: ConfigPlugin = (config) => {
     return gradleConfig
   })
 
-  return withAppBuildGradle(config, (gradleConfig) => {
-    const standardDefault = 'getDefaultProguardFile("proguard-android.txt")'
-    const optimizedDefault = 'getDefaultProguardFile("proguard-android-optimize.txt")'
-
-    if (gradleConfig.modResults.contents.includes(standardDefault)) {
-      return gradleConfig
-    }
-
-    if (!gradleConfig.modResults.contents.includes(optimizedDefault)) {
-      throw new Error('Unable to configure the standard Android release rules')
-    }
-
-    gradleConfig.modResults.contents = gradleConfig.modResults.contents.replace(
-      optimizedDefault,
-      standardDefault,
-    )
-
-    return gradleConfig
-  })
+  // Release builds keep the template's optimised R8 rules; Android Gradle Plugin 9 refuses the
+  // unoptimised ones.
+  return config
 }
 
 const releaseSigningMarker = '// Vaka: release signing'

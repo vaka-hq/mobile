@@ -3,7 +3,7 @@ import { Directory, File, Paths } from 'expo-file-system'
 import { useSyncExternalStore } from 'react'
 import { getPreferences, setPreference } from '@/settings/preferences'
 import { listReleases, readUpdateManifest, type ReleaseAsset } from '@/sources/github/client'
-import { AppUpdates } from '../../modules/app-updates'
+import { AppUpdates } from '../../modules/platform'
 import { apkFor, manifestOf, releaseFor } from './update-release'
 
 /** A newer build than the one running, on the listener's channel. */

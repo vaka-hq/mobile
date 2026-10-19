@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { stopIfAborted } from '@/lib/abort'
 import { getPreferences, usePreferences } from '@/settings/preferences'
-import { Speech } from '../../modules/speech'
+import { Speech } from '../../modules/platform'
 import { type Ebook, learnSections, listEbooks } from './ebooks'
 import { type BookRecord, workIdOf } from './model'
 import { offlineTrackUri } from './offline'

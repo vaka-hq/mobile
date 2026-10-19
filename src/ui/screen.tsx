@@ -8,7 +8,7 @@ import { Box, Column, FilledIconButton, Icon, IconButton, Row, Text } from '@/li
 import { useFeedback } from '@/lib/feedback'
 import { miniPlayerHeight, useBelowMiniPlayer, usePlayerLayout } from '@/player/expansion'
 import { usePlayerValue } from '@/player/use-player'
-import { HeaderAppBar, LargeTopAppBar, Scaffold, TopAppBar } from '../../modules/android-components'
+import { HeaderAppBar, LargeTopAppBar, Scaffold, TopAppBar } from '../../modules/ui'
 import { type Glyph, glyphs } from './glyphs'
 
 export type ActionProps = {

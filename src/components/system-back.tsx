@@ -1,7 +1,7 @@
 import { usePathname } from 'expo-router'
 import { useLayoutEffect } from 'react'
 import { usePlayerLayout } from '@/player/expansion'
-import { setBackPreviewBlocked, setReactNativeBack } from '../../modules/android-components'
+import { setBackPreviewBlocked, setReactNativeBack } from '../../modules/ui'
 
 let blockers = 0
 

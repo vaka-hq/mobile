@@ -262,7 +262,7 @@ export async function exportBackup(withSecrets: boolean): Promise<string | null>
   const name = `vaka-backup-${day}.json`
   const file = folder.createFile(name, 'application/json')
 
-  file.write(JSON.stringify(backup))
+  await file.write(JSON.stringify(backup))
 
   return name
 }

@@ -1,7 +1,7 @@
 import { Directory, File, Paths } from 'expo-file-system'
 import { useSyncExternalStore } from 'react'
 import { getPreferences } from '@/settings/preferences'
-import { Speech } from '../../modules/speech'
+import { Speech } from '../../modules/platform'
 import { downloadResuming } from './resumable-download'
 
 /**

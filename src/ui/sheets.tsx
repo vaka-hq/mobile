@@ -6,11 +6,7 @@ import { fillMaxWidth, padding, weight } from '@/lib/compose-modifiers'
 import { Column, FilterChip, Row, Slider, Text, useMaterialColors } from '@/lib/compose-ui'
 import { type SleepTimer, setSleepTimer, setSpeed } from '@/player/controller'
 import { maxPlaybackSpeed } from '@/settings/preferences'
-import {
-  ModalSheet,
-  type ModalSheetRef,
-  SheetCardList as SheetList,
-} from '../../modules/android-components'
+import { ModalSheet, type ModalSheetRef, SheetCardList as SheetList } from '../../modules/ui'
 import { speedLabel } from './format'
 import type { Glyph } from './glyphs'
 import { CardItem, Empty } from './primitives'

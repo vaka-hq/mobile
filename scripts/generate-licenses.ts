@@ -61,12 +61,12 @@ const licences = []
  */
 const nativeLibraries = [
   { name: 'AndroidX DynamicAnimation', version: '1.1.0' },
-  { name: 'AndroidX Media3 (ExoPlayer)', version: '1.9.0' },
-  { name: 'Coil', version: '3.2.0' },
-  { name: 'Java Native Access (JNA)', version: '5.18.1' },
-  { name: 'Jetpack Compose', version: '1.11.0-beta02' },
-  { name: 'Jetpack Compose Material 3', version: '1.5.0-alpha17' },
-  { name: 'Kotlin standard library', version: '2.2.20' },
+  { name: 'AndroidX Media3 (ExoPlayer)', version: '1.9.1' },
+  { name: 'Coil', version: '3.4.0' },
+  { name: 'Java Native Access (JNA)', version: '5.19.1' },
+  { name: 'Jetpack Compose', version: '1.12.1' },
+  { name: 'Jetpack Compose Material 3', version: '1.5.0-beta01' },
+  { name: 'Kotlin standard library', version: '2.3.10' },
   { name: 'Material Symbols', version: '' },
   { name: 'OkHttp', version: '4.12.0' },
   { name: 'Vosk', version: '0.3.75' },

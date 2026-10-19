@@ -1,0 +1,10 @@
+{
+  "platforms": ["android"],
+  "android": {
+    "modules": [
+      "app.vaka.platform.AppUpdatesModule",
+      "app.vaka.platform.ProxiedHttpModule",
+      "app.vaka.platform.SpeechModule"
+    ]
+  }
+}

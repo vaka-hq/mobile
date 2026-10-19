@@ -2,6 +2,7 @@ import { plural } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import * as Application from 'expo-application'
+import { getCalendars } from 'expo-localization'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useBackupRestore } from '@/components/backup-restore'
@@ -20,6 +21,14 @@ import { exportBackup, hasSecrets } from '@/library/backup'
 import { clearEbookCache, ebookBytes, ebookCacheBytes, useEbooks } from '@/library/ebooks'
 import { invalidateLibrary } from '@/library/invalidation'
 import { isLanguage } from '@/library/languages'
+import {
+  chooseSyncSource,
+  resyncLibrary,
+  setLibrarySync,
+  type SyncProblem,
+  syncSources,
+  useLibrarySync,
+} from '@/library/library-sync'
 import { offlineBytes, useOfflineBooks } from '@/library/offline'
 import { cachedMetadataSize, clearCachedMetadata } from '@/library/repository'
 import { installSpeechModel, removeSpeechModel, useSpeechModel } from '@/library/speech-model'
@@ -39,8 +48,10 @@ import { hardcoverKey, useHardcoverKey } from '@/settings/hardcover-key'
 import { useKeyProblems } from '@/settings/key-problems'
 import {
   playbackSpeeds,
+  type SyncSourceId,
   setPreference,
   skipIntervals,
+  syncSourceIds,
   usePreferences,
 } from '@/settings/preferences'
 import { torBoxKey, useTorBoxKey } from '@/settings/torbox-key'
@@ -49,7 +60,7 @@ import { normalizeBaseUrl } from '@/sources/audiobookbay/client'
 import { isAuthenticationError } from '@/sources/torbox/client'
 import { ChoiceDialog, ConfirmDialog, FormDialog, TextDialog } from '@/ui/dialogs'
 import { useErrorText } from '@/ui/errors'
-import { dataSize, speedLabel } from '@/ui/format'
+import { dataSize, speedLabel, timeOfDay } from '@/ui/format'
 import { useLanguageNames } from '@/ui/languages'
 import { Group, List } from '@/ui/primitives'
 import { Screen } from '@/ui/screen'
@@ -59,6 +70,7 @@ type Dialog =
   | 'removeTorbox'
   | 'hardcover'
   | 'removeHardcover'
+  | 'syncSource'
   | 'speed'
   | 'skipBack'
   | 'readingSync'
@@ -85,6 +97,9 @@ export function SettingsScreen() {
   const preferences = usePreferences()
   const speechModel = useSpeechModel()
   const updateState = useUpdateState()
+  const librarySync = useLibrarySync()
+  // Saving a key asked for to turn sync on turns it on.
+  const [syncAfterKey, setSyncAfterKey] = useState(false)
 
   const speechProgress = i18n.number(
     speechModel.status === 'downloading' ? speechModel.progress : 0,
@@ -92,14 +107,14 @@ export function SettingsScreen() {
   )
 
   const syncLabels = {
-    off: t({ message: 'Off', comment: 'Sync setting: not carried over' }),
+    off: t({ message: 'Off', comment: 'Handoff setting: not carried over' }),
     chapters: t({
       message: 'Approximate',
-      comment: 'Sync setting: the place is estimated from its share of the chapter',
+      comment: 'Handoff setting: the place is estimated from its share of the chapter',
     }),
     words: t({
       message: 'Exact',
-      comment: 'Sync setting: the exact sentence is found by listening to the words',
+      comment: 'Handoff setting: the exact sentence is found by listening to the words',
     }),
   }
 
@@ -282,6 +297,91 @@ export function SettingsScreen() {
           (hardcoverCheck.data?.username ? `@${hardcoverCheck.data.username}` : null) ??
           t({ message: 'Connected', comment: 'Hardcover row with a valid key' }))
 
+  const sourceNames = {
+    hardcover: t({ message: 'Hardcover', comment: 'Name of the book metadata service' }),
+  } satisfies Record<SyncSourceId, string>
+
+  // No provider until the listener picks one; without one there is nothing to sync or say.
+  const source = preferences.syncSource ? syncSources[preferences.syncSource] : null
+  const sourceName = preferences.syncSource ? sourceNames[preferences.syncSource] : ''
+
+  const syncedTime = librarySync.syncedAt
+    ? timeOfDay(librarySync.syncedAt, i18n.locale, getCalendars()[0]?.uses24hourClock ?? null)
+    : ''
+
+  /** Why syncing keeps failing, said so the listener knows what to do about it. */
+  function syncProblemText(problem: SyncProblem | null) {
+    switch (problem) {
+      case 'rejectedKey':
+        return t({
+          message: `${sourceName} didn’t accept your key. Replace it in Accounts.`,
+          comment:
+            'Library sync status when the provider rejects the API key as invalid or expired, with its name',
+        })
+      case 'missingAccess':
+        return t({
+          message: `Your ${sourceName} key can’t sync your library. Replace it with one that can.`,
+          comment:
+            'Library sync status when the API key lacks the permissions to read or change the library, with the provider name',
+        })
+      case 'limited':
+        return t({
+          message: `${sourceName}’s request limit was reached. It tries again later.`,
+          comment: 'Library sync status when the provider’s rate limit is used up, with its name',
+        })
+      case null:
+        return t({
+          message: 'Couldn’t sync. It tries again soon.',
+          comment: 'Library sync status after a sync failed for a passing reason',
+        })
+    }
+  }
+
+  // How syncing stands, in the row under the provider: while on, or when it cannot sync at all.
+  const syncStatus = !source
+    ? null
+    : !source.ready()
+      ? t({
+          message: `Add your ${sourceName} API key to sync`,
+          comment: 'Library sync status when the chosen provider has no key yet, with its name',
+        })
+      : !preferences.librarySync
+        ? null
+        : librarySync.syncing
+          ? t({ message: 'Syncing…', comment: 'Library sync status while it syncs' })
+          : librarySync.error
+            ? syncProblemText(source.problem(librarySync.error))
+            : librarySync.syncedAt
+              ? t({
+                  message: `Synced ${syncedTime}`,
+                  comment: 'Library sync status with when it last synced, such as “Synced 14:05”',
+                })
+              : t({
+                  message: 'Not synced yet',
+                  comment: 'Library sync status before the first sync',
+                })
+
+  function toggleLibrarySync() {
+    if (preferences.librarySync) {
+      void setLibrarySync(false)
+    } else if (source?.ready()) {
+      void setLibrarySync(true)
+    } else if (preferences.syncSource === 'hardcover') {
+      setSyncAfterKey(true)
+      setDialog('hardcover')
+    }
+  }
+
+  function resync() {
+    showFeedback(
+      t({
+        message: `Syncing everything again from ${sourceName}`,
+        comment: 'Shown after holding the library sync row, with the source name',
+      }),
+    )
+    void resyncLibrary()
+  }
+
   const channelLabels = {
     stable: t({ message: 'Stable', comment: 'Update channel: tested releases only' }),
     nightly: t({
@@ -353,6 +453,39 @@ export function SettingsScreen() {
               value: annasValue,
               onPress: () => setDialog(annasSecret ? 'removeAnnas' : 'annas'),
             },
+          ]}
+        />
+        <Group
+          title={t({ message: 'Library', comment: 'Settings section' })}
+          rows={[
+            {
+              key: 'syncSource',
+              glyph: 'library',
+              label: t({
+                message: 'Provider',
+                comment:
+                  'Setting for which service the library is kept in step with, such as Hardcover',
+              }),
+              value:
+                sourceName ||
+                t({ message: 'None', comment: 'Library provider when no service is chosen' }),
+              onPress: () => setDialog('syncSource'),
+              // The switch turns syncing with the provider on and off; with none, it has none.
+              toggle: preferences.librarySync,
+              toggleHidden: !source,
+              onToggle: toggleLibrarySync,
+            },
+            ...(syncStatus
+              ? [
+                  {
+                    key: 'syncStatus',
+                    glyph: 'shelfSync' as const,
+                    label: syncStatus,
+                    // Held while on, it syncs everything again from the provider.
+                    onLongPress: preferences.librarySync && source?.ready() ? resync : undefined,
+                  },
+                ]
+              : []),
           ]}
         />
         <Group
@@ -436,20 +569,20 @@ export function SettingsScreen() {
               key: 'readingSync',
               glyph: 'readingSync',
               label: t({
-                message: 'Sync',
+                message: 'Handoff',
                 comment:
-                  'Setting for carrying the place between the audiobook and the e-book of the same book',
+                  'Setting for handing the place over between the audiobook and the e-book of the same book, when switching from one to the other',
               }),
               value:
                 preferences.readingSync === 'words' && speechModel.status === 'downloading'
                   ? t({
                       message: `Downloading speech model · ${speechProgress}`,
-                      comment: 'Sync setting while its speech model downloads',
+                      comment: 'Handoff setting while its speech model downloads',
                     })
                   : preferences.readingSync === 'words' && speechModel.status !== 'ready'
                     ? t({
                         message: 'Speech model missing. Choose again to download it.',
-                        comment: 'Sync setting when its speech model failed to download',
+                        comment: 'Handoff setting when its speech model failed to download',
                       })
                     : syncLabels[preferences.readingSync],
               onPress: () => setDialog('readingSync'),
@@ -626,7 +759,37 @@ export function SettingsScreen() {
           onDismiss={() => setDialog((current) => (current === 'removeTorbox' ? null : current))}
         />
       ) : null}
-      {dialog === 'hardcover' ? <HardcoverKeyDialog onClose={() => setDialog(null)} /> : null}
+      {dialog === 'hardcover' ? (
+        <HardcoverKeyDialog
+          onClose={() => {
+            setDialog(null)
+
+            if (syncAfterKey && hardcoverKey.get()) {
+              void setLibrarySync(true)
+            }
+
+            setSyncAfterKey(false)
+          }}
+        />
+      ) : null}
+      {dialog === 'syncSource' ? (
+        <ChoiceDialog
+          title={t({
+            message: 'Provider',
+            comment: 'Dialog title: which service the library is kept in step with',
+          })}
+          options={[
+            {
+              value: 'none' as const,
+              label: t({ message: 'None', comment: 'Library provider when no service is chosen' }),
+            },
+            ...syncSourceIds.map((id) => ({ value: id, label: sourceNames[id] })),
+          ]}
+          selected={preferences.syncSource ?? 'none'}
+          onSelect={(id) => void chooseSyncSource(id === 'none' ? null : id)}
+          onDismiss={() => setDialog(null)}
+        />
+      ) : null}
       {dialog === 'removeHardcover' ? (
         <ConfirmDialog
           title={t({ message: 'Replace the Hardcover key?', comment: 'Dialog title' })}
@@ -691,9 +854,9 @@ export function SettingsScreen() {
       {dialog === 'readingSync' ? (
         <ChoiceDialog
           title={t({
-            message: 'Sync',
+            message: 'Handoff',
             comment:
-              'Dialog title: how the place is carried between the audiobook and the e-book of the same book',
+              'Dialog title: how the place is handed over between the audiobook and the e-book of the same book',
           })}
           options={[
             { value: 'off' as const, label: syncLabels.off },

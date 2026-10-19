@@ -37,6 +37,20 @@ export function dataSize(bytes: number, locale: string) {
   return `${number} ${dataUnits[unit]}`
 }
 
+/**
+ * A time of day in the app's language on the phone's own clock: `14:05` on a 24-hour phone even in
+ * English, `2:05 PM` on a 12-hour one. Null leaves the clock to the language.
+ */
+export function timeOfDay(time: number, locale: string, uses24HourClock: boolean | null) {
+  const options: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' }
+
+  if (uses24HourClock !== null) {
+    options.hourCycle = uses24HourClock ? 'h23' : 'h12'
+  }
+
+  return new Intl.DateTimeFormat(locale, options).format(new Date(time))
+}
+
 /** Playback speed as listeners read it: `1×`, `1.25×`. */
 export function speedLabel(speed: number) {
   return `${Number(speed.toFixed(2))}×`

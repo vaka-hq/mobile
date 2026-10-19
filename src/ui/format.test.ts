@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chapterNumber, clock, dataSize, hoursAndMinutes, speedLabel } from './format'
+import { chapterNumber, clock, dataSize, hoursAndMinutes, speedLabel, timeOfDay } from './format'
 
 describe('formatting', () => {
   it('formats media clocks', () => {
@@ -7,6 +7,14 @@ describe('formatting', () => {
     expect(clock(245.9)).toBe('4:05')
     expect(clock(3845)).toBe('1:04:05')
     expect(clock(-3)).toBe('0:00')
+  })
+
+  it('tells the time on the phone’s own clock, whatever the language', () => {
+    const afternoon = new Date(2026, 9, 19, 14, 5).getTime()
+
+    expect(timeOfDay(afternoon, 'en', true)).toBe('14:05')
+    expect(timeOfDay(afternoon, 'en', false)).toMatch(/^2:05\sPM$/u)
+    expect(timeOfDay(afternoon, 'sv', true)).toBe('14:05')
   })
 
   it('rounds durations up to whole minutes', () => {

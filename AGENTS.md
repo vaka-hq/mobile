@@ -93,6 +93,16 @@ short: how the app works belongs in `docs/`.
   in `withExclusiveTransactionAsync`.
 - Hardcover and TorBox are reached with the listener's own API keys, entered in Settings and
   verified before they are stored. Keep secrets in `expo-secure-store`, never in SQLite or logs.
+- Library sync (`src/library/library-sync.ts`) keeps the library in step with one sync source at a
+  time, chosen in Settings → Library. A new source is one entry in `syncSources` (and its name in
+  Settings); choosing another source stops the one before. Hardcover's (`src/library/shelves.ts`,
+  with the pure, tested planner `shelf-sync.ts` and `shelf-store.ts`): Hardcover is the source of
+  truth. The baseline per book
+  (`hardcover_shelf`) tells which side changed; a change there wins over one here. Never delete
+  anything on Hardcover: removing a book here sends nothing, and a book taken off the shelves there
+  only leaves the library here, keeping its listening. Set a book's status before its progress
+  (Hardcover opens and finishes reads with the status), send every field when updating a read, and
+  keep writes under Hardcover's 60 a minute.
 - TorBox: a download is followed by polling that slows down over time and while it is stalled or
   failing. The download guard only ever cancels torrents this app added.
 - AudioBookBay blocks addresses that ask too often. Without a proxy, a request with no answer while

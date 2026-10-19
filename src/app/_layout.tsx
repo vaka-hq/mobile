@@ -18,6 +18,7 @@ import { FeedbackProvider } from '@/lib/feedback'
 import { queryClient } from '@/lib/query-client'
 import { rootBackgroundColor } from '@/lib/root-background'
 import { checkForUpdatesDaily } from '@/library/app-updates'
+import { startLibrarySync } from '@/library/library-sync'
 import { resumeOfflineDownloads } from '@/library/offline'
 import { startPlayer } from '@/player/controller'
 
@@ -42,6 +43,7 @@ function AppProviders() {
     startPlayer().catch(() => undefined)
     resumeOfflineDownloads()
     checkForUpdatesDaily()
+    startLibrarySync()
   }, [])
 
   return (

@@ -10,7 +10,7 @@ import { AppState } from 'react-native'
 import { torBoxStatus } from '@/library/books'
 import { displayAuthors, displayCover, displayTitle } from '@/library/display'
 import { NotStreamableError } from '@/library/errors'
-import { invalidateLibrary } from '@/library/invalidation'
+import { invalidateLibrary, noteListening } from '@/library/invalidation'
 import { type BookRecord, type Chapter, workIdOf } from '@/library/model'
 import { offlineBook, offlineTrackUri } from '@/library/offline'
 import {
@@ -22,6 +22,7 @@ import {
   savePlayback,
   saveTrackDuration,
 } from '@/library/repository'
+import { shelfStart } from '@/library/shelf-store'
 import { isStreamUrlStale, streamUrl } from '@/library/streams'
 import {
   bookDuration,
@@ -349,6 +350,10 @@ async function persist() {
   try {
     await savePlayback(place)
     written = place
+
+    if (moved) {
+      noteListening()
+    }
   } catch {
     // The next save, seconds later or on pause, writes the place again.
     lastSavedAt = 0
@@ -707,9 +712,20 @@ export async function open(bookId: string, autoplay: boolean): Promise<boolean> 
     return false
   }
 
+  // A recording never played here starts where the book stands on the Hardcover shelves.
+  const fromShelves = saved ? null : await shelfStart(book).catch(() => null)
+
+  if (token !== openToken) {
+    return false
+  }
+
   const restart = saved?.finished ?? false
-  let track = restart ? 0 : Math.min(saved?.track ?? 0, book.tracks.length - 1)
-  let position = restart ? 0 : (saved?.position ?? 0)
+
+  let track = restart
+    ? 0
+    : Math.min(saved?.track ?? fromShelves?.track ?? 0, book.tracks.length - 1)
+
+  let position = restart ? 0 : (saved?.position ?? fromShelves?.position ?? 0)
 
   // Asked before the book is loaded, so cancelling leaves the player, and any book in it, as it
   // was; a place chosen is where the book opens.

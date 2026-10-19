@@ -180,6 +180,16 @@ msgstr "{roundedMinutes, plural, one {# min left} other {# min left}}"
 msgid "{seeders, plural, one {# seeder} other {# seeders}}"
 msgstr "{seeders, plural, one {# seeder} other {# seeders}}"
 
+#. Library sync status when the provider rejects the API key as invalid or expired, with its name
+#: src/screens/settings.tsx
+msgid "{sourceName} didn’t accept your key. Replace it in Accounts."
+msgstr "{sourceName} didn’t accept your key. Replace it in Accounts."
+
+#. Library sync status when the provider’s rate limit is used up, with its name
+#: src/screens/settings.tsx
+msgid "{sourceName}’s request limit was reached. It tries again later."
+msgstr "{sourceName}’s request limit was reached. It tries again later."
+
 #. Skip interval option, for example “30 seconds”
 #: src/screens/settings.tsx
 msgid "{value} seconds"
@@ -267,6 +277,11 @@ msgstr "Add streaming key"
 #: src/screens/work.tsx
 msgid "Add to library"
 msgstr "Add to library"
+
+#. Library sync status when the chosen provider has no key yet, with its name
+#: src/screens/settings.tsx
+msgid "Add your {sourceName} API key to sync"
+msgstr "Add your {sourceName} API key to sync"
 
 #. Error when book details need a Hardcover key, which is not set
 #: src/ui/errors.ts
@@ -376,7 +391,7 @@ msgstr "Anyone with the file can use them."
 msgid "API key"
 msgstr "API key"
 
-#. Sync setting: the place is estimated from its share of the chapter
+#. Handoff setting: the place is estimated from its share of the chapter
 #: src/screens/settings.tsx
 msgid "Approximate"
 msgstr "Approximate"
@@ -845,6 +860,11 @@ msgstr "Couldn’t check for updates"
 msgid "Couldn’t check for updates. Check your connection and try again."
 msgstr "Couldn’t check for updates. Check your connection and try again."
 
+#. Library sync status after a sync failed for a passing reason
+#: src/screens/settings.tsx
+msgid "Couldn’t sync. It tries again soon."
+msgstr "Couldn’t sync. It tries again soon."
+
 #. A language books can be preferred in
 #: src/ui/languages.ts
 msgid "Croatian"
@@ -1043,7 +1063,7 @@ msgstr "Downloading · {percent}%"
 msgid "Downloading {percent}%"
 msgstr "Downloading {percent}%"
 
-#. Sync setting while its speech model downloads
+#. Handoff setting while its speech model downloads
 #: src/screens/settings.tsx
 msgid "Downloading speech model · {speechProgress}"
 msgstr "Downloading speech model · {speechProgress}"
@@ -1145,7 +1165,7 @@ msgstr "Esperanto"
 msgid "Estonian"
 msgstr "Estonian"
 
-#. Sync setting: the exact sentence is found by listening to the words
+#. Handoff setting: the exact sentence is found by listening to the words
 #: src/screens/settings.tsx
 msgid "Exact"
 msgstr "Exact"
@@ -1271,6 +1291,13 @@ msgstr "Greek"
 msgid "Green"
 msgstr "Green"
 
+#. Dialog title: how the place is handed over between the audiobook and the e-book of the same book
+#. Setting for handing the place over between the audiobook and the e-book of the same book, when switching from one to the other
+#: src/screens/settings.tsx
+msgid "Handoff"
+msgstr "Handoff"
+
+#. Name of the book metadata service
 #. Name of the book metadata service
 #. Name of the book metadata service
 #: src/screens/book.tsx
@@ -1548,9 +1575,11 @@ msgid "Less than a minute left"
 msgstr "Less than a minute left"
 
 #. Navigation destination: saved audiobooks
+#. Settings section
 #. Title of the library screen
 #: src/components/bottom-bar.tsx
 #: src/screens/library.tsx
+#: src/screens/settings.tsx
 msgid "Library"
 msgstr "Library"
 
@@ -1837,6 +1866,12 @@ msgstr "No series yet"
 msgid "No sources found"
 msgstr "No sources found"
 
+#. Library provider when no service is chosen
+#. Library provider when no service is chosen
+#: src/screens/settings.tsx
+msgid "None"
+msgstr "None"
+
 #. Storage row when nothing of its kind is downloaded
 #. Storage row when nothing of its kind is downloaded
 #: src/screens/settings.tsx
@@ -1899,6 +1934,11 @@ msgctxt "book status"
 msgid "Not started"
 msgstr "Not started"
 
+#. Library sync status before the first sync
+#: src/screens/settings.tsx
+msgid "Not synced yet"
+msgstr "Not synced yet"
+
 #. Title of the dialog for a bookmark’s note
 #. Title of the dialog for a highlight’s note
 #: src/components/book-sheets.tsx
@@ -1932,8 +1972,8 @@ msgstr "Nothing saved yet"
 msgid "Nothing to add"
 msgstr "Nothing to add"
 
+#. Handoff setting: not carried over
 #. Sleep timer option
-#. Sync setting: not carried over
 #: src/screens/settings.tsx
 #: src/ui/sheets.tsx
 msgid "Off"
@@ -2127,6 +2167,12 @@ msgstr "Previous page"
 #: src/screens/work-streams.tsx
 msgid "Probably dead: no one is sharing it"
 msgstr "Probably dead: no one is sharing it"
+
+#. Dialog title: which service the library is kept in step with
+#. Setting for which service the library is kept in step with, such as Hardcover
+#: src/screens/settings.tsx
+msgid "Provider"
+msgstr "Provider"
 
 #. Text field label, like isp.decodo.com
 #: src/screens/settings.tsx
@@ -2612,7 +2658,7 @@ msgstr "Sources could not be searched. Try again in a moment."
 msgid "Spanish"
 msgstr "Spanish"
 
-#. Sync setting when its speech model failed to download
+#. Handoff setting when its speech model failed to download
 #: src/screens/settings.tsx
 msgid "Speech model missing. Choose again to download it."
 msgstr "Speech model missing. Choose again to download it."
@@ -2688,11 +2734,20 @@ msgstr "Switching to listening"
 msgid "Switching to reading"
 msgstr "Switching to reading"
 
-#. Dialog title: how the place is carried between the audiobook and the e-book of the same book
-#. Setting for carrying the place between the audiobook and the e-book of the same book
+#. Library sync status with when it last synced, such as “Synced 14:05”
 #: src/screens/settings.tsx
-msgid "Sync"
-msgstr "Sync"
+msgid "Synced {syncedTime}"
+msgstr "Synced {syncedTime}"
+
+#. Shown after holding the library sync row, with the source name
+#: src/screens/settings.tsx
+msgid "Syncing everything again from {sourceName}"
+msgstr "Syncing everything again from {sourceName}"
+
+#. Library sync status while it syncs
+#: src/screens/settings.tsx
+msgid "Syncing…"
+msgstr "Syncing…"
 
 #. A language books can be preferred in
 #: src/ui/languages.ts
@@ -3121,6 +3176,11 @@ msgstr "You’ll lose your progress, notes and downloads."
 #: src/screens/library.tsx
 msgid "You’ll lose your progress."
 msgstr "You’ll lose your progress."
+
+#. Library sync status when the API key lacks the permissions to read or change the library, with the provider name
+#: src/screens/settings.tsx
+msgid "Your {sourceName} key can’t sync your library. Replace it with one that can."
+msgstr "Your {sourceName} key can’t sync your library. Replace it with one that can."
 
 #. Library load failure
 #: src/screens/library.tsx

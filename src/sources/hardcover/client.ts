@@ -1,8 +1,11 @@
 import { z } from 'zod'
-import { HttpError, request } from '@/lib/http'
+import { request } from '@/lib/http'
 import { hardcoverKey } from '@/settings/hardcover-key'
+import { HardcoverError, hardcoverFailure } from './failure'
 import { type HardcoverHit, pickEdition } from './match'
 import { seriesBooks } from './series'
+
+export { HardcoverError, type HardcoverFailure } from './failure'
 
 const endpoint = 'https://api.hardcover.app/v1/graphql'
 
@@ -167,19 +170,6 @@ export const hardcoverBookSchema = z.object({
 
 export type HardcoverBook = z.infer<typeof hardcoverBookSchema>
 
-/** Why Hardcover refused a request, for messages the listener can act on. */
-export type HardcoverFailure = 'rejectedKey' | 'missingScope' | 'rateLimited' | 'other'
-
-export class HardcoverError extends HttpError {
-  readonly reason: HardcoverFailure
-
-  constructor(message: string, status: number | null, reason: HardcoverFailure = 'other') {
-    super(message, status)
-    this.name = 'HardcoverError'
-    this.reason = reason
-  }
-}
-
 export class HardcoverNotConnectedError extends Error {
   constructor() {
     super('Add your Hardcover API key in Settings to load book details')
@@ -187,54 +177,18 @@ export class HardcoverNotConnectedError extends Error {
   }
 }
 
+/** What a request names in its variables: plain values, ID lists and mutation inputs. */
+type Variables = Record<string, string | number | number[] | Record<string, string | number | null>>
+
 const graphqlEnvelope = z.object({
   data: z.json().nullish(),
   errors: z.array(z.object({ message: z.string() })).nullish(),
 })
 
-const failure = z.object({
-  error: z.string().nullish(),
-  error_description: z.string().nullish(),
-  scope: z.string().nullish(),
-})
-
-function failureFrom(status: number, body: string) {
-  let reason: z.infer<typeof failure> | null = null
-
-  try {
-    const parsed = failure.safeParse(JSON.parse(body))
-
-    reason = parsed.success ? parsed.data : null
-  } catch {
-    reason = null
-  }
-
-  if (status === 401) {
-    return new HardcoverError('Hardcover did not accept the API key', status, 'rejectedKey')
-  }
-
-  if (reason?.error === 'insufficient_scope') {
-    return new HardcoverError(
-      `The Hardcover API key is missing the ${reason.scope ?? 'read:catalog'} permission`,
-      status,
-      'missingScope',
-    )
-  }
-
-  if (status === 429) {
-    return new HardcoverError('Hardcover’s rate limit was reached', status, 'rateLimited')
-  }
-
-  return new HardcoverError(
-    reason?.error_description ?? reason?.error ?? `Hardcover answered ${status}`,
-    status,
-  )
-}
-
 async function graphql<T extends z.ZodType>(
   apiKey: string,
   document: string,
-  variables: Record<string, string | number | number[]>,
+  variables: Variables,
   schema: T,
   signal?: AbortSignal,
 ): Promise<z.infer<T>> {
@@ -253,7 +207,7 @@ async function graphql<T extends z.ZodType>(
     },
     async (response) => {
       if (!response.ok) {
-        throw failureFrom(response.status, await response.text())
+        throw hardcoverFailure(response.status, await response.text())
       }
 
       return graphqlEnvelope.parse(await response.json())
@@ -269,7 +223,7 @@ async function graphql<T extends z.ZodType>(
 
 function query<T extends z.ZodType>(
   document: string,
-  variables: Record<string, string | number | number[]>,
+  variables: Variables,
   schema: T,
   signal?: AbortSignal,
 ) {
@@ -952,4 +906,239 @@ export async function fetchGenreBooks(tagId: number, page: number, signal?: Abor
     items: result.taggable_counts.flatMap((entry) => (entry.book ? [hitFromBook(entry.book)] : [])),
     hasNextPage: result.taggable_counts.length === browsePageSize,
   } satisfies HardcoverBrowsePage
+}
+
+/**
+ * The listener's Hardcover library: every book on their shelves with its status, and its read in
+ * progress. Vaka never deletes anything there; it reads the shelves, adds books and moves them
+ * on as they are listened to.
+ */
+export type HardcoverShelfStatus = 1 | 2 | 3 | 4 | 5
+
+/** Hardcover's statuses, by ID. Ignored books (6) stay off the shelves Vaka reads. */
+export const shelfStatus = {
+  wantToRead: 1,
+  listening: 2,
+  read: 3,
+  paused: 4,
+  didNotFinish: 5,
+} as const satisfies Record<string, HardcoverShelfStatus>
+
+const shelfRead = z.object({
+  id: z.number(),
+  started_at: z.string().nullish(),
+  progress_seconds: z.number().nullish(),
+  edition_id: z.number().nullish(),
+  edition: z.object({ audio_seconds: z.number().nullish() }).nullish(),
+})
+
+const shelfEntry = z.object({
+  id: z.number(),
+  book_id: z.number(),
+  status_id: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+  edition_id: z.number().nullish(),
+  user_book_reads: z.array(shelfRead),
+})
+
+/** A read in progress: where it stands, in seconds of the edition it is listened to in. */
+export type HardcoverRead = {
+  id: number
+  startedAt: string | null
+  progressSeconds: number | null
+  editionId: number | null
+  /** The length of that edition, to carry the place over to a recording of another length. */
+  editionSeconds: number | null
+}
+
+export type HardcoverShelfEntry = {
+  userBookId: number
+  bookId: number
+  status: HardcoverShelfStatus
+  editionId: number | null
+  /** The read not yet finished, the newest one first; none for a book not started or finished. */
+  read: HardcoverRead | null
+}
+
+function readFrom(read: z.infer<typeof shelfRead> | undefined): HardcoverRead | null {
+  return read
+    ? {
+        id: read.id,
+        startedAt: read.started_at ?? null,
+        progressSeconds: read.progress_seconds ?? null,
+        editionId: read.edition_id ?? null,
+        editionSeconds: read.edition?.audio_seconds ?? null,
+      }
+    : null
+}
+
+function entryFrom(entry: z.infer<typeof shelfEntry>): HardcoverShelfEntry {
+  return {
+    userBookId: entry.id,
+    bookId: entry.book_id,
+    status: entry.status_id,
+    editionId: entry.edition_id ?? null,
+    read: readFrom(entry.user_book_reads[0]),
+  }
+}
+
+const shelfFields = `
+  id
+  book_id
+  status_id
+  edition_id
+  user_book_reads(where: { finished_at: { _is_null: true } }, order_by: { id: desc }, limit: 1) {
+    id
+    started_at
+    progress_seconds
+    edition_id
+    edition { audio_seconds }
+  }
+`
+
+/** How many shelf entries one request reads; each request costs one of the rate limit's. */
+const shelfPageSize = 500
+
+/**
+ * Every book on the listener's shelves but the ignored ones, page by page, with whose shelves
+ * they are, so a key for another account is not taken for the same shelves.
+ */
+export async function fetchShelves(signal?: AbortSignal) {
+  const entries: HardcoverShelfEntry[] = []
+  let userId: number | null = null
+
+  for (let offset = 0; ; offset += shelfPageSize) {
+    const { me } = await query(
+      `query VakaShelves($limit: Int!, $offset: Int!) {
+        me {
+          user_books(
+            where: { status_id: { _in: [1, 2, 3, 4, 5] } }
+            order_by: { id: asc }
+            limit: $limit
+            offset: $offset
+          ) { ${shelfFields} }
+          id
+        }
+      }`,
+      { limit: shelfPageSize, offset },
+      z.object({
+        me: z.array(z.object({ id: z.number(), user_books: z.array(shelfEntry) })),
+      }),
+      signal,
+    )
+
+    const page = me[0]?.user_books ?? []
+
+    userId = me[0]?.id ?? userId
+    entries.push(...page.map(entryFrom))
+
+    if (page.length < shelfPageSize) {
+      if (userId === null) {
+        throw new HardcoverError('Hardcover did not say whose shelves these are', null)
+      }
+
+      return { userId, entries }
+    }
+  }
+}
+
+const shelfResult = z.object({
+  id: z.number().nullish(),
+  error: z.string().nullish(),
+  user_book: shelfEntry.nullish(),
+})
+
+/** Hardcover answers a refused change with an `error` beside it rather than a failed request. */
+function shelfEntryOf(result: z.infer<typeof shelfResult>) {
+  if (result.error || !result.user_book) {
+    throw new HardcoverError(result.error ?? 'Hardcover did not change the shelf', null)
+  }
+
+  return entryFrom(result.user_book)
+}
+
+/**
+ * Puts a book on the shelves in a status, in the edition listened to. Listening or Read starts a
+ * read on Hardcover's side, which the returned entry carries.
+ */
+export async function addToShelf(
+  bookId: number,
+  editionId: number | null,
+  status: HardcoverShelfStatus,
+  signal?: AbortSignal,
+) {
+  const { insert_user_book: result } = await query(
+    `mutation VakaAddToShelf($object: UserBookCreateInput!) {
+      insert_user_book(object: $object) {
+        id
+        error
+        user_book { ${shelfFields} }
+      }
+    }`,
+    { object: { book_id: bookId, edition_id: editionId, status_id: status } },
+    z.object({ insert_user_book: shelfResult }),
+    signal,
+  )
+
+  return shelfEntryOf(result)
+}
+
+/**
+ * Moves a book on the shelves to another status. Hardcover keeps the reads in step itself:
+ * Listening opens a read when none is open, and Read finishes the open one at its end.
+ */
+export async function setShelfStatus(
+  userBookId: number,
+  status: HardcoverShelfStatus,
+  signal?: AbortSignal,
+) {
+  const { update_user_book: result } = await query(
+    `mutation VakaSetShelfStatus($id: Int!, $object: UserBookUpdateInput!) {
+      update_user_book(id: $id, object: $object) {
+        id
+        error
+        user_book { ${shelfFields} }
+      }
+    }`,
+    { id: userBookId, object: { status_id: status } },
+    z.object({ update_user_book: shelfResult }),
+    signal,
+  )
+
+  return shelfEntryOf(result)
+}
+
+/**
+ * Saves how far the open read has got. Every field of the read is sent, since a field left out
+ * may be cleared.
+ */
+export async function saveReadProgress(
+  read: Pick<HardcoverRead, 'id' | 'startedAt'>,
+  editionId: number | null,
+  progressSeconds: number,
+  signal?: AbortSignal,
+) {
+  const { update_user_book_read: result } = await query(
+    `mutation VakaSaveProgress($id: Int!, $object: DatesReadInput!) {
+      update_user_book_read(id: $id, object: $object) {
+        id
+        error
+      }
+    }`,
+    {
+      id: read.id,
+      object: {
+        edition_id: editionId,
+        started_at: read.startedAt,
+        progress_seconds: Math.round(progressSeconds),
+      },
+    },
+    z.object({
+      update_user_book_read: z.object({ id: z.number().nullish(), error: z.string().nullish() }),
+    }),
+    signal,
+  )
+
+  if (result.error) {
+    throw new HardcoverError(result.error, null)
+  }
 }

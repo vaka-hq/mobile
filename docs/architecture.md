@@ -122,7 +122,7 @@ Selecting text works as it does elsewhere on Android, with a vibration, the magn
 floating text toolbar, whose Highlight and Note the app carries out. Its
 display settings are a card over the page. Listening and reading keep their own places and meet
 when the listener says so: the switch buttons carry the place over, and opening one after newer
-progress in the other asks where to start. The exact mode listens to a few seconds of the audio
+progress in the other asks where to start; Settings → Handoff sets how closely. The exact mode listens to a few seconds of the audio
 with the offline Vosk recogniser (`modules/speech`) to find the words on the page. Its model is
 downloaded when the mode is chosen, picking up where a dropped connection left off rather than
 starting over.
@@ -173,6 +173,53 @@ re-checked whenever Settings opens, so an expired or revoked key shows up there.
 answers name the problem: a rejected key, a missing `read:catalog` permission or the rate limit.
 Without a key the app works with AudioBookBay details. Hardcover's personal keys expire on the date
 chosen when creating them; replace the key in Settings when that happens.
+
+For library sync with Hardcover the key also needs your library and profile (`read:library`,
+`write:library` and `read:me:content`); `read:me:email` lets Settings show the account's email.
+The sync's status under the provider says when Hardcover rejects the key, when the key lacks
+those permissions and when Hardcover's request limit is used up (`src/sources/hardcover/failure.ts`,
+tested). A key that may read the shelves but not change them still brings Hardcover's changes in;
+what it may not send waits for a key that can.
+
+## Library sync
+
+Settings → Library keeps the library in step with one sync source at a time. The Provider row
+picks it, None by default; once one is picked, its switch fades in and turns syncing on or off,
+off until the listener turns it on. The row below says how syncing stands; holding it while
+syncing is on syncs everything again from the provider. Sources are listed in
+`src/library/library-sync.ts`, which also decides when runs happen; choosing another source, or
+none, stops the one before, forgets what it knew and leaves syncing off. Hardcover is the only
+source so far.
+
+### Hardcover
+
+The library follows your Hardcover shelves (`src/library/shelves.ts`). Hardcover is the source of
+truth, and nothing is ever deleted there.
+
+- **When:** at start, on returning to the app, ten seconds after the library changes (a book
+  added, played, paused, finished or removed) and every five minutes while listening. Each run reads
+  all the shelves in one request.
+- **Which side changed:** a baseline per book (`hardcover_shelf`) holds the shelf entry as the last
+  run left it. The pure planner (`src/library/shelf-sync.ts`, tested) compares the two: what changed
+  on Hardcover is applied here, even over listening done here since; what changed only here is sent
+  there. A book Hardcover first has keeps what Hardcover knows and gains what only this phone knew.
+- **Here from there:** shelved books (all but Ignored) come into the library; Read marks a book
+  finished, and a finished book Hardcover has as anything else is no longer finished here; the open
+  read's place moves listening, by share of the book when the recording and Hardcover's edition
+  differ in length. A book playing moves once it is paused, and one open but paused is moved in
+  the player; until then Hardcover's change waits. A recording never played here starts at
+  Hardcover's place. A book taken off the shelves, or set to Ignored, leaves the library, keeping
+  its listening.
+- **There from here:** a book added here goes on the shelves as Want to Read, as Currently Reading
+  once played (with its place) or as Read once finished. Playing a book makes it Currently
+  Reading, playing a Read book again starts a new read, finishing it marks it Read, and listening
+  saves its place in the open read in the recording's own edition. Removing a book here changes
+  nothing there.
+- **How Hardcover keeps reads:** setting Currently Reading opens a read and setting Read finishes
+  it, so the app sets the status first and then only fills in the place, sending every field of the
+  read. Writes are paced under the 60-a-minute limit. A key for another account starts afresh;
+  turning sync off forgets the baselines, and syncing everything again forgets them first, so
+  Hardcover wins wherever it says anything.
 
 ## Builds
 

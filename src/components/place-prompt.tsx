@@ -25,7 +25,7 @@ import { useLabels } from '@/ui/labels'
  * can be cancelled at any time, and then nothing opens.
  */
 
-export type WhereToStart = 'stay' | 'move'
+type WhereToStart = 'stay' | 'move'
 
 type Choice = Omit<PlaceOption, 'onPress'>
 
@@ -64,6 +64,13 @@ function subscribe(listener: () => void) {
   }
 }
 
+/** Takes `asked` away, unless something else is already being asked in its place. */
+function close(asked: Question) {
+  if (question === asked) {
+    set(null)
+  }
+}
+
 /** Closes whatever is being asked, as if cancelled, before something else is. */
 function cancelOpen() {
   if (question?.kind === 'choice') {
@@ -77,23 +84,20 @@ function cancelOpen() {
  * Asks where to start; resolves `move` only once the place moved to is found, and null when the
  * listener cancelled, whether choosing or while it was being found.
  */
-export function askWhereToStart(ask: {
-  title: string
-  stay: Choice
-  move: Choice
-  moving?: PlaceWork
-}) {
+function askWhereToStart(ask: { title: string; stay: Choice; move: Choice; moving?: PlaceWork }) {
   cancelOpen()
 
   return new Promise<WhereToStart | null>((resolve) => {
-    set({
+    const asked: Question = {
       kind: 'choice',
       ...ask,
       answer: (choice) => {
-        set(null)
+        close(asked)
         resolve(choice)
       },
-    })
+    }
+
+    set(asked)
   })
 }
 
@@ -102,15 +106,17 @@ export function findPlace(title: string, work: PlaceWork) {
   cancelOpen()
 
   return new Promise<boolean>((resolve) => {
-    set({
+    const asked: Question = {
       kind: 'work',
       title,
       work,
       answer: (done) => {
-        set(null)
+        close(asked)
         resolve(done)
       },
-    })
+    }
+
+    set(asked)
   })
 }
 
@@ -309,6 +315,17 @@ export function PlacePrompt() {
       void run(current.work, current.answer)
     }
   })
+
+  // A finding stops with its question, such as when another question takes its place.
+  useEffect(
+    () => () => {
+      running.current?.abort()
+      running.current = null
+      started.current = null
+      setBusy(false)
+    },
+    [current],
+  )
 
   function cancel(answer: () => void) {
     running.current?.abort()

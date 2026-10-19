@@ -59,6 +59,17 @@ short: how the app works belongs in `docs/`.
   must catch Back there has to turn React Native's callback back on first. The native side reads
   a private field of `ReactActivity` and is pinned to React Native 0.86.3: review it when
   upgrading.
+- Stack screens move as the system Settings app's pages do. They open and close with Android 17's
+  activity transitions (`config/android-transitions`, installed over react-native-screens'
+  `default` by a config plugin), started only once the new screen has drawn (`StackEnter.kt`)
+  and with the system's edge extension (`StackEdges.kt`). A back swipe runs WindowManager Shell's
+  cross-activity animation between stack screens (`StackBack.kt`), constant for constant, and
+  dismisses the top screen natively on commit. It reaches into react-native-screens' stack:
+  retest it on the emulator against the Settings app after upgrading that library.
+- A committed back preview skips JavaScript's `BackHandler`, so wherever one takes Back for
+  itself it also calls `useBackPreviewBlocked` (`src/components/system-back.tsx`). A closing
+  screen's Compose content would redraw empty, so `Screen` and the reader keep its last frame
+  through the transition (`LeavingFrame`).
 - Android colour roles follow Material 3: screens on `surface`, containers on
   `surfaceContainerHigh`, sheets on the default `surfaceContainerLow`, text `onSurface` and
   `onSurfaceVariant`. Colour comes from the dynamic palette; covers are the only imagery.

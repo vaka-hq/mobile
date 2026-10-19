@@ -30,6 +30,9 @@ dependencies {
   // Coil 3.2 matches this Expo/React Native build's Kotlin 2.1 toolchain (as in the reference app).
   implementation 'io.coil-kt.coil3:coil-compose:3.2.0'
   implementation 'io.coil-kt.coil3:coil-network-okhttp:3.2.0'
+  // Predictive back attaches and dismisses stack screens (StackBack.kt).
+  implementation project(':react-native-screens')
+  implementation 'androidx.dynamicanimation:dynamicanimation:1.1.0'
 
   if (findProject(':expo-ui') != null) {
     implementation project(':expo-ui')

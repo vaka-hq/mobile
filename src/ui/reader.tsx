@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { scheduleOnRN } from 'react-native-worklets'
 import { Host } from '@/components/host'
+import { useBackPreviewBlocked } from '@/components/system-back'
 import {
   animateContentSize,
   background,
@@ -118,6 +119,9 @@ export function ReaderSearchPage({
   /** What was found, or where it stands, filling the page below the bar. */
   children: ReactNode
 }) {
+  // Back closes the search page, so a back swipe previews nothing while it is open.
+  useBackPreviewBlocked(true)
+
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       onBack()

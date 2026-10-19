@@ -16,7 +16,9 @@ remembers the stream last chosen or played and opens with it.
   holds the tab group (Library at `/` and Browse at `/browse`), `welcome`, `settings`,
   `licenses`, `book/[id]` (an AudioBookBay post), `book/[id]/match`, `work/[id]` (a Hardcover
   book's page), `work/[id]/streams`, `work/[id]/ebooks` and `read/[md5]`. The player floats over
-  every route in the player layer; series, chapters and bookmarks are sheets.
+  every route in the player layer; series, chapters and bookmarks are sheets. Pushed screens
+  slide in and out as the system Settings app's pages do, and a back swipe previews the screen
+  below with Android's own cross-activity animation (`StackBack.kt`).
 - `src/ui/` is the app's own vocabulary drawn with Expo UI's Jetpack Compose components:
   `Screen`, `Action`, `List`, `BookRow`, `Cover`, `InfoRow`, `Notice`,
   `Empty`, `Loading`, `LoadMore`, `ChipRow`, `SearchField`, the speed and sleep sheets and the

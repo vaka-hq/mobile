@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pop, the screen it reveals: activity_close_enter. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android" android:shareInterpolator="false">
+    <alpha
+        android:interpolator="@android:interpolator/linear"
+        android:duration="450"
+        android:startOffset="0"
+        android:fromAlpha="1"
+        android:toAlpha="1"
+        android:fillEnabled="true"
+        android:fillBefore="true"
+        android:fillAfter="true" />
+    <translate
+        android:interpolator="@android:interpolator/fast_out_extra_slow_in"
+        android:duration="450"
+        android:fromXDelta="-96dp"
+        android:toXDelta="0"
+        android:fillEnabled="true"
+        android:fillBefore="true"
+        android:fillAfter="true" />
+    <extend
+        android:interpolator="@android:interpolator/fast_out_extra_slow_in"
+        android:duration="450"
+        android:fromExtendLeft="0"
+        android:fromExtendTop="0"
+        android:fromExtendRight="96dp"
+        android:fromExtendBottom="0"
+        android:toExtendLeft="0"
+        android:toExtendTop="0"
+        android:toExtendRight="96dp"
+        android:toExtendBottom="0" />
+</set>

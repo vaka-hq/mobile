@@ -4,6 +4,7 @@ import { type ReactNode, useEffect, useState } from 'react'
 import { BackHandler } from 'react-native'
 import { useBackupRestore } from '@/components/backup-restore'
 import { type ProxyFields, useProxySetup } from '@/components/proxy-setup'
+import { useBackPreviewBlocked } from '@/components/system-back'
 import { fillMaxSize, fillMaxWidth, imePadding, padding, weight } from '@/lib/compose-modifiers'
 import {
   AnimatedVisibility,
@@ -269,7 +270,10 @@ export function WelcomeScreen() {
     }
   })
 
-  // Back returns to the step before rather than leaving the app mid-setup.
+  // Back returns to the step before rather than leaving the app mid-setup, so a back swipe after
+  // the first step previews nothing.
+  useBackPreviewBlocked(step > 0)
+
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (step === 0) {

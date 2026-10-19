@@ -43,8 +43,7 @@ import {
   useMaterialColors,
 } from '@/lib/compose-ui'
 import { type HighlightColor, highlightColors } from '@/library/ebooks'
-import { TopAppBar } from '../../modules/ui'
-import { SideReveal } from '../../modules/ui'
+import { SideReveal, TopAppBar } from '../../modules/ui'
 import { type Glyph, glyphs } from './glyphs'
 import { Action } from './screen'
 
@@ -428,7 +427,7 @@ export type ReaderChromeProps = {
   topInset: number
   /** Room for the system navigation bar below the bottom bar, in dp. */
   bottomInset: number
-  /** Sheets and dialogs, drawn in the reader's own colours. */
+  /** Sheets and dialogs, drawn in the phone's colours like the bars. */
   children?: ReactNode
 }
 
@@ -462,9 +461,9 @@ const percentWidth = 52
 const returnGap = 4
 
 /**
- * The overview's bars around the page card, in the reading theme's colours: the app bar with
- * search, notes and bookmarks, and display, and at the foot the chapter, what is left of it, the
- * contents and a slider through the book that moves the page as it is dragged. The bars sit in
+ * The overview's bars around the page card, in the phone's colours like the rest of the app: the
+ * app bar with listening, search, notes and display, and at the foot the chapter, what is left of
+ * it, the contents and a slider through the book that moves the page as it is dragged. The bars sit in
  * two Compose trees, one at each edge, so the middle of the screen, the page card and the pages
  * either side, stays free for touches.
  */

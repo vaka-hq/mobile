@@ -2,6 +2,7 @@ import { useLingui } from '@lingui/react/macro'
 import { useIsFocused, useRouter } from 'expo-router'
 import type { ReactNode } from 'react'
 import { Host } from '@/components/host'
+import { LeavingFrame } from '@/components/leaving-frame'
 import { fillMaxWidth, height, padding, weight } from '@/lib/compose-modifiers'
 import { Box, Column, FilledIconButton, Icon, IconButton, Row, Text } from '@/lib/compose-ui'
 import { useFeedback } from '@/lib/feedback'
@@ -238,18 +239,23 @@ export type ScreenProps = Omit<
   miniPlayer?: boolean
 }
 
-/** A whole screen in one Compose tree, showing feedback while it is focused. */
+/**
+ * A whole screen in one Compose tree, showing feedback while it is focused and keeping its last
+ * frame as it closes.
+ */
 export function Screen({ miniPlayer = true, aboveNavigationBar = false, ...props }: ScreenProps) {
   const focused = useIsFocused()
 
   return (
-    <Host style={{ flex: 1 }}>
-      <ScreenFrame
-        {...props}
-        aboveNavigationBar={aboveNavigationBar}
-        miniPlayerSpace={miniPlayer && !aboveNavigationBar}
-        showsFeedback={focused}
-      />
-    </Host>
+    <LeavingFrame>
+      <Host style={{ flex: 1 }}>
+        <ScreenFrame
+          {...props}
+          aboveNavigationBar={aboveNavigationBar}
+          miniPlayerSpace={miniPlayer && !aboveNavigationBar}
+          showsFeedback={focused}
+        />
+      </Host>
+    </LeavingFrame>
   )
 }

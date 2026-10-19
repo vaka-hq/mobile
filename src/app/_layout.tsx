@@ -52,9 +52,14 @@ function AppProviders() {
           <FeedbackProvider>
             {/* The player floats above every route, so it can grow over the tab bar. */}
             <View style={{ flex: 1 }}>
+              {/*
+                Screens open and close with Android 17's activity transitions, as the system
+                Settings app's pages do (config/android-transitions), and a back swipe previews
+                the screen below as the system does between activities (StackBack.kt).
+              */}
               <Stack
                 screenOptions={{
-                  animation: 'fade',
+                  animation: 'default',
                   contentStyle: { backgroundColor: background },
                   headerShown: false,
                 }}

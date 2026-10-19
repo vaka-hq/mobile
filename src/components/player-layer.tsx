@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { BackHandler, StyleSheet } from 'react-native'
 import { Host } from '@/components/host'
 import { MiniPlayer } from '@/components/mini-player'
+import { useBackPreviewBlocked } from '@/components/system-back'
 import {
   collapsePlayer,
   miniPlayerHeight,
@@ -53,7 +54,10 @@ export function PlayerLayer() {
   // On screens without a tab bar, the bar rests clear of the screen's corners, filled below.
   const belowBar = onTabs ? 0 : belowMiniPlayer
 
-  // Registered while open, after the router's own handler, so back collapses the player first.
+  // Registered while open, after the router's own handler, so back collapses the player first,
+  // and a back swipe previews no screen beneath it.
+  useBackPreviewBlocked(expanded && !hidden)
+
   useEffect(() => {
     if (!expanded || hidden) {
       return

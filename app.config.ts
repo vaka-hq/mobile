@@ -1,8 +1,11 @@
+import { copyFile, mkdir } from 'node:fs/promises'
+import { join } from 'node:path'
 import type { ConfigContext, ExpoConfig } from 'expo/config'
 import {
   type ConfigPlugin,
   withAndroidManifest,
   withAppBuildGradle,
+  withDangerousMod,
   withGradleProperties,
   withProjectBuildGradle,
 } from 'expo/config-plugins'
@@ -187,6 +190,33 @@ subprojects { subproject ->
   })
 
 /**
+ * Stack screens open and close with Android 17's activity transitions, the ones the system
+ * Settings app uses between its pages: the app's resources replace the react-native-screens
+ * `default` animation (its Android 13 values) by name. `extend` needs Android 13, so older
+ * versions keep the library's own.
+ */
+const withAndroidStackTransitions: ConfigPlugin = (config) =>
+  withDangerousMod(config, [
+    'android',
+    async (modConfig) => {
+      const source = join(modConfig.modRequest.projectRoot, 'config', 'android-transitions')
+      const folder = join(modConfig.modRequest.platformProjectRoot, 'app/src/main/res/anim-v33')
+      await mkdir(folder, { recursive: true })
+
+      for (const name of [
+        'rns_default_enter_in.xml',
+        'rns_default_enter_out.xml',
+        'rns_default_exit_in.xml',
+        'rns_default_exit_out.xml',
+      ]) {
+        await copyFile(join(source, name), join(folder, name))
+      }
+
+      return modConfig
+    },
+  ])
+
+/**
  * Leaves out the settings Expo's prebuild writes for over-the-air updates, which this app does not
  * use: without `expo-updates` nothing reads them.
  */
@@ -208,82 +238,84 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     withReleaseSigning(variant.variant === 'production')(
       withoutUpdatesSettings(
         withFreshExpoModuleList(
-          withAndroidReleaseShrinking({
-            ...config,
-            name: variant.name,
-            slug: 'vaka',
-            // Release builds are named and numbered by the release workflow; local builds are 0.0.1.
-            version: process.env.VAKA_VERSION_NAME ?? '0.0.1',
-            platforms: ['android'],
-            orientation: 'portrait',
-            icon: './assets/images/icon.png',
-            scheme: variant.scheme,
-            userInterfaceStyle: 'automatic',
-            android: {
-              package: variant.androidPackage,
-              // The build time in minutes, from the release workflow, so every release, stable or
-              // nightly, installs over the builds before it.
-              versionCode: Number(process.env.VAKA_VERSION_CODE ?? 1),
-              allowBackup: false,
-              // Pulled in by libraries for things the app does not use: biometric unlock of the
-              // keystore, the Play install referrer and vibration, which haptic feedback does not need.
-              blockedPermissions: [
-                'com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE',
-                'com.google.android.gms.permission.AD_ID',
-                'android.permission.USE_BIOMETRIC',
-                'android.permission.USE_FINGERPRINT',
-                'android.permission.VIBRATE',
-                'android.permission.READ_EXTERNAL_STORAGE',
-                'android.permission.RECORD_AUDIO',
-                'android.permission.SYSTEM_ALERT_WINDOW',
-                'android.permission.WRITE_EXTERNAL_STORAGE',
-              ],
-              predictiveBackGestureEnabled: true,
-              // Built by `vp run icons:generate`; the colour is the field's, which it prints.
-              adaptiveIcon: {
-                backgroundColor: '#182445',
-                backgroundImage: './assets/images/android-icon-background.png',
-                foregroundImage: './assets/images/android-icon-foreground.png',
-                monochromeImage: './assets/images/android-icon-monochrome.png',
-              },
-            },
-            plugins: [
-              [
-                'expo-audio',
-                {
-                  enableBackgroundPlayback: true,
-                  microphonePermission: false,
-                  recordAudioAndroid: false,
-                },
-              ],
-              [
-                'expo-build-properties',
-                {
-                  android: {
-                    enableMinifyInReleaseBuilds: true,
-                    enableShrinkResourcesInReleaseBuilds: true,
-                    usePrecompiledHeaders: true,
-                  },
-                },
-              ],
-              ['expo-localization', { supportedLocales: ['en', 'sv'] }],
-              ['expo-secure-store', { faceIDPermission: false }],
-              // The icon's mark on its midnight field, in light and dark mode alike.
-              [
-                'expo-splash-screen',
-                {
-                  image: './assets/images/splash-icon.png',
-                  imageWidth: 200,
+          withAndroidStackTransitions(
+            withAndroidReleaseShrinking({
+              ...config,
+              name: variant.name,
+              slug: 'vaka',
+              // Release builds are named and numbered by the release workflow; local builds are 0.0.1.
+              version: process.env.VAKA_VERSION_NAME ?? '0.0.1',
+              platforms: ['android'],
+              orientation: 'portrait',
+              icon: './assets/images/icon.png',
+              scheme: variant.scheme,
+              userInterfaceStyle: 'automatic',
+              android: {
+                package: variant.androidPackage,
+                // The build time in minutes, from the release workflow, so every release, stable or
+                // nightly, installs over the builds before it.
+                versionCode: Number(process.env.VAKA_VERSION_CODE ?? 1),
+                allowBackup: false,
+                // Pulled in by libraries for things the app does not use: biometric unlock of the
+                // keystore, the Play install referrer and vibration, which haptic feedback does not need.
+                blockedPermissions: [
+                  'com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE',
+                  'com.google.android.gms.permission.AD_ID',
+                  'android.permission.USE_BIOMETRIC',
+                  'android.permission.USE_FINGERPRINT',
+                  'android.permission.VIBRATE',
+                  'android.permission.READ_EXTERNAL_STORAGE',
+                  'android.permission.RECORD_AUDIO',
+                  'android.permission.SYSTEM_ALERT_WINDOW',
+                  'android.permission.WRITE_EXTERNAL_STORAGE',
+                ],
+                predictiveBackGestureEnabled: true,
+                // Built by `vp run icons:generate`; the colour is the field's, which it prints.
+                adaptiveIcon: {
                   backgroundColor: '#182445',
-                  dark: { image: './assets/images/splash-icon.png', backgroundColor: '#182445' },
+                  backgroundImage: './assets/images/android-icon-background.png',
+                  foregroundImage: './assets/images/android-icon-foreground.png',
+                  monochromeImage: './assets/images/android-icon-monochrome.png',
                 },
+              },
+              plugins: [
+                [
+                  'expo-audio',
+                  {
+                    enableBackgroundPlayback: true,
+                    microphonePermission: false,
+                    recordAudioAndroid: false,
+                  },
+                ],
+                [
+                  'expo-build-properties',
+                  {
+                    android: {
+                      enableMinifyInReleaseBuilds: true,
+                      enableShrinkResourcesInReleaseBuilds: true,
+                      usePrecompiledHeaders: true,
+                    },
+                  },
+                ],
+                ['expo-localization', { supportedLocales: ['en', 'sv'] }],
+                ['expo-secure-store', { faceIDPermission: false }],
+                // The icon's mark on its midnight field, in light and dark mode alike.
+                [
+                  'expo-splash-screen',
+                  {
+                    image: './assets/images/splash-icon.png',
+                    imageWidth: 200,
+                    backgroundColor: '#182445',
+                    dark: { image: './assets/images/splash-icon.png', backgroundColor: '#182445' },
+                  },
+                ],
+                'expo-router',
+                'expo-sqlite',
+                'expo-status-bar',
               ],
-              'expo-router',
-              'expo-sqlite',
-              'expo-status-bar',
-            ],
-            experiments: { typedRoutes: true, reactCompiler: true },
-          }),
+              experiments: { typedRoutes: true, reactCompiler: true },
+            }),
+          ),
         ),
       ),
     ),

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Push, the new screen: activity_open_enter. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android" android:shareInterpolator="false">
+    <alpha
+        android:interpolator="@android:interpolator/linear"
+        android:duration="83"
+        android:startOffset="50"
+        android:fromAlpha="0"
+        android:toAlpha="1"
+        android:fillEnabled="true"
+        android:fillBefore="true"
+        android:fillAfter="true" />
+    <translate
+        android:interpolator="@android:interpolator/fast_out_extra_slow_in"
+        android:duration="450"
+        android:fromXDelta="96dp"
+        android:toXDelta="0"
+        android:fillEnabled="true"
+        android:fillBefore="true"
+        android:fillAfter="true" />
+    <extend
+        android:interpolator="@android:interpolator/fast_out_extra_slow_in"
+        android:duration="450"
+        android:fromExtendLeft="96dp"
+        android:fromExtendTop="0"
+        android:fromExtendRight="0"
+        android:fromExtendBottom="0"
+        android:toExtendLeft="96dp"
+        android:toExtendTop="0"
+        android:toExtendRight="0"
+        android:toExtendBottom="0" />
+</set>

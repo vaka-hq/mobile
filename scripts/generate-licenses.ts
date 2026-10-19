@@ -60,6 +60,7 @@ const licences = []
  * Apache 2.0; JNA is offered under Apache 2.0 or LGPL 2.1, and is used here under Apache 2.0.
  */
 const nativeLibraries = [
+  { name: 'AndroidX DynamicAnimation', version: '1.1.0' },
   { name: 'AndroidX Media3 (ExoPlayer)', version: '1.9.0' },
   { name: 'Coil', version: '3.2.0' },
   { name: 'Java Native Access (JNA)', version: '5.18.1' },

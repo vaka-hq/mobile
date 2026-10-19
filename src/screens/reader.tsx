@@ -3,10 +3,11 @@ import { useLingui } from '@lingui/react/macro'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useRef, useState } from 'react'
-import { BackHandler, Share, useWindowDimensions, View } from 'react-native'
+import { BackHandler, Share, useWindowDimensions } from 'react-native'
 import { cancelAnimation, Easing, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Host } from '@/components/host'
+import { LeavingFrame } from '@/components/leaving-frame'
 import { findingTakesTime, findPlace, type PlaceWork } from '@/components/place-prompt'
 import {
   BookSearchPage,
@@ -23,6 +24,7 @@ import {
   type ReaderViewHandle,
   type TocItem,
 } from '@/components/reader-view'
+import { useBackPreviewBlocked } from '@/components/system-back'
 import { useAppColorScheme } from '@/lib/app-color-scheme'
 import { useFeedback } from '@/lib/feedback'
 import {
@@ -313,7 +315,9 @@ export function ReaderScreen() {
   )
 
   // Back closes the display settings, or the bar pulled down over the page, before it leaves the
-  // book.
+  // book; a back swipe meanwhile previews nothing.
+  useBackPreviewBlocked(displaying || barShown)
+
   useEffect(() => {
     if (!displaying && !barShown) {
       return
@@ -850,7 +854,7 @@ export function ReaderScreen() {
     : null
 
   return (
-    <View style={{ flex: 1 }}>
+    <LeavingFrame>
       {/* The status bar shows with the bars, and throughout the search page. */}
       <StatusBar
         hidden={!chrome && !searching && !barShown}
@@ -999,6 +1003,6 @@ export function ReaderScreen() {
           onBack={() => setSearching(false)}
         />
       ) : null}
-    </View>
+    </LeavingFrame>
   )
 }

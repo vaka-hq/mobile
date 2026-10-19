@@ -3,6 +3,9 @@ package expo.modules.androidcomponents
 import android.net.Uri
 import android.os.Build
 import android.view.RoundedCorner
+import android.view.View
+import expo.modules.kotlin.Promise
+import expo.modules.kotlin.functions.Queues
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.ui.ExpoUIView
@@ -29,8 +32,35 @@ class AndroidComponentsModule : Module() {
     Function("setReactNativeBack") { enabled: Boolean ->
       val activity = appContext.currentActivity as? com.facebook.react.ReactActivity ?: return@Function false
       setReactNativeBack(activity, enabled)
+      // Stack screens get predictive back wherever React Native would handle Back.
+      activity.runOnUiThread {
+        StackEnter.register(activity)
+        StackBack.of(activity).setWanted(enabled)
+      }
       true
     }
+
+    // While the app takes Back for itself, a back swipe previews nothing.
+    Function("setBackPreviewBlocked") { blocked: Boolean ->
+      val activity = appContext.currentActivity as? com.facebook.react.ReactActivity ?: return@Function false
+      activity.runOnUiThread { StackBack.of(activity).setBlocked(blocked) }
+      true
+    }
+
+    // A closing screen keeps its last frame through the stack's exit transition.
+    AsyncFunction("freezeScreen") { tag: Int, promise: Promise ->
+      val activity = appContext.currentActivity
+      val view = appContext.findView<View>(tag)
+      if (activity == null || view == null) return@AsyncFunction promise.resolve(false)
+      ScreenFreeze.freeze(activity, view) { promise.resolve(it) }
+    }.runOnQueue(Queues.MAIN)
+
+    // A predictive back removes its screen natively first; such a screen has nothing to freeze.
+    Function("takeNativeDismissal") { StackBack.takeNativeDismissal() }
+
+    AsyncFunction("thawScreen") { tag: Int ->
+      appContext.findView<View>(tag)?.let { ScreenFreeze.thaw(it) }
+    }.runOnQueue(Queues.MAIN)
 
     // An EPUB's contents with where each part starts, from 0 to 1, as JSON: the same parts and
     // places the reader reports on opening it, read without opening it, such as once it is

@@ -283,11 +283,9 @@ internal class ChapterParser(
     if (tag == "link" && parser.attr("rel")?.contains("stylesheet") == true) {
       parser.attr("href")?.let { href -> runCatching { css.load(resolvePath(base, href), read) } }
     }
+    // Caught as Throwable: a huge or hostile sheet can overflow the regexes' stack.
     if (tag == "style") {
-      try {
-        css.parse(parser.nextText())
-      } catch (_: Exception) {
-      }
+      runCatching { css.parse(parser.nextText()) }
       return
     }
 

@@ -204,10 +204,12 @@ truth, and nothing is ever deleted there.
   on Hardcover is applied here, even over listening done here since; what changed only here is sent
   there. A book Hardcover first has keeps what Hardcover knows and gains what only this phone knew.
 - **Here from there:** shelved books (all but Ignored) come into the library; Read marks a book
-  finished; the open read's place moves listening, by share of the book when the recording and
-  Hardcover's edition differ in length. A book playing is left where the listener is; one open but
-  paused is moved in the player. A recording never played here starts at Hardcover's place. A book
-  taken off the shelves leaves the library, keeping its listening.
+  finished, and a finished book Hardcover has as anything else is no longer finished here; the open
+  read's place moves listening, by share of the book when the recording and Hardcover's edition
+  differ in length. A book playing moves once it is paused, and one open but paused is moved in
+  the player; until then Hardcover's change waits. A recording never played here starts at
+  Hardcover's place. A book taken off the shelves, or set to Ignored, leaves the library, keeping
+  its listening.
 - **There from here:** a book added here goes on the shelves as Want to Read, as Currently Reading
   once played (with its place) or as Read once finished. Playing a book makes it Currently
   Reading, playing a Read book again starts a new read, finishing it marks it Read, and listening

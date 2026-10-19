@@ -161,6 +161,101 @@ describe('changes made here', () => {
   })
 })
 
+describe('every change on the website', () => {
+  const inProgress = local({ playedAt: 500, listening: listening(hour, 600) })
+
+  it('takes a book read again there back to the top here', () => {
+    const before = entry({ status: 3 })
+    const after = entry({ status: 2, read: read(null) })
+
+    expect(planShelf(after, baseline(before), local({ finishedAt: 500 }))).toEqual([
+      { kind: 'restartHere' },
+    ])
+  })
+
+  it('moves a finished book here to where it is read again there', () => {
+    const before = entry({ status: 3 })
+    const after = entry({ status: 2, read: read(hour) })
+
+    expect(planShelf(after, baseline(before), local({ finishedAt: 500 }))).toEqual([
+      { kind: 'moveHere', share: 0.1, seconds: hour },
+    ])
+  })
+
+  it('takes a paused book’s place without sending anything back', () => {
+    const before = entry({ read: read(hour) })
+    const after = entry({ status: 4, read: read(3 * hour) })
+
+    expect(planShelf(after, baseline(before), inProgress)).toEqual([
+      { kind: 'moveHere', share: 0.3, seconds: 3 * hour },
+    ])
+  })
+
+  it('leaves listening here as it is for a book given up there', () => {
+    const before = entry({ read: read(hour) })
+    const after = entry({ status: 5, read: read(hour) })
+
+    expect(planShelf(after, baseline(before), inProgress)).toEqual([])
+  })
+
+  it('takes a book marked wanted again there back from finished here', () => {
+    const before = entry({ status: 3 })
+    const after = entry({ status: 1 })
+
+    expect(planShelf(after, baseline(before), local({ finishedAt: 500 }))).toEqual([
+      { kind: 'restartHere' },
+    ])
+  })
+
+  it('wins over listening here when both moved since the last sync', () => {
+    const before = entry({ read: read(hour) })
+    const after = entry({ read: read(4 * hour) })
+    const book = local({ playedAt: 2000, listening: listening(2 * hour, 2000) })
+
+    expect(planShelf(after, baseline(before), book)).toEqual([
+      { kind: 'moveHere', share: 0.4, seconds: 4 * hour },
+    ])
+  })
+
+  it('brings a book taken off the shelves back once it is shelved again there', () => {
+    expect(planShelf(entry({ status: 1 }), null, local({ inLibrary: false }))).toEqual([
+      { kind: 'addHere' },
+    ])
+  })
+
+  it('keeps a book finished here that Hardcover first links as only wanted', () => {
+    expect(planShelf(entry({ status: 1 }), null, local({ finishedAt: 500 }))).toEqual([
+      { kind: 'statusThere', status: 3 },
+    ])
+  })
+})
+
+describe('every change in the app', () => {
+  it('starts listening again on a paused book', () => {
+    const remote = entry({ status: 4, read: read(hour) })
+    const book = local({ playedAt: 2000, listening: listening(hour + 600, 2100) })
+
+    expect(planShelf(remote, baseline(remote), book)).toEqual([
+      { kind: 'statusThere', status: 2 },
+      { kind: 'progressThere', seconds: hour + 600, editionId: 50 },
+    ])
+  })
+
+  it('sends nothing when the book is marked not started or removed here', () => {
+    const remote = entry({ read: read(hour) })
+
+    expect(planShelf(remote, baseline(remote), local())).toEqual([])
+    expect(planShelf(remote, baseline(remote), local({ inLibrary: false }))).toEqual([])
+    expect(planShelf(remote, baseline(remote), null)).toEqual([])
+  })
+
+  it('sends nothing for a book added here that Hardcover already has', () => {
+    const remote = entry({ status: 5 })
+
+    expect(planShelf(remote, baseline(remote), local())).toEqual([])
+  })
+})
+
 describe('remoteProgress', () => {
   it('keeps the recording’s own edition when it has one', () => {
     expect(remoteProgress(listening(hour, 0, 77), read(0))).toEqual({

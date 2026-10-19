@@ -22,6 +22,7 @@ import {
   leaveFromShelves,
   moveFromShelves,
   placeFromShelves,
+  restartFromShelves,
   saveShelfBaseline,
   type ShelfBook,
   shelfBaselines,
@@ -59,7 +60,8 @@ type Writes = { refused: HardcoverError | null }
 
 /**
  * Carries out a book's plan; returns the shelf entry it leaves there, whether it changed here, and
- * whether a change for Hardcover was held back, so the book's baseline stays for the next run.
+ * whether a change was held back, either way, so the book's baseline stays and the next run tries
+ * it again.
  */
 async function carryOut(
   bookId: number,
@@ -100,7 +102,8 @@ async function carryOut(
   for (const action of actions) {
     switch (action.kind) {
       case 'addHere':
-        if (details) {
+        // A book known here already has its details; one new here needs them fetched.
+        if (details || book?.hasDetails) {
           await addFromShelves(workId, details)
           changedHere = true
         }
@@ -121,8 +124,20 @@ async function carryOut(
         const player = getState()
         const open = player.book !== null && workIdOf(player.book) === workId
 
-        // A book playing is not moved under the listener; their listening goes there instead.
-        if (!place || (open && player.playing)) {
+        // A book playing is not moved under the listener; it moves once they pause, as Hardcover
+        // still wins.
+        if (open && player.playing) {
+          heldBack = true
+          break
+        }
+
+        // A recording whose length is not known yet starts at the place once it opens.
+        if (!place) {
+          if (!open && book?.local.finishedAt) {
+            await restartFromShelves(workId, bookId)
+            changedHere = true
+          }
+
           break
         }
 
@@ -134,6 +149,21 @@ async function carryOut(
         }
 
         changedHere = true
+        break
+      }
+
+      case 'restartHere': {
+        const openBook = getState().book
+
+        // The book open in the player would write its own finished place back; it restarts once
+        // another book is open.
+        if (!openBook || workIdOf(openBook) !== workId) {
+          await restartFromShelves(workId, bookId)
+          changedHere = true
+        } else {
+          heldBack = true
+        }
+
         break
       }
 
@@ -269,7 +299,7 @@ export async function syncHardcoverShelves() {
 
     changedHere ||= done.changedHere
 
-    // A book with a change held back keeps its baseline, so the change is sent once it can be.
+    // A book with a change held back keeps its baseline, so the change is made once it can be.
     if (!done.heldBack) {
       await saveShelfBaseline(bookId, done.entry, startedAt)
     }

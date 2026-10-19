@@ -49,6 +49,11 @@ export type ShelfAction =
   | { kind: 'finishHere' }
   /** Hardcover's read is elsewhere: move listening there, as a share of the recording. */
   | { kind: 'moveHere'; share: number | null; seconds: number }
+  /**
+   * Hardcover no longer has it read, with no place to move to: it is no longer finished here, and
+   * starts again from the top, or from Hardcover's place once there is one.
+   */
+  | { kind: 'restartHere' }
   /** The book left Hardcover's shelves: take it out of the library, keeping its listening. */
   | { kind: 'leaveHere' }
   | { kind: 'addThere'; status: HardcoverShelfStatus }
@@ -119,16 +124,24 @@ function localStatus(local: LocalBook): HardcoverShelfStatus {
   return local.playedAt !== null || local.listening ? 2 : 1
 }
 
-/** Hardcover's entry, applied here. Listening here is moved, never forgotten. */
-function applyHere(remote: HardcoverShelfEntry, local: LocalBook | null): ShelfAction[] {
+/**
+ * Hardcover's entry, applied here. Listening here is moved, never forgotten. A book Hardcover
+ * first links and only wants is left as it is here, since this phone knows more of it.
+ */
+function applyHere(
+  remote: HardcoverShelfEntry,
+  local: LocalBook | null,
+  linked: boolean,
+): ShelfAction[] {
   const actions: ShelfAction[] = []
+  const finishedHere = (local?.finishedAt ?? null) !== null
 
   if (!local?.inLibrary) {
     actions.push({ kind: 'addHere' })
   }
 
   if (remote.status === 3) {
-    if ((local?.finishedAt ?? null) === null) {
+    if (!finishedHere) {
       actions.push({ kind: 'finishHere' })
     }
   } else if (
@@ -141,6 +154,8 @@ function applyHere(remote: HardcoverShelfEntry, local: LocalBook | null): ShelfA
       share: readShare(remote.read),
       seconds: remote.read.progressSeconds,
     })
+  } else if (finishedHere && (!linked || remote.status !== 1)) {
+    actions.push({ kind: 'restartHere' })
   }
 
   return actions
@@ -238,7 +253,7 @@ export function planShelf(
   }
 
   const linked = !base || base.userBookId !== remote.userBookId
-  const here = applyHere(remote, local)
+  const here = applyHere(remote, local, linked)
 
   return linked ? [...here, ...fillThere(remote, local)] : here
 }

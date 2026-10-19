@@ -182,8 +182,11 @@ export async function shelfBooks() {
   return books
 }
 
-/** Puts a book Hardcover has on its shelves in the library, with its details. */
-export async function addFromShelves(workId: string, work: HardcoverWork) {
+/**
+ * Puts a book Hardcover has on its shelves in the library, with its details, or with those it
+ * already has here.
+ */
+export async function addFromShelves(workId: string, work: HardcoverWork | null) {
   await setWorkInLibrary(workId, work, true)
 }
 
@@ -264,6 +267,29 @@ export async function moveFromShelves(
     now,
     workId,
   )
+}
+
+/**
+ * The book is no longer finished: the places of its recordings heard to the end are forgotten, so
+ * the next one opened starts at Hardcover's place, or from the top. Bookmarks stay.
+ */
+export async function restartFromShelves(workId: string, hardcoverId: number) {
+  const now = Date.now()
+
+  await database.withExclusiveTransactionAsync(async (txn) => {
+    await txn.runAsync(
+      `DELETE FROM playback WHERE finished = 1 AND book_id IN (
+         SELECT id FROM books WHERE hardcover_id = ?
+         UNION SELECT stream_id FROM works WHERE id = ?)`,
+      hardcoverId,
+      workId,
+    )
+    await txn.runAsync(
+      'UPDATE works SET finished_at = NULL, updated_at = ? WHERE id = ?',
+      now,
+      workId,
+    )
+  })
 }
 
 /**

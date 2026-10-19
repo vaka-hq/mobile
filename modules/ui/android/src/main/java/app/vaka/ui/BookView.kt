@@ -57,6 +57,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -194,7 +195,8 @@ private data class ReaderLabels(
 /**
  * The reader's state outside composition: the book, how it is laid out, where the reader is, and
  * the marks and selection drawn over the text. Chapters are laid out one at a time on a single
- * background thread, the one the reader is in first.
+ * background thread, the one the reader is in first, and the images near the page being read are
+ * decoded on it too.
  */
 private class BookState(val scope: CoroutineScope, val post: (JSONObject) -> Unit) {
   var labels by mutableStateOf(ReaderLabels())
@@ -259,10 +261,17 @@ private class BookState(val scope: CoroutineScope, val post: (JSONObject) -> Uni
   /** Where the page counts of the book in its current settings are kept, once counted. */
   var countKey: String? = null
 
-  /** Decoded images, kept to an eighth of the app's memory by their size in bytes. */
-  val images = object : LruCache<String, ImageBitmap>((Runtime.getRuntime().maxMemory() / 8).toInt()) {
-    override fun sizeOf(key: String, value: ImageBitmap) = value.asAndroidBitmap().byteCount
+  /**
+   * Decoded images, by path and the width they are drawn at, kept to an eighth of the app's memory
+   * by their size in bytes. They are decoded on the layout thread, never while a page draws.
+   */
+  private val images = object : LruCache<String, ImageBitmap>((Runtime.getRuntime().maxMemory() / 8).toInt()) {
+    override fun sizeOf(key: String, value: ImageBitmap) = value.asAndroidBitmap().allocationByteCount
   }
+  /** Images being decoded, and those that cannot be, so neither is asked for again; main thread only. */
+  private val imagesAsked = mutableSetOf<String>()
+  /** Raised as each image is decoded, so a page drawn before its image was ready draws again. */
+  private val imagesDecoded = mutableIntStateOf(0)
 
   val totalPages: Int get() = book?.chapters?.indices?.sumOf { pageCounts[it] ?: 0 } ?: 0
 
@@ -366,6 +375,8 @@ private class BookState(val scope: CoroutineScope, val post: (JSONObject) -> Uni
       }
       evict(chapter)
       waiters.remove(chapter)?.forEach { it() }
+      // The images on its pages near the one being read are decoded as soon as it is laid out.
+      prefetchImages()
     }
   }
 
@@ -460,6 +471,8 @@ private class BookState(val scope: CoroutineScope, val post: (JSONObject) -> Uni
   /** Lays out the chapters either side of the one being read, so turning into them is instant. */
   fun prefetch() {
     val ref = page ?: return
+    // The page's images first, so they are decoded before the chapters beside it are laid out.
+    prefetchImages()
     ensure(ref.chapter - 1)
     ensure(ref.chapter + 1)
   }
@@ -662,25 +675,75 @@ private class BookState(val scope: CoroutineScope, val post: (JSONObject) -> Uni
     searchHits = emptyList()
   }
 
-  fun image(path: String, width: Float): ImageBitmap? {
-    if (width <= 0f) return null
-    images.get(path)?.let { return it }
-    val bytes = book?.bytes(path) ?: return null
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-    // An image Android cannot decode, such as an SVG, is left out.
-    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-    // Decoded no larger than it is drawn, and never beyond about four million pixels.
-    var sample = 1
-    while (sample < 64 && (bounds.outWidth / (sample * 2) >= width ||
-        bounds.outWidth.toLong() * bounds.outHeight / (sample.toLong() * sample) > 4_000_000L)
-    ) {
-      sample *= 2
-    }
-    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
-      ?: return null
-    return bitmap.asImageBitmap().also { images.put(path, it) }
+  /** Lets go of the last book's images; those still being decoded for it are dropped when done. */
+  fun forgetImages() {
+    images.evictAll()
+    imagesAsked.clear()
   }
+
+  /**
+   * An image ready to draw, or null while it is decoded in the background, as one let go to save
+   * memory is decoded again; its box stays blank until then, and the page draws again once it is.
+   */
+  fun imageFor(item: PlacedImage): ImageBitmap? {
+    // Read while drawing, so that a page drawn without the image draws again as images arrive.
+    imagesDecoded.intValue
+    return images.get(imageKey(item)) ?: run {
+      decodeImage(item)
+      null
+    }
+  }
+
+  private fun imageKey(item: PlacedImage) = "${item.path}|${item.width.roundToInt()}"
+
+  /** Decodes an image on the layout thread, at the size of its box on the page. */
+  private fun decodeImage(item: PlacedImage) {
+    val book = book ?: return
+    val key = imageKey(item)
+    if (images.get(key) != null || !imagesAsked.add(key)) return
+    scope.launch {
+      val image = withContext(worker) {
+        runCatching { book.bytes(item.path)?.let { decodeBitmap(it, item.width, item.height) } }.getOrNull()
+      }
+      // Another book opened meanwhile has let go of this one's images.
+      if (this@BookState.book !== book) return@launch
+      // One that cannot be decoded stays asked for, so it is not tried again on every frame.
+      if (image == null) return@launch
+      images.put(key, image)
+      imagesAsked.remove(key)
+      imagesDecoded.intValue++
+    }
+  }
+
+  /** Decodes the images on the pages the row of cards shows around the page being read. */
+  private fun prefetchImages() {
+    val ref = page ?: return
+    val near = generateSequence(ref) { previous(it) }.take(3) + generateSequence(next(ref)) { next(it) }.take(2)
+    near.forEach { pageAt(it)?.items?.forEach { item -> if (item is PlacedImage) decodeImage(item) } }
+  }
+}
+
+/**
+ * An image decoded no larger than about twice its box on the page, which is never wider than the
+ * text nor taller than the page, and never beyond about four million pixels; null when Android
+ * cannot decode it, such as an SVG.
+ */
+private fun decodeBitmap(bytes: ByteArray, width: Float, height: Float): ImageBitmap? {
+  val boxWidth = width.roundToInt().coerceAtLeast(1)
+  val boxHeight = height.roundToInt().coerceAtLeast(1)
+  val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+  BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+  if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+  var sample = 1
+  while (sample < 64 && (
+      (bounds.outWidth / (sample * 2) >= boxWidth && bounds.outHeight / (sample * 2) >= boxHeight) ||
+        bounds.outWidth.toLong() * bounds.outHeight / (sample.toLong() * sample) > 4_000_000L
+      )
+  ) {
+    sample *= 2
+  }
+  val options = BitmapFactory.Options().apply { inSampleSize = sample }
+  return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)?.asImageBitmap()
 }
 
 /**
@@ -892,7 +955,7 @@ private suspend fun handle(state: BookState, message: JSONObject, cache: File) {
       state.source = file.name
       state.cacheDir = cache
       state.book?.close()
-      state.images.evictAll()
+      state.forgetImages()
       state.book = book
       state.tocPositions = book.toc.mapNotNull { entry -> book.resolve(entry.href)?.let { it to entry } }
       val annotations = message.optJSONArray("annotations") ?: JSONArray()
@@ -1917,7 +1980,7 @@ private fun DrawScope.drawPage(
     page.items.forEach { item ->
       when (item) {
         is PlacedText -> drawTextItem(state, style, page.chapter, item, selection, dark)
-        is PlacedImage -> state.image(item.path, item.width)?.let { image ->
+        is PlacedImage -> state.imageFor(item)?.let { image ->
           drawImage(
             image,
             dstOffset = IntOffset(item.left.toInt(), item.top.toInt()),

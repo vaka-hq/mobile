@@ -103,7 +103,9 @@ short: how the app works belongs in `docs/`.
   migration in `src/library/database.ts`; never edit shipped ones. Writes that belong together run
   in `withExclusiveTransactionAsync`.
 - Hardcover and TorBox are reached with the listener's own API keys, entered in Settings and
-  verified before they are stored. Keep secrets in `expo-secure-store`, never in SQLite or logs.
+  verified before they are stored. Keys restored from a backup are the exception, since restoring
+  works offline: the start-up check and Settings check them as soon as they are in place. Keep
+  secrets in `expo-secure-store`, never in SQLite or logs.
 - Library sync (`src/library/library-sync.ts`) keeps the library in step with one sync source at a
   time, chosen in Settings → Library. A new source is one entry in `syncSources` (with its ID in
   `syncSourceIds` and its name in Settings); choosing another source stops the one before. Hardcover's (`src/library/shelves.ts`,

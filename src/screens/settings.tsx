@@ -47,6 +47,7 @@ import { annasKey, useAnnasKey } from '@/settings/annas-key'
 import { hardcoverKey, useHardcoverKey } from '@/settings/hardcover-key'
 import { useKeyProblems } from '@/settings/key-problems'
 import {
+  getPreferences,
   playbackSpeeds,
   type SyncSourceId,
   setPreference,
@@ -141,7 +142,10 @@ export function SettingsScreen() {
         t({ message: 'Speech model ready', comment: 'The speech model finished downloading' }),
       )
     } catch (error) {
-      showFeedback(errorText(error instanceof Error ? error : null))
+      // Leaving the mode stops the download; that is no failure to tell.
+      if (getPreferences().readingSync === 'words') {
+        showFeedback(errorText(error instanceof Error ? error : null))
+      }
     }
   }
 

@@ -5,7 +5,7 @@ import {
   shelfStatus,
 } from '@/sources/hardcover/client'
 import { database } from './database'
-import { type BookRecord, hardcoverWorkId } from './model'
+import type { BookRecord } from './model'
 import {
   getBook,
   getPlayback,
@@ -34,7 +34,7 @@ const baselineRow = z.object({
 })
 
 /** A baseline with the edition its place is counted in, to start a recording of another there. */
-export type StoredBaseline = ShelfBaseline & {
+type StoredBaseline = ShelfBaseline & {
   editionId: number | null
   editionSeconds: number | null
 }
@@ -315,9 +315,4 @@ export async function shelfStart(book: BookRecord) {
   )
 
   return into === null ? null : locate(book.durations, into)
-}
-
-/** The work a Hardcover book is kept under here, or would be. */
-export function shelfWorkId(books: Map<number, ShelfBook>, bookId: number) {
-  return books.get(bookId)?.workId ?? hardcoverWorkId(bookId)
 }

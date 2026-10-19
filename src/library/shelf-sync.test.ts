@@ -36,7 +36,7 @@ describe('a book only on Hardcover', () => {
 
     expect(planShelf(remote, null, null)).toEqual([
       { kind: 'addHere' },
-      { kind: 'moveHere', share: 0.2, seconds: 2 * hour },
+      { kind: 'moveHere', seconds: 2 * hour },
     ])
   })
 
@@ -84,7 +84,7 @@ describe('Hardcover as the source of truth', () => {
     const book = local({ playedAt: 500, listening: listening(2 * hour, 2000) })
 
     expect(planShelf(after, baseline(before), book)).toEqual([
-      { kind: 'moveHere', share: 0.5, seconds: 5 * hour },
+      { kind: 'moveHere', seconds: 5 * hour },
     ])
   })
 
@@ -178,7 +178,7 @@ describe('every change on the website', () => {
     const after = entry({ status: 2, read: read(hour) })
 
     expect(planShelf(after, baseline(before), local({ finishedAt: 500 }))).toEqual([
-      { kind: 'moveHere', share: 0.1, seconds: hour },
+      { kind: 'moveHere', seconds: hour },
     ])
   })
 
@@ -187,7 +187,7 @@ describe('every change on the website', () => {
     const after = entry({ status: 4, read: read(3 * hour) })
 
     expect(planShelf(after, baseline(before), inProgress)).toEqual([
-      { kind: 'moveHere', share: 0.3, seconds: 3 * hour },
+      { kind: 'moveHere', seconds: 3 * hour },
     ])
   })
 
@@ -213,7 +213,7 @@ describe('every change on the website', () => {
     const book = local({ playedAt: 2000, listening: listening(2 * hour, 2000) })
 
     expect(planShelf(after, baseline(before), book)).toEqual([
-      { kind: 'moveHere', share: 0.4, seconds: 4 * hour },
+      { kind: 'moveHere', seconds: 4 * hour },
     ])
   })
 

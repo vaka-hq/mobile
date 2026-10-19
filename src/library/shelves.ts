@@ -102,12 +102,8 @@ async function carryOut(
   for (const action of actions) {
     switch (action.kind) {
       case 'addHere':
-        // A book known here already has its details; one new here needs them fetched.
-        if (details || book?.hasDetails) {
-          await addFromShelves(workId, details)
-          changedHere = true
-        }
-
+        await addFromShelves(workId, details)
+        changedHere = true
         break
       case 'finishHere':
         await finishFromShelves(workId, details)
@@ -191,9 +187,11 @@ async function carryOut(
 
         if (entry && read) {
           const seconds = Math.round(action.seconds)
+          // A place in no edition of its own stays in the read's, rather than clearing it there.
+          const editionId = action.editionId ?? read.editionId
 
           const saved = await write(async () => {
-            await saveReadProgress(read, action.editionId, seconds)
+            await saveReadProgress(read, editionId, seconds)
 
             return true
           })
@@ -207,9 +205,9 @@ async function carryOut(
             read: {
               ...read,
               progressSeconds: seconds,
-              editionId: action.editionId ?? read.editionId,
+              editionId,
               editionSeconds:
-                action.editionId === null || action.editionId === read.editionId
+                editionId === read.editionId
                   ? read.editionSeconds
                   : (book?.local.listening?.recordingSeconds ?? null),
             },

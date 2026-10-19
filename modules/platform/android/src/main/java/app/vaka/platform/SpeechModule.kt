@@ -116,7 +116,7 @@ class SpeechModule : Module() {
    * same however long the stretch.
    */
   @JS
-  suspend fun transcribe(request: SnippetRequest): Transcript = withContext(Dispatchers.Default) {
+  suspend fun transcribe(request: SnippetRequest): Transcript = withContext(Dispatchers.IO) {
     val duration = request.duration.coerceIn(1.0, longestSnippet)
     val words = mutableListOf<HeardWord>()
 
@@ -253,10 +253,6 @@ class SpeechModule : Module() {
       val endUs = startUs + (duration * 1_000_000).toLong()
       extractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
 
-      val codec = MediaCodec.createDecoderByType(mime)
-      codec.configure(format, null, null, 0)
-      codec.start()
-
       var rate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
       var channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
       var float = false
@@ -265,7 +261,10 @@ class SpeechModule : Module() {
       var inputDone = false
       var outputDone = false
 
+      val codec = MediaCodec.createDecoderByType(mime)
       try {
+        codec.configure(format, null, null, 0)
+        codec.start()
         while (!outputDone) {
           if (!inputDone) {
             val inputIndex = codec.dequeueInputBuffer(10_000)
@@ -316,7 +315,8 @@ class SpeechModule : Module() {
         }
         resampler?.flush()
       } finally {
-        codec.stop()
+        // Stopping throws for a codec that never started or that failed; it is released anyway.
+        runCatching { codec.stop() }
         codec.release()
       }
     } finally {

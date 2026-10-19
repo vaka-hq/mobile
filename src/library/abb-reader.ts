@@ -8,7 +8,7 @@ import {
   TimeoutError,
 } from '@/lib/http'
 import { proxiedReader } from '@/lib/proxied-http'
-import { abbProxyServer, getAbbProxy } from '@/settings/abb-proxy'
+import { getAbbProxy } from '@/settings/abb-proxy'
 import { getPreferences, setPreference } from '@/settings/preferences'
 
 /**
@@ -104,5 +104,5 @@ const directReader: TextReader = async (url, headers, signal) => {
 export function abbReader(): TextReader {
   const proxy = getAbbProxy()
 
-  return proxy ? proxiedReader(abbProxyServer(proxy)) : directReader
+  return proxy ? proxiedReader(proxy) : directReader
 }

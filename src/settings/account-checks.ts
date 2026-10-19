@@ -7,7 +7,7 @@ import { normalizeApiKey } from '@/sources/hardcover/api-key'
 import { fetchHardcoverAccount, HardcoverError, verifyApiKey } from '@/sources/hardcover/client'
 import { checkExitAddress } from '@/sources/ip-check/client'
 import { fetchAccount, isAuthenticationError } from '@/sources/torbox/client'
-import { type AbbProxy, abbProxyServer, useAbbProxy } from './abb-proxy'
+import { type AbbProxy, useAbbProxy } from './abb-proxy'
 import { annasKey, useAnnasKey } from './annas-key'
 import { hardcoverKey, useHardcoverKey } from './hardcover-key'
 import { getPreferences, usePreferences } from './preferences'
@@ -30,7 +30,7 @@ export const accountCheckKeys = {
  * moves every request to another address.
  */
 export async function checkProxy(proxy: AbbProxy, signal?: AbortSignal) {
-  await checkExitAddress(proxiedReader(abbProxyServer(proxy)), signal)
+  await checkExitAddress(proxiedReader(proxy), signal)
 
   return true
 }

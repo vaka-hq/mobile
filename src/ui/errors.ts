@@ -41,7 +41,14 @@ export function useErrorText() {
       })
     }
 
-    if (error instanceof HardcoverError && error.reason !== 'other') {
+    if (error instanceof HardcoverError && error.reason === 'missingScope') {
+      return t({
+        message: 'Your Hardcover API key isn’t allowed to do this. Replace it in Settings.',
+        comment: 'Error when the saved Hardcover key lacks a permission the action needs',
+      })
+    }
+
+    if (error instanceof HardcoverError && error.reason === 'rejectedKey') {
       return t({
         message: 'Hardcover no longer accepts your API key. Check it in Settings.',
         comment: 'Error when Hardcover rejects the saved key',

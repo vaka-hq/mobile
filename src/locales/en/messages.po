@@ -1079,7 +1079,6 @@ msgid "Downloading. You can change to it once it has finished."
 msgstr "Downloading. You can change to it once it has finished."
 
 #. Feedback after adding an uncached audiobook
-#. Feedback after adding an uncached audiobook
 #: src/components/book-details.tsx
 msgid "Downloading. You can listen once it has finished."
 msgstr "Downloading. You can listen once it has finished."
@@ -2392,6 +2391,7 @@ msgstr "Resume"
 #. Retries a failed action
 #. Retries a failed action
 #. Retries a failed action
+#. Retries a failed action
 #: src/components/book-details.tsx
 #: src/components/series-sheet.tsx
 #: src/screens/book.tsx
@@ -2882,7 +2882,9 @@ msgid "Their reading progress, highlights and notes are deleted too."
 msgstr "Their reading progress, highlights and notes are deleted too."
 
 #. Book load failure title
+#. Book load failure title
 #: src/screens/book.tsx
+#: src/screens/match.tsx
 msgid "This audiobook could not be opened"
 msgstr "This audiobook could not be opened"
 
@@ -3181,6 +3183,11 @@ msgstr "You’ll lose your progress."
 #: src/screens/settings.tsx
 msgid "Your {sourceName} key can’t sync your library. Replace it with one that can."
 msgstr "Your {sourceName} key can’t sync your library. Replace it with one that can."
+
+#. Error when the saved Hardcover key lacks a permission the action needs
+#: src/ui/errors.ts
+msgid "Your Hardcover API key isn’t allowed to do this. Replace it in Settings."
+msgstr "Your Hardcover API key isn’t allowed to do this. Replace it in Settings."
 
 #. Library load failure
 #: src/screens/library.tsx

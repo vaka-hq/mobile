@@ -67,7 +67,8 @@ function fileFrom(cells: HTMLElement[]): LibgenFile | null {
     title: title ?? '',
     authors: (text(1) ?? '').split(/[,;]/u).flatMap((author) => clean(author) ?? []),
     publisher: full ? text(2) : null,
-    year: full ? text(3) : null,
+    // The year cell sometimes holds dates or several, such as “2020:10:01 23:00:00+00:00, 2025”.
+    year: full ? (text(3)?.match(/\b(?:1[5-9]|20)\d\d\b/u)?.[0] ?? null) : null,
     language: full ? text(4) : null,
     size: full ? text(6) : null,
     extension: full ? (text(7)?.toLowerCase() ?? null) : null,

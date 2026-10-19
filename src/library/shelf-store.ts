@@ -230,11 +230,10 @@ function secondsIn(
 }
 
 /**
- * Moves listening to the place Hardcover has, for the recording listened to last. One whose
- * files' lengths are not all known yet is left; it starts at Hardcover's place when it opens.
+ * The place in the recording listened to last that Hardcover's place comes to. None for a
+ * recording whose files' lengths are not all known yet; it starts there when it opens instead.
  */
-export async function moveFromShelves(
-  workId: string,
+export async function placeFromShelves(
   streamId: string | null,
   seconds: number,
   editionId: number | null,
@@ -243,27 +242,28 @@ export async function moveFromShelves(
   const book = streamId ? await getBook(streamId) : null
 
   if (!book?.durations) {
-    return false
+    return null
   }
 
   const into = secondsIn(book, seconds, editionId, editionSeconds)
 
-  if (into === null) {
-    return false
-  }
+  return into === null ? null : { bookId: book.id, ...locate(book.durations, into) }
+}
 
-  const place = locate(book.durations, into)
-  const speed = (await getPlayback(book.id))?.speed ?? 1
+/** Saves listening at Hardcover's place, no longer finished. */
+export async function moveFromShelves(
+  workId: string,
+  place: { bookId: string; track: number; position: number },
+) {
+  const speed = (await getPlayback(place.bookId))?.speed ?? 1
   const now = Date.now()
 
-  await savePlayback({ bookId: book.id, ...place, speed, finished: false })
+  await savePlayback({ ...place, speed, finished: false })
   await database.runAsync(
     'UPDATE works SET finished_at = NULL, updated_at = ? WHERE id = ?',
     now,
     workId,
   )
-
-  return true
 }
 
 /**

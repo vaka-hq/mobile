@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { AppState } from 'react-native'
-import { getState } from '@/player/controller'
+import { getState, seekTo } from '@/player/controller'
 import { hardcoverKey } from '@/settings/hardcover-key'
 import { getPreferences, setPreference } from '@/settings/preferences'
 import {
@@ -21,6 +21,7 @@ import {
   forgetShelves,
   leaveFromShelves,
   moveFromShelves,
+  placeFromShelves,
   saveShelfBaseline,
   type ShelfBook,
   shelfBaselines,
@@ -98,7 +99,6 @@ async function carryOut(
   details: HardcoverWork | null,
 ) {
   const workId = book?.workId ?? hardcoverWorkId(bookId)
-  const openWork = getState().book
   let entry = remote
   let changedHere = false
 
@@ -115,20 +115,33 @@ async function carryOut(
         await finishFromShelves(workId, details)
         changedHere = true
         break
-      case 'moveHere':
-        // The book playing here is not moved under the listener; their listening is sent instead.
-        if (!openWork || workIdOf(openWork) !== workId) {
-          changedHere =
-            (await moveFromShelves(
-              workId,
-              book?.streamId ?? null,
-              action.seconds,
-              entry?.read?.editionId ?? null,
-              entry?.read?.editionSeconds ?? null,
-            )) || changedHere
+      case 'moveHere': {
+        const place = await placeFromShelves(
+          book?.streamId ?? null,
+          action.seconds,
+          entry?.read?.editionId ?? null,
+          entry?.read?.editionSeconds ?? null,
+        )
+
+        const player = getState()
+        const open = player.book !== null && workIdOf(player.book) === workId
+
+        // A book playing is not moved under the listener; their listening goes there instead.
+        if (!place || (open && player.playing)) {
+          break
         }
 
+        // The book open but paused is moved in the player, which would write its own place back.
+        if (open && player.book?.id === place.bookId) {
+          await seekTo(place.track, place.position)
+        } else {
+          await moveFromShelves(workId, place)
+        }
+
+        changedHere = true
         break
+      }
+
       case 'leaveHere':
         await leaveFromShelves(workId)
         changedHere = true

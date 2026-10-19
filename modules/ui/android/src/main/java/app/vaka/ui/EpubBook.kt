@@ -201,7 +201,7 @@ class EpubBook(
             "a", "span" -> if (linkTag == local(parser.name)) {
               linkTag = null
               val text = label.toString().replace(tocWhitespace, " ").trim()
-              if (text.isNotEmpty() && href != null) entries.add(TocEntry(text, href!!, maxOf(0, depth)))
+              if (text.isNotEmpty() && href != null) entries.add(TocEntry(text, href, maxOf(0, depth)))
             }
           }
         }
@@ -227,7 +227,7 @@ class EpubBook(
             "content" -> {
               val src = parser.attr("src")
               if (src != null && label != null) {
-                entries.add(TocEntry(label!!, resolvePath(base, src), depth))
+                entries.add(TocEntry(label, resolvePath(base, src), depth))
               }
             }
           }
@@ -351,7 +351,6 @@ class TextBlock(
   val indentPercent: Float?,
   /** Text size relative to the body's, from the book's style sheet. */
   val size: Float,
-  val uppercase: Boolean,
   /** Space above and below, in em of the block's text, collapsing with its neighbours'. */
   val marginTop: Float,
   val marginBottom: Float

@@ -28,6 +28,11 @@ private val fontFamilyDeclaration = Regex("font-family\\s*:\\s*([^;]+)", RegexOp
 private val signedNumber = Regex("^(-?[0-9.]+)")
 private val unsignedNumber = Regex("^([0-9.]+)")
 
+private val namedSizes = mapOf(
+  "xx-small" to 0.6f, "x-small" to 0.75f, "small" to 0.89f, "medium" to 1f,
+  "large" to 1.2f, "x-large" to 1.5f, "xx-large" to 2f, "smaller" to 0.85f, "larger" to 1.2f
+)
+
 /** What the reader takes from a book's style sheets for one element. */
 internal data class CssStyle(
   val italic: Boolean? = null,
@@ -188,11 +193,7 @@ internal class Css {
   }
 
   private fun size(value: String): Float? {
-    val named = mapOf(
-      "xx-small" to 0.6f, "x-small" to 0.75f, "small" to 0.89f, "medium" to 1f,
-      "large" to 1.2f, "x-large" to 1.5f, "xx-large" to 2f, "smaller" to 0.85f, "larger" to 1.2f
-    )
-    named[value]?.let { return it }
+    namedSizes[value]?.let { return it }
     val number = unsignedNumber.find(value)?.groupValues?.get(1)?.toFloatOrNull() ?: return null
     return when {
       value.endsWith("%") -> number / 100f
@@ -262,7 +263,7 @@ internal class ChapterParser(
         when (parser.eventType) {
           XmlPullParser.START_TAG -> start(parser)
           XmlPullParser.END_TAG -> end(parser)
-          XmlPullParser.TEXT, XmlPullParser.ENTITY_REF -> parser.text?.let { append(it) }
+          XmlPullParser.TEXT -> parser.text?.let { append(it) }
         }
       }
     } catch (_: Exception) {
@@ -278,8 +279,9 @@ internal class ChapterParser(
     val tag = local(parser.name).lowercase()
     val parent = stack.lastOrNull()
 
+    // A style sheet that cannot be read leaves the chapter in the reader's own style.
     if (tag == "link" && parser.attr("rel")?.contains("stylesheet") == true) {
-      parser.attr("href")?.let { href -> css.load(resolvePath(base, href), read) }
+      parser.attr("href")?.let { href -> runCatching { css.load(resolvePath(base, href), read) } }
     }
     if (tag == "style") {
       try {
@@ -330,10 +332,11 @@ internal class ChapterParser(
     } else null
     val block = tag in blockTags
 
+    // A block ends the text before it first, so its anchors point at its own text.
+    if (block) flush()
+
     parser.attr("id")?.let { id -> anchors.putIfAbsent(id, blocks.size) }
     parser.attr("name")?.takeIf { tag == "a" }?.let { id -> anchors.putIfAbsent(id, blocks.size) }
-
-    if (block) flush()
 
     stack.addLast(
       Element(
@@ -377,7 +380,7 @@ internal class ChapterParser(
       val element = stack.removeLast()
       if (element.block) flush()
     }
-    if (tag in setOf("td", "th") && text.isNotEmpty() && !text.endsWith(' ')) appendRaw(" ")
+    if ((tag == "td" || tag == "th") && text.isNotEmpty() && !text.endsWith(' ')) appendRaw(" ")
   }
 
   private fun append(raw: String) {
@@ -435,8 +438,8 @@ internal class ChapterParser(
     // Trailing spaces and breaks go; a block of only whitespace is no block.
     var end = text.length
     while (end > 0 && (text[end - 1] == ' ' || text[end - 1] == '\n')) end--
-    if (end > 0 && text.substring(0, end).isNotBlank()) {
-      val content = text.substring(0, end)
+    val content = text.substring(0, end)
+    if (content.isNotBlank()) {
       val kept = spans.mapNotNull { span ->
         if (span.start >= end) null
         else Span(span.start, minOf(span.end, end), span.italic, span.bold, span.smallCaps, span.superscript, span.subscript, span.href, span.size)
@@ -451,7 +454,6 @@ internal class ChapterParser(
           indent = pendingStyle.indent,
           indentPercent = pendingStyle.indentPercent,
           size = pendingStyle.size ?: 1f,
-          uppercase = pendingStyle.uppercase == true,
           marginTop = pendingStyle.marginTop ?: defaultMargin(pendingTag),
           marginBottom = pendingStyle.marginBottom ?: defaultMargin(pendingTag)
         )

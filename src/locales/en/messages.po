@@ -214,10 +214,10 @@ msgstr "Accounts"
 msgid "Add"
 msgstr "Add"
 
-#. Browse notice when no Hardcover key is saved; Hardcover is a name
+#. Browse notice when no Hardcover key is saved; tapping it asks for one
 #: src/screens/browse.tsx
-msgid "Add a Hardcover API key for a better search, with books and series, covers and details."
-msgstr "Add a Hardcover API key for a better search, with books and series, covers and details."
+msgid "Add a Hardcover API key for better search."
+msgstr "Add a Hardcover API key for better search."
 
 #. Match picker without a Hardcover API key
 #: src/screens/match.tsx
@@ -245,11 +245,6 @@ msgstr "Add bookmark"
 #: src/screens/welcome.tsx
 msgid "Add Hardcover"
 msgstr "Add Hardcover"
-
-#. Browse notice button opening Settings
-#: src/screens/browse.tsx
-msgid "Add key"
-msgstr "Add key"
 
 #. Adds every book of a series to the library
 #: src/components/series-sheet.tsx
@@ -375,6 +370,7 @@ msgstr "Anyone with the file can use them."
 #. Text field label
 #. Text field label
 #. Text field label
+#: src/components/hardcover-key-dialog.tsx
 #: src/screens/settings.tsx
 #: src/screens/welcome.tsx
 msgid "API key"
@@ -785,13 +781,13 @@ msgid "Connected to Anna’s Archive"
 msgstr "Connected to Anna’s Archive"
 
 #. Hardcover key saved
-#: src/screens/settings.tsx
+#: src/components/hardcover-key-dialog.tsx
 msgid "Connected to Hardcover"
 msgstr "Connected to Hardcover"
 
 #. Hardcover key saved, with the account email
 #. placeholder {0}: account.email
-#: src/screens/settings.tsx
+#: src/components/hardcover-key-dialog.tsx
 msgid "Connected to Hardcover as {0}"
 msgstr "Connected to Hardcover as {0}"
 
@@ -1283,7 +1279,7 @@ msgid "Hardcover"
 msgstr "Hardcover"
 
 #. Dialog title
-#: src/screens/settings.tsx
+#: src/components/hardcover-key-dialog.tsx
 msgid "Hardcover API key"
 msgstr "Hardcover API key"
 
@@ -2392,6 +2388,7 @@ msgstr "Sans"
 #. Saves a setting
 #. Saves a setting
 #: src/components/book-sheets.tsx
+#: src/components/hardcover-key-dialog.tsx
 #: src/screens/reader.tsx
 #: src/screens/settings.tsx
 msgid "Save"

@@ -214,10 +214,10 @@ msgstr "Konton"
 msgid "Add"
 msgstr "Lägg till"
 
-#. Browse notice when no Hardcover key is saved; Hardcover is a name
+#. Browse notice when no Hardcover key is saved; tapping it asks for one
 #: src/screens/browse.tsx
-msgid "Add a Hardcover API key for a better search, with books and series, covers and details."
-msgstr "Lägg till en API-nyckel för Hardcover för bättre sökning, med böcker och serier, omslag och detaljer."
+msgid "Add a Hardcover API key for better search."
+msgstr "Lägg till en API-nyckel för Hardcover för bättre sökning."
 
 #. Match picker without a Hardcover API key
 #: src/screens/match.tsx
@@ -245,11 +245,6 @@ msgstr "Lägg till bokmärke"
 #: src/screens/welcome.tsx
 msgid "Add Hardcover"
 msgstr "Lägg till Hardcover"
-
-#. Browse notice button opening Settings
-#: src/screens/browse.tsx
-msgid "Add key"
-msgstr "Lägg till nyckel"
 
 #. Adds every book of a series to the library
 #: src/components/series-sheet.tsx
@@ -375,6 +370,7 @@ msgstr "Alla som har filen kan använda dem."
 #. Text field label
 #. Text field label
 #. Text field label
+#: src/components/hardcover-key-dialog.tsx
 #: src/screens/settings.tsx
 #: src/screens/welcome.tsx
 msgid "API key"
@@ -785,13 +781,13 @@ msgid "Connected to Anna’s Archive"
 msgstr "Ansluten till Anna’s Archive"
 
 #. Hardcover key saved
-#: src/screens/settings.tsx
+#: src/components/hardcover-key-dialog.tsx
 msgid "Connected to Hardcover"
 msgstr "Ansluten till Hardcover"
 
 #. Hardcover key saved, with the account email
 #. placeholder {0}: account.email
-#: src/screens/settings.tsx
+#: src/components/hardcover-key-dialog.tsx
 msgid "Connected to Hardcover as {0}"
 msgstr "Ansluten till Hardcover som {0}"
 
@@ -1283,7 +1279,7 @@ msgid "Hardcover"
 msgstr "Hardcover"
 
 #. Dialog title
-#: src/screens/settings.tsx
+#: src/components/hardcover-key-dialog.tsx
 msgid "Hardcover API key"
 msgstr "API-nyckel för Hardcover"
 
@@ -2392,6 +2388,7 @@ msgstr "Sans"
 #. Saves a setting
 #. Saves a setting
 #: src/components/book-sheets.tsx
+#: src/components/hardcover-key-dialog.tsx
 #: src/screens/reader.tsx
 #: src/screens/settings.tsx
 msgid "Save"

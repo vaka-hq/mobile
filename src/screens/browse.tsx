@@ -1,8 +1,9 @@
 import { plural } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
 import { useRouter } from 'expo-router'
-import { type ReactNode, useEffect, useState } from 'react'
+import { createContext, type ReactNode, useContext, useEffect, useState } from 'react'
 import { EbookResultRow, useOpenEbook } from '@/components/ebook-row'
+import { HardcoverKeyDialog } from '@/components/hardcover-key-dialog'
 import { SeriesSheet } from '@/components/series-sheet'
 import { fillMaxSize } from '@/lib/compose-modifiers'
 import { LazyColumn } from '@/lib/compose-ui'
@@ -35,6 +36,7 @@ import {
   LoadMore,
   LoadingPage,
   Notice,
+  SceneFade,
   SearchField,
 } from '@/ui/primitives'
 import { Screen } from '@/ui/screen'
@@ -81,16 +83,21 @@ type PagedResults = {
   isFetching: boolean
   isFetchingNextPage: boolean
   isFetchNextPageError: boolean
+  /** The last search's results, kept on screen while this one's first page loads. */
+  isPlaceholderData: boolean
   fetchNextPage: () => void
 }
 
+/** Opens the Hardcover key dialog from Browse's notice. */
+const AddHardcoverKey = createContext<() => void>(() => undefined)
+
 /**
  * Without a Hardcover key, a search finds only uploads and e-books, without book details: says so
- * above the results, with the way to add one, until it is closed for good.
+ * above the results until it is closed for good. Tapping it asks for a key right here.
  */
 function HardcoverNotice() {
   const { t } = useLingui()
-  const router = useRouter()
+  const addKey = useContext(AddHardcoverKey)
   const connected = Boolean(useHardcoverKey())
   const { hardcoverNoticeDismissed } = usePreferences()
 
@@ -102,12 +109,10 @@ function HardcoverNotice() {
     <Notice
       glyph='info'
       message={t({
-        message:
-          'Add a Hardcover API key for a better search, with books and series, covers and details.',
-        comment: 'Browse notice when no Hardcover key is saved; Hardcover is a name',
+        message: 'Add a Hardcover API key for better search.',
+        comment: 'Browse notice when no Hardcover key is saved; tapping it asks for one',
       })}
-      actionLabel={t({ message: 'Add key', comment: 'Browse notice button opening Settings' })}
-      onAction={() => router.navigate('/settings')}
+      onPress={addKey}
       dismissLabel={t({ message: 'Close', comment: 'Closes the Browse notice for good' })}
       onDismiss={() => void setPreference('hardcoverNoticeDismissed', true)}
     />
@@ -134,48 +139,69 @@ function PagedList({
   const { t } = useLingui()
   const errorText = useErrorText()
 
-  if (results.isLoadingError) {
-    return failed
-  }
+  // Each set of results that takes the place of the last one kept on screen is a scene of its own.
+  const [kept, setKept] = useState(results.isPlaceholderData)
+  const [arrivals, setArrivals] = useState(0)
 
-  if (results.isPending) {
-    return <LoadingPage />
+  if (kept !== results.isPlaceholderData) {
+    setKept(results.isPlaceholderData)
+
+    if (!results.isPlaceholderData) {
+      setArrivals(arrivals + 1)
+    }
   }
 
   // A page can come back empty with more to follow, as series searches leave empty series out.
-  if (count === 0 && !results.hasNextPage) {
-    return empty
-  }
+  const scene = results.isLoadingError
+    ? 'failed'
+    : results.isPending
+      ? 'loading'
+      : count === 0 && !results.hasNextPage
+        ? 'empty'
+        : `results:${arrivals}`
 
+  // Loading, a failure, finding nothing and the results fade into one another.
   return (
-    // The spinner at the foot brings its own room above and below it, so the list adds none and
-    // it sits midway between the last result and the bar below.
-    <LazyColumn
-      modifiers={[fillMaxSize()]}
-      contentPadding={{ bottom: results.hasNextPage && !results.isFetchNextPageError ? 0 : 16 }}
-    >
-      <HardcoverNotice />
-      {children}
-      {results.isFetchNextPageError ? (
-        <Notice
-          glyph='warning'
-          tone='error'
-          message={errorText(results.error)}
-          actionLabel={t({ message: 'Retry', comment: 'Retries a failed action' })}
-          onAction={() => results.fetchNextPage()}
-        />
-      ) : results.hasNextPage ? (
-        <LoadMore
-          loading={results.isFetchingNextPage}
-          // Not while the list itself refreshes; the next page is asked for once it is done.
-          onVisible={() => {
-            if (!results.isFetchingNextPage && !results.isFetching) {
-              results.fetchNextPage()
-            }
+    <SceneFade scene={scene}>
+      {scene === 'failed' ? (
+        failed
+      ) : scene === 'loading' ? (
+        <LoadingPage />
+      ) : scene === 'empty' ? (
+        empty
+      ) : (
+        // The spinner at the foot brings its own room above and below it, so the list adds none
+        // and it sits midway between the last result and the bar below.
+        <LazyColumn
+          modifiers={[fillMaxSize()]}
+          contentPadding={{
+            bottom: results.hasNextPage && !results.isFetchNextPageError ? 0 : 16,
           }}
-        />
-      ) : null}
-    </LazyColumn>
+        >
+          <HardcoverNotice />
+          {children}
+          {results.isFetchNextPageError ? (
+            <Notice
+              glyph='warning'
+              tone='error'
+              message={errorText(results.error)}
+              actionLabel={t({ message: 'Retry', comment: 'Retries a failed action' })}
+              onAction={() => results.fetchNextPage()}
+            />
+          ) : results.hasNextPage ? (
+            <LoadMore
+              loading={results.isFetchingNextPage}
+              // Not while the list itself refreshes; the next page is asked for once it is done.
+              onVisible={() => {
+                if (!results.isFetchingNextPage && !results.isFetching) {
+                  results.fetchNextPage()
+                }
+              }}
+            />
+          ) : null}
+        </LazyColumn>
+      )}
+    </SceneFade>
   )
 }
 
@@ -528,6 +554,7 @@ export function BrowseScreen() {
   const [browseKey, setBrowseKey] = useState(trendingKey)
   const genres = useHardcoverGenres(connected)
   const [source, setSource] = useState<Source>('books')
+  const [addingKey, setAddingKey] = useState(false)
   const debounced = useDebounced(query.trim(), 400)
   const searching = debounced.length >= 2
   // Books and series come from Hardcover, so without it a search finds uploads or e-books.
@@ -643,19 +670,35 @@ export function BrowseScreen() {
         </>
       }
     >
-      {ebookSearch ? (
-        <EbookResults query={debounced} />
-      ) : browsingHardcover ? (
-        <HardcoverBrowseList browse={browseFor(browseKey)} />
-      ) : hardcoverSource ? (
-        <HardcoverResults
-          query={debounced}
-          source={hardcoverSource}
-          onSearchUploads={() => setSource('uploads')}
-        />
-      ) : (
-        <UploadResults feed={feed} />
-      )}
+      <AddHardcoverKey value={() => setAddingKey(true)}>
+        {/* Adding a Hardcover key, or searching, swaps the kind of list, which fades in. */}
+        <SceneFade
+          scene={
+            ebookSearch
+              ? 'ebooks'
+              : browsingHardcover
+                ? 'hardcoverBrowse'
+                : hardcoverSource
+                  ? 'hardcover'
+                  : 'uploads'
+          }
+        >
+          {ebookSearch ? (
+            <EbookResults query={debounced} />
+          ) : browsingHardcover ? (
+            <HardcoverBrowseList browse={browseFor(browseKey)} />
+          ) : hardcoverSource ? (
+            <HardcoverResults
+              query={debounced}
+              source={hardcoverSource}
+              onSearchUploads={() => setSource('uploads')}
+            />
+          ) : (
+            <UploadResults feed={feed} />
+          )}
+        </SceneFade>
+      </AddHardcoverKey>
+      {addingKey ? <HardcoverKeyDialog onClose={() => setAddingKey(false)} /> : null}
     </Screen>
   )
 }

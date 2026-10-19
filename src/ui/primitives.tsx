@@ -3,6 +3,7 @@ import { type ReactNode, type Ref, useEffect, useImperativeHandle, useRef, useSt
 import {
   alpha,
   animateContentSize,
+  animated,
   background,
   clickable,
   clip,
@@ -10,12 +11,14 @@ import {
   composeGeometry,
   fillMaxSize,
   fillMaxWidth,
+  graphicsLayer,
   height,
   onVisibilityChanged,
   padding,
   paddingAll,
   size,
   toggleable,
+  tween,
   verticalScroll,
   weight,
 } from '@/lib/compose-modifiers'
@@ -1012,6 +1015,8 @@ export type NoticeProps = {
   message: string
   actionLabel?: string
   onAction?: () => void
+  /** What tapping the whole card does. */
+  onPress?: () => void
   /** Closes the notice with a button at its end, labelled `dismissLabel`. */
   onDismiss?: () => void
   dismissLabel?: string
@@ -1024,6 +1029,7 @@ export function Notice({
   message,
   actionLabel,
   onAction,
+  onPress,
   onDismiss,
   dismissLabel,
   tone = 'neutral',
@@ -1036,7 +1042,11 @@ export function Notice({
     <Box modifiers={[fillMaxWidth(), padding(16, 8, 16, 8)]}>
       <ListItem
         colors={{ containerColor: container, contentColor: content }}
-        modifiers={[fillMaxWidth(), clip(composeGeometry.RoundedCorner(16))]}
+        modifiers={[
+          fillMaxWidth(),
+          clip(composeGeometry.RoundedCorner(16)),
+          ...(onPress ? [clickable(onPress)] : []),
+        ]}
       >
         <ListItem.LeadingContent>
           <Icon source={glyphs[glyph]} size={24} tint={content} />
@@ -1068,6 +1078,42 @@ export function Notice({
           </ListItem.TrailingContent>
         ) : null}
       </ListItem>
+    </Box>
+  )
+}
+
+/** How long a new scene takes to fade in. */
+const sceneInMs = 180
+
+/**
+ * A body whose content changes as a whole, such as from loading to results, or from one kind of
+ * list to another: each new `scene` fades in over the last rather than replacing it at once.
+ */
+export function SceneFade({ scene, children }: { scene: string; children: ReactNode }) {
+  const [entered, setEntered] = useState(scene)
+
+  // A new scene first shows transparent, then fades in once it is on screen.
+  useEffect(() => {
+    if (entered === scene) {
+      return
+    }
+
+    const frame = requestAnimationFrame(() => setEntered(scene))
+
+    return () => cancelAnimationFrame(frame)
+  }, [entered, scene])
+
+  return (
+    <Box
+      key={scene}
+      modifiers={[
+        fillMaxSize(),
+        graphicsLayer({
+          alpha: animated(entered === scene ? 1 : 0, tween({ durationMillis: sceneInMs })),
+        }),
+      ]}
+    >
+      {children}
     </Box>
   )
 }

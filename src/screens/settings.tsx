@@ -5,6 +5,7 @@ import * as Application from 'expo-application'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useBackupRestore } from '@/components/backup-restore'
+import { HardcoverKeyDialog } from '@/components/hardcover-key-dialog'
 import { type ProxyFields, useProxySetup } from '@/components/proxy-setup'
 import { AudiobookDownloadsSheet, EbookDownloadsSheet } from '@/components/storage-sheets'
 import { useFeedback } from '@/lib/feedback'
@@ -27,7 +28,6 @@ import { audioCacheSize, clearAudioCache } from '@/player/controller'
 import { type AbbProxy, setAbbProxy, useAbbProxy } from '@/settings/abb-proxy'
 import {
   connectAnnas,
-  connectHardcover,
   connectTorBox,
   useAnnasAccount,
   useHardcoverAccount,
@@ -211,27 +211,6 @@ export function SettingsScreen() {
 
   const keyProblems = useKeyProblems()
   const hardcoverProblem = keyProblems.hardcover
-
-  /** Resolves with a problem to show in the dialog, or null once the key is saved. */
-  async function saveHardcoverKey(value: string) {
-    try {
-      const account = await connectHardcover(value)
-
-      setDialog(null)
-      showFeedback(
-        account?.email
-          ? t({
-              message: `Connected to Hardcover as ${account.email}`,
-              comment: 'Hardcover key saved, with the account email',
-            })
-          : t({ message: 'Connected to Hardcover', comment: 'Hardcover key saved' }),
-      )
-
-      return null
-    } catch (error) {
-      return hardcoverProblem(error instanceof Error ? error : new Error(String(error)))
-    }
-  }
 
   const proxySetup = useProxySetup()
   const proxyProblem = proxySetup.problem
@@ -647,17 +626,7 @@ export function SettingsScreen() {
           onDismiss={() => setDialog((current) => (current === 'removeTorbox' ? null : current))}
         />
       ) : null}
-      {dialog === 'hardcover' ? (
-        <TextDialog
-          title={t({ message: 'Hardcover API key', comment: 'Dialog title' })}
-          label={t({ message: 'API key', comment: 'Text field label' })}
-          initialValue=''
-          secret
-          confirmLabel={t({ message: 'Save', comment: 'Saves a setting' })}
-          onConfirm={saveHardcoverKey}
-          onDismiss={() => setDialog(null)}
-        />
-      ) : null}
+      {dialog === 'hardcover' ? <HardcoverKeyDialog onClose={() => setDialog(null)} /> : null}
       {dialog === 'removeHardcover' ? (
         <ConfirmDialog
           title={t({ message: 'Replace the Hardcover key?', comment: 'Dialog title' })}

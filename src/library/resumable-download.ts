@@ -48,6 +48,11 @@ export async function downloadResuming(
 
       return
     } catch (error) {
+      // Asked to carry on past the end, the server says no range is left: the file is whole.
+      if (offset > 0 && error instanceof Error && error.message.includes('HTTP 416')) {
+        return
+      }
+
       fruitless = sizeOf(file) > offset ? 0 : fruitless + 1
 
       if (signal.aborted || fruitless >= attemptsWithoutProgress) {

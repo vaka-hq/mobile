@@ -20,7 +20,7 @@ import { UnexpectedAnswerError } from './errors'
  * into the app's storage, and remembered with where the reader is and what they marked.
  */
 
-export const ebookSources = ['annas', 'libgen'] as const
+const ebookSources = ['annas', 'libgen'] as const
 
 export type EbookSource = (typeof ebookSources)[number]
 
@@ -43,7 +43,7 @@ export type EbookResult = {
  * `remote` is a file known and chosen but not on the phone; `done` has a copy here, kept for
  * offline reading or only in the cache while it is read.
  */
-export const ebookStatuses = ['remote', 'downloading', 'done', 'failed'] as const
+const ebookStatuses = ['remote', 'downloading', 'done', 'failed'] as const
 
 export type EbookStatus = (typeof ebookStatuses)[number]
 
@@ -398,13 +398,8 @@ function coverByIsbn(isbns: string[]) {
 
 let annasSession: { baseUrl: string; key: string } | null = null
 
-async function searchAnnasSignedIn(query: string, page: number, signal?: AbortSignal) {
-  const key = annasKey.get()
+async function searchAnnasSignedIn(key: string, query: string, page: number, signal?: AbortSignal) {
   const baseUrl = getPreferences().annasBaseUrl
-
-  if (!key) {
-    return { files: [], hasNextPage: false }
-  }
 
   // One sign-in per key and mirror; the phone's cookie store keeps the session.
   if (annasSession?.key !== key || annasSession.baseUrl !== baseUrl) {
@@ -454,10 +449,14 @@ export async function searchEbooksPage(
   signal?: AbortSignal,
 ): Promise<EbookSearchPage> {
   const none = Promise.resolve({ files: [], hasNextPage: false })
+  // Anna's Archive is only asked with a member key.
+  const key = place.sites.includes('annas') ? annasKey.get() : null
+  const askLibgen = place.sites.includes('libgen')
+  const asked = (key ? 1 : 0) + (askLibgen ? 1 : 0)
 
   const [annas, libgen] = await Promise.allSettled([
-    place.sites.includes('annas') ? searchAnnasSignedIn(query, place.page, signal) : none,
-    place.sites.includes('libgen')
+    key ? searchAnnasSignedIn(key, query, place.page, signal) : none,
+    askLibgen
       ? searchLibgen(getPreferences().libgenBaseUrl, query, place.page, signal).then(
           ({ files, hasNextPage }) => ({
             files: files.map((file): EbookResult => ({
@@ -471,8 +470,16 @@ export async function searchEbooksPage(
       : none,
   ])
 
-  if (annas.status === 'rejected' && libgen.status === 'rejected') {
-    throw libgen.reason instanceof Error ? libgen.reason : new Error(String(libgen.reason))
+  const failures = [libgen, annas].flatMap((site): unknown[] =>
+    site.status === 'rejected' ? [site.reason] : [],
+  )
+
+  // Every site asked for the first page failing is an error, even when only one was asked; on a
+  // later page, both must fail, since one alone only ends its own results.
+  if (failures.length > 0 && failures.length === (place.page === firstEbookPage.page ? asked : 2)) {
+    const [reason] = failures
+
+    throw reason instanceof Error ? reason : new Error(String(reason))
   }
 
   const seen = new Map<string, EbookResult>()
@@ -853,7 +860,6 @@ export async function forgetReadingOf(workId: string) {
   )
 }
 
-/** Remembers where each part of an e-book starts, as the reader found when opening it. */
 /**
  * An e-book's contents with where each part starts, read from its file when not known yet, as the
  * reader learns them on opening it. Null when the file is not on the phone or cannot be read; the
@@ -883,6 +889,7 @@ export async function learnSections(md5: string) {
   }
 }
 
+/** Remembers where each part of an e-book starts, as the reader found when opening it. */
 export async function saveSections(md5: string, sections: EbookSection[]) {
   const ebook = getEbook(md5)
 
@@ -899,8 +906,8 @@ export async function saveSections(md5: string, sections: EbookSection[]) {
 }
 
 /**
- * Makes a file the one a Hardcover book is read in. Nothing is downloaded: reading it fetches it,
- * and keeping it for offline reading is the listener's own choice.
+ * Makes a file the one a Hardcover book is read in. Nothing is downloaded: the book's page offers
+ * to download it, and only then to read it.
  */
 export async function chooseEbook(result: EbookResult, workId: string) {
   const previous = getEbook(result.md5)
@@ -908,7 +915,7 @@ export async function chooseEbook(result: EbookResult, workId: string) {
   await save({ ...recordOf(result, previous, workId), workId, chosenAt: Date.now() })
 }
 
-export const markKinds = ['highlight', 'bookmark'] as const
+const markKinds = ['highlight', 'bookmark'] as const
 
 export type MarkKind = (typeof markKinds)[number]
 

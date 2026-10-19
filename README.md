@@ -18,7 +18,7 @@ You need:
 - [Vite+](https://viteplus.dev) (`vp`), which runs every command in the project;
 - Node.js, the version in `.node-version`;
 - pnpm, the version in `package.json` (`packageManager`), which `vp install` uses;
-- JDK 17, and the Android SDK from Android Studio with platform 36 (Gradle adds the NDK and build
+- JDK 17, and the Android SDK from Android Studio with platform 37 (Gradle adds the NDK and build
   tools it needs);
 - an Android phone or emulator on Android 7 or newer.
 
@@ -52,7 +52,7 @@ reload over Metro. Native changes (modules, config plugins, native dependencies)
 - `src/` holds the app: routes in `src/app`, screens in `src/screens`, shared UI in `src/ui`, and
   the data, player and service clients beside them.
 - `modules/` holds the app's own native modules: the Compose components and e-book reader, the
-  proxy client and offline speech recognition.
+  proxy client, offline speech recognition and the installer of the app's updates.
 - `docs/architecture.md` explains how the app works.
 - `AGENTS.md` lists the conventions to follow when changing it.
 

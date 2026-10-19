@@ -105,11 +105,7 @@ export default defineConfig({
   },
   test: {
     // Live tests reach the real services; run them with `vp run test:live`.
-    exclude: [
-      ...(process.env.VAKA_LIVE_TESTS ? [] : ['**/*.live.test.ts']),
-      '**/node_modules/**',
-      '**/dist/**',
-    ],
+    exclude: process.env.VAKA_LIVE_TESTS ? [] : ['**/*.live.test.ts'],
     include: ['config/**/*.test.ts', 'src/**/*.test.ts'],
   },
 })

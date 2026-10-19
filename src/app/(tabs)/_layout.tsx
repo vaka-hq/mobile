@@ -1,19 +1,25 @@
 import { TabList, TabSlot, Tabs, TabTrigger } from 'expo-router/ui'
 import { View } from 'react-native'
-import { miniPlayerHeight, usePlayerLayout } from '@/player/expansion'
+import { BottomBar } from '@/components/bottom-bar'
+import { miniPlayerHeight, setTabBarHeight } from '@/player/expansion'
 import { usePlayerValue } from '@/player/use-player'
+import { StillView } from '../../../modules/ui'
 
 export default function TabsLayout() {
   const loaded = usePlayerValue((state) => state.book !== null)
-  const { tabBarHeight } = usePlayerLayout()
 
   return (
     <Tabs options={{ backBehavior: 'history' }}>
       <View style={{ flex: 1 }}>
         <TabSlot style={{ flex: 1 }} />
-        {/* Room for the mini player and the tab bar, which float above the stack. */}
+        {/* Room for the mini player, which floats above the tab bar in the player layer. */}
         {loaded ? <View style={{ height: miniPlayerHeight }} /> : null}
-        <View style={{ height: tabBarHeight }} />
+        {/* The tab bar stays put while the tabs slide under a screen opening or closing over them. */}
+        <View onLayout={(event) => setTabBarHeight(event.nativeEvent.layout.height)}>
+          <StillView>
+            <BottomBar />
+          </StillView>
+        </View>
       </View>
       <TabList style={{ display: 'none' }}>
         <TabTrigger name='library' href='/' />

@@ -28,6 +28,8 @@ class VakaViewsModule : Module() {
 
     View(GatedListView::class)
 
+    View(StillView::class) {}
+
     ExpoUIView<StepDotsProps>("StepDotsView") {
       Content { props ->
         StepDotsContent(props)

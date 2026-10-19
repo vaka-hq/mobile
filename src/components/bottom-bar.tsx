@@ -1,18 +1,12 @@
 import { useLingui } from '@lingui/react/macro'
-import { usePathname, useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
-import { View } from 'react-native'
+import { useTabTrigger } from 'expo-router/ui'
 import { Host } from '@/components/host'
-import { useTabsShown } from '@/components/tabs-shown'
-import { AnimatedVisibility, Column, EnterTransition, ExitTransition } from '@/lib/compose-ui'
-import { setTabBarHeight } from '@/player/expansion'
+import { Column } from '@/lib/compose-ui'
 import type { Glyph } from '@/ui/glyphs'
 import { GlyphIcon } from '@/ui/primitives'
 import { ShortNavigationBar } from '../../modules/ui'
 
 type TabName = 'library' | 'browse'
-
-const tabPaths: Record<TabName, '/' | '/browse'> = { library: '/', browse: '/browse' }
 
 type Tab = {
   name: TabName
@@ -29,30 +23,20 @@ function TabIcon({ tab }: { tab: Tab }) {
 
 /**
  * The Material 3 Expressive short navigation bar under the tabs; the mini player floats above it
- * in the player layer. It floats above the stack rather than in the tabs' screen, so screens slide
- * past it without it: it fades out as another screen opens over the tabs and in as they
- * return, and the tabs keep room for it.
+ * in the player layer. It is part of the tabs' screen, so a screen opening over them covers it and
+ * one closing reveals it, but it holds still while the tabs slide (`StillView`).
  */
 export function BottomBar() {
   const { t } = useLingui()
-  const router = useRouter()
-  const pathname = usePathname()
-  const shown = useTabsShown()
-  // The tab shown last stays selected while the bar fades out under another screen.
-  const [current, setCurrent] = useState<TabName>(pathname === '/browse' ? 'browse' : 'library')
-
-  useEffect(() => {
-    if (pathname === tabPaths.library || pathname === tabPaths.browse) {
-      setCurrent(pathname === tabPaths.browse ? 'browse' : 'library')
-    }
-  }, [pathname])
+  const libraryTrigger = useTabTrigger({ name: 'library' })
+  const browseTrigger = useTabTrigger({ name: 'browse' })
 
   const library: Tab = {
     name: 'library',
     label: t({ message: 'Library', comment: 'Navigation destination: saved audiobooks' }),
     icon: 'library',
     selectedIcon: 'libraryFilled',
-    focused: current === 'library',
+    focused: Boolean(libraryTrigger.trigger?.isFocused),
   }
 
   const browse: Tab = {
@@ -63,49 +47,33 @@ export function BottomBar() {
     }),
     icon: 'browse',
     selectedIcon: 'browseFilled',
-    focused: current === 'browse',
+    focused: Boolean(browseTrigger.trigger?.isFocused),
   }
 
   const tabs = [library, browse]
 
   return (
-    <View
-      pointerEvents='box-none'
-      style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}
-      // Measured while shown; the mini player sits above it and the tabs keep room for it.
-      onLayout={(event) => {
-        const { height } = event.nativeEvent.layout
+    <Host matchContents={{ vertical: true }} style={{ width: '100%' }}>
+      <Column>
+        <ShortNavigationBar
+          labels={[library.label, browse.label]}
+          icons={[
+            <TabIcon key={library.name} tab={library} />,
+            <TabIcon key={browse.name} tab={browse} />,
+          ]}
+          selectedIndex={Math.max(
+            0,
+            tabs.findIndex((tab) => tab.focused),
+          )}
+          onSelect={(index) => {
+            const tab = tabs[index]
 
-        if (height > 0) {
-          setTabBarHeight(height)
-        }
-      }}
-    >
-      <Host matchContents={{ vertical: true }} style={{ width: '100%' }}>
-        <Column>
-          <AnimatedVisibility
-            visible={shown}
-            enterTransition={EnterTransition.fadeIn()}
-            exitTransition={ExitTransition.fadeOut()}
-          >
-            <ShortNavigationBar
-              labels={[library.label, browse.label]}
-              icons={[
-                <TabIcon key={library.name} tab={library} />,
-                <TabIcon key={browse.name} tab={browse} />,
-              ]}
-              selectedIndex={current === 'browse' ? 1 : 0}
-              onSelect={(index) => {
-                const tab = tabs[index]
-
-                if (tab && !tab.focused) {
-                  router.navigate(tabPaths[tab.name])
-                }
-              }}
-            />
-          </AnimatedVisibility>
-        </Column>
-      </Host>
-    </View>
+            if (tab && !tab.focused) {
+              libraryTrigger.switchTab(tab.name, { resetOnFocus: false })
+            }
+          }}
+        />
+      </Column>
+    </Host>
   )
 }

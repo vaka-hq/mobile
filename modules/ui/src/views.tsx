@@ -126,6 +126,18 @@ export function GatedList(props: GatedListProps) {
   return <NativeGatedListView {...props} />
 }
 
+const NativeStillView: React.ComponentType<{ children: ReactNode; style?: ViewStyle }> =
+  requireNativeView('VakaViews', 'StillView')
+
+/**
+ * Holds its content still while the stack slides the screen it is on sideways, as the tab bar
+ * stays put under a screen opening or closing over the tabs; a back swipe's preview moves it with
+ * its screen.
+ */
+export function StillView({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+  return <NativeStillView style={style}>{children}</NativeStillView>
+}
+
 const NativeStepDotsView: React.ComponentType<{ count: number; current: number }> =
   requireNativeView('VakaViews', 'StepDotsView')
 

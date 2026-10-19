@@ -221,7 +221,7 @@ importers:
         specifier: 58.0.13
         version: 58.0.13(expo@58.0.12)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))
       expo-file-system:
-        specifier: ~58.0.9
+        specifier: 58.0.9
         version: 58.0.9(expo@58.0.12)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))
       expo-linking:
         specifier: 58.0.13

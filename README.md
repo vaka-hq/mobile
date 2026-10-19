@@ -33,7 +33,7 @@ Vaka, since it has native modules of its own.
 On first start the app asks for a TorBox API key (torbox.app → Settings → API) and, optionally, a
 Hardcover API key with `read:catalog` access (hardcover.app → Settings → Hardcover API) and an
 HTTP proxy for AudioBookBay, or restores a backup instead. All of them can be added later in
-Settings. To keep the library in step with your Hardcover shelves (Settings → Hardcover library),
+Settings. To keep the library in step with your Hardcover shelves (Settings → Library),
 give the key `read:library` and `write:library` too.
 
 ## Developing

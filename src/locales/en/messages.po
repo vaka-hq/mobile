@@ -268,6 +268,11 @@ msgstr "Add streaming key"
 msgid "Add to library"
 msgstr "Add to library"
 
+#. Library sync row when the chosen source has no key yet, with its name
+#: src/screens/settings.tsx
+msgid "Add your {sourceName} API key to sync"
+msgstr "Add your {sourceName} API key to sync"
+
 #. Error when book details need a Hardcover key, which is not set
 #: src/ui/errors.ts
 msgid "Add your Hardcover API key in Settings to load book details."
@@ -845,7 +850,7 @@ msgstr "Couldn’t check for updates"
 msgid "Couldn’t check for updates. Check your connection and try again."
 msgstr "Couldn’t check for updates. Check your connection and try again."
 
-#. Hardcover library setting after a sync failed for a passing reason
+#. Library sync row after a sync failed for a passing reason
 #: src/screens/settings.tsx
 msgid "Couldn’t sync. It tries again soon."
 msgstr "Couldn’t sync. It tries again soon."
@@ -1278,6 +1283,7 @@ msgstr "Green"
 
 #. Name of the book metadata service
 #. Name of the book metadata service
+#. Name of the book metadata service
 #: src/screens/book.tsx
 #: src/screens/settings.tsx
 msgid "Hardcover"
@@ -1309,12 +1315,6 @@ msgstr "Hardcover did not accept this API key"
 #: src/ui/errors.ts
 msgid "Hardcover is busy. Try again in a minute."
 msgstr "Hardcover is busy. Try again in a minute."
-
-#. Dialog title for keeping the library in step with Hardcover
-#. Setting keeping the library in step with the books on Hardcover; Hardcover is a name
-#: src/screens/settings.tsx
-msgid "Hardcover library"
-msgstr "Hardcover library"
 
 #. Start-up check: the saved Hardcover key was rejected or lacks access
 #: src/components/account-alert.tsx
@@ -1559,9 +1559,11 @@ msgid "Less than a minute left"
 msgstr "Less than a minute left"
 
 #. Navigation destination: saved audiobooks
+#. Settings section
 #. Title of the library screen
 #: src/components/bottom-bar.tsx
 #: src/screens/library.tsx
+#: src/screens/settings.tsx
 msgid "Library"
 msgstr "Library"
 
@@ -1943,10 +1945,8 @@ msgstr "Nothing saved yet"
 msgid "Nothing to add"
 msgstr "Nothing to add"
 
-#. Hardcover library setting when not syncing
 #. Sleep timer option
 #. Sync setting: not carried over
-#. Turns a setting off
 #: src/screens/settings.tsx
 #: src/ui/sheets.tsx
 msgid "Off"
@@ -1956,12 +1956,6 @@ msgstr "Off"
 #: src/components/abb-silence-alert.tsx
 msgid "OK"
 msgstr "OK"
-
-#. Hardcover library setting when syncing
-#. Turns a setting on
-#: src/screens/settings.tsx
-msgid "On"
-msgstr "On"
 
 #. Asks to replace the TorBox download in progress; the name is a torrent’s title in quotes
 #: src/components/download-guard.tsx
@@ -2713,12 +2707,28 @@ msgstr "Switching to reading"
 msgid "Sync"
 msgstr "Sync"
 
-#. Hardcover library setting with when it last synced, such as “Synced 14:05”
+#. Switch keeping the library in step with the sync source
+#: src/screens/settings.tsx
+msgid "Sync library"
+msgstr "Sync library"
+
+#. Dialog title
+#. Setting for which service the library is kept in step with
+#: src/screens/settings.tsx
+msgid "Sync source"
+msgstr "Sync source"
+
+#. Library sync row with when it last synced, such as “Synced 14:05”
 #: src/screens/settings.tsx
 msgid "Synced {syncedTime}"
 msgstr "Synced {syncedTime}"
 
-#. Hardcover library setting while it syncs
+#. Shown after holding the library sync row, with the source name
+#: src/screens/settings.tsx
+msgid "Syncing everything again from {sourceName}"
+msgstr "Syncing everything again from {sourceName}"
+
+#. Library sync row while it syncs
 #: src/screens/settings.tsx
 msgid "Syncing…"
 msgstr "Syncing…"
@@ -3151,10 +3161,10 @@ msgstr "You’ll lose your progress, notes and downloads."
 msgid "You’ll lose your progress."
 msgstr "You’ll lose your progress."
 
-#. Hardcover library setting when the API key lacks the library permissions; Hardcover is a name
+#. Library sync row when the API key lacks library permissions, with the source name
 #: src/screens/settings.tsx
-msgid "Your key can’t change your Hardcover library. Replace it with one that can."
-msgstr "Your key can’t change your Hardcover library. Replace it with one that can."
+msgid "Your {sourceName} key can’t change your library. Replace it."
+msgstr "Your {sourceName} key can’t change your library. Replace it."
 
 #. Library load failure
 #: src/screens/library.tsx

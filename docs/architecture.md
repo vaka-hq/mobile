@@ -174,13 +174,21 @@ answers name the problem: a rejected key, a missing `read:catalog` permission or
 Without a key the app works with AudioBookBay details. Hardcover's personal keys expire on the date
 chosen when creating them; replace the key in Settings when that happens.
 
-For Settings → Hardcover library the key also needs your library (`read:library` and
+For library sync with Hardcover the key also needs your library (`read:library` and
 `write:library`); `read:me:email` lets Settings show the account's email.
 
-## Hardcover library
+## Library sync
 
-With Settings → Hardcover library on, the library follows your Hardcover shelves
-(`src/library/shelves.ts`). Hardcover is the source of truth, and nothing is ever deleted there.
+Settings → Library keeps the library in step with one sync source at a time: Sync source picks
+it, and the Sync library switch turns syncing on or off. Holding the switch's row while it is on
+syncs everything again from the source. Sources are listed in `src/library/library-sync.ts`,
+which also decides when runs happen; choosing another source stops the one before and forgets what
+it knew. Hardcover is the only source so far.
+
+### Hardcover
+
+The library follows your Hardcover shelves (`src/library/shelves.ts`). Hardcover is the source of
+truth, and nothing is ever deleted there.
 
 - **When:** at start, on returning to the app, ten seconds after the library changes (a book
   added, played, paused, finished or removed) and every five minutes while listening. Each run reads
@@ -201,8 +209,9 @@ With Settings → Hardcover library on, the library follows your Hardcover shelv
   nothing there.
 - **How Hardcover keeps reads:** setting Currently Reading opens a read and setting Read finishes
   it, so the app sets the status first and then only fills in the place, sending every field of the
-  read. Writes are paced under the 60-a-minute limit. A key for another account starts afresh, and
-  turning sync off forgets the baselines.
+  read. Writes are paced under the 60-a-minute limit. A key for another account starts afresh;
+  turning sync off forgets the baselines, and syncing everything again forgets them first, so
+  Hardcover wins wherever it says anything.
 
 ## Builds
 

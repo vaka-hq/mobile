@@ -41,6 +41,7 @@ import {
   ListItem,
   LoadingIndicator,
   Row,
+  Switch,
   Text,
   TextButton,
   TextField,
@@ -239,6 +240,8 @@ export type GroupRow = {
   drillIn?: boolean
   /** A trailing button with its own action, such as cancelling a download; replaces the badge. */
   action?: { glyph: Glyph; description: string; onPress: () => void }
+  /** A switch at the row's end, on or off; tapping the row flips it through `onPress`. */
+  toggle?: boolean
   /** Something about the row is still being found out: a small spinner at its end. */
   pending?: boolean
   /** Shown faded and not tappable, such as a choice that is still being checked. */
@@ -340,7 +343,7 @@ export function Group({
             <ListItem
               // Compose reads a ListItem's slots once, so a row that gains or loses a line or a
               // trailing mark, such as a value that loads later, is drawn afresh.
-              key={`${row.key}:${row.value ? 'v' : ''}${row.badge ? 'b' : ''}${row.drillIn ? 'd' : ''}${row.action ? 'a' : ''}${row.pending ? 'p' : ''}`}
+              key={`${row.key}:${row.value ? 'v' : ''}${row.badge ? 'b' : ''}${row.drillIn ? 'd' : ''}${row.action ? 'a' : ''}${row.pending ? 'p' : ''}${row.toggle === undefined ? '' : 't'}`}
               colors={{
                 containerColor: row.selected
                   ? colors.secondaryContainer
@@ -395,7 +398,15 @@ export function Group({
                   </Row>
                 </ListItem.TrailingContent>
               ) : null}
-              {row.pending ? (
+              {row.toggle !== undefined ? (
+                <ListItem.TrailingContent>
+                  <Switch
+                    value={row.toggle}
+                    enabled={!row.disabled}
+                    onCheckedChange={() => row.onPress?.()}
+                  />
+                </ListItem.TrailingContent>
+              ) : row.pending ? (
                 <ListItem.TrailingContent>
                   {/* The app's loading indicator, as on every page still loading. */}
                   <LoadingIndicator modifiers={[size(32, 32)]} />

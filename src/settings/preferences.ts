@@ -6,6 +6,11 @@ import { defaultAnnasArchiveUrl } from '@/sources/annas-archive/client'
 import { defaultAudioBookBayUrl } from '@/sources/audiobookbay/client'
 import { defaultLibgenUrl } from '@/sources/libgen/client'
 
+/** The services the library can sync with (`src/library/library-sync.ts`). */
+export const syncSourceIds = ['hardcover'] as const
+
+export type SyncSourceId = (typeof syncSourceIds)[number]
+
 /** Android's player accepts rates up to 2×. */
 export const maxPlaybackSpeed = 3
 
@@ -60,8 +65,10 @@ const preferencesSchema = z.object({
    * address; they are told again only after it has answered in between.
    */
   abbSilenceNoticed: z.boolean().catch(false),
-  /** The library is kept in step with the listener's Hardcover shelves. */
-  hardcoverShelves: z.boolean().catch(false),
+  /** The library is kept in step with the sync source. */
+  librarySync: z.boolean().catch(false),
+  /** Which service the library syncs with; one at a time. */
+  syncSource: z.enum(syncSourceIds).catch('hardcover'),
   /** Whose Hardcover shelves the last sync read, so a key for another account starts afresh. */
   hardcoverShelvesUser: z.number().nullable().catch(null),
   /** The listener closed Browse's notice about adding a Hardcover key; it does not show again. */

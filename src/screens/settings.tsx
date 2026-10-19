@@ -20,9 +20,15 @@ import { exportBackup, hasSecrets } from '@/library/backup'
 import { clearEbookCache, ebookBytes, ebookCacheBytes, useEbooks } from '@/library/ebooks'
 import { invalidateLibrary } from '@/library/invalidation'
 import { isLanguage } from '@/library/languages'
+import {
+  chooseSyncSource,
+  resyncLibrary,
+  setLibrarySync,
+  syncSources,
+  useLibrarySync,
+} from '@/library/library-sync'
 import { offlineBytes, useOfflineBooks } from '@/library/offline'
 import { cachedMetadataSize, clearCachedMetadata } from '@/library/repository'
-import { isShelfKeyProblem, setShelfSync, useShelfSync } from '@/library/shelves'
 import { installSpeechModel, removeSpeechModel, useSpeechModel } from '@/library/speech-model'
 import { forgetStreamUrls } from '@/library/streams'
 import { audioCacheSize, clearAudioCache } from '@/player/controller'
@@ -40,8 +46,10 @@ import { hardcoverKey, useHardcoverKey } from '@/settings/hardcover-key'
 import { useKeyProblems } from '@/settings/key-problems'
 import {
   playbackSpeeds,
+  type SyncSourceId,
   setPreference,
   skipIntervals,
+  syncSourceIds,
   usePreferences,
 } from '@/settings/preferences'
 import { torBoxKey, useTorBoxKey } from '@/settings/torbox-key'
@@ -60,7 +68,7 @@ type Dialog =
   | 'removeTorbox'
   | 'hardcover'
   | 'removeHardcover'
-  | 'hardcoverShelves'
+  | 'syncSource'
   | 'speed'
   | 'skipBack'
   | 'readingSync'
@@ -87,7 +95,9 @@ export function SettingsScreen() {
   const preferences = usePreferences()
   const speechModel = useSpeechModel()
   const updateState = useUpdateState()
-  const shelfSync = useShelfSync()
+  const librarySync = useLibrarySync()
+  // Saving a key asked for to turn sync on turns it on.
+  const [syncAfterKey, setSyncAfterKey] = useState(false)
 
   const speechProgress = i18n.number(
     speechModel.status === 'downloading' ? speechModel.progress : 0,
@@ -285,32 +295,64 @@ export function SettingsScreen() {
           (hardcoverCheck.data?.username ? `@${hardcoverCheck.data.username}` : null) ??
           t({ message: 'Connected', comment: 'Hardcover row with a valid key' }))
 
-  const syncedTime = shelfSync.syncedAt
-    ? i18n.date(new Date(shelfSync.syncedAt), { timeStyle: 'short' })
+  const sourceNames = {
+    hardcover: t({ message: 'Hardcover', comment: 'Name of the book metadata service' }),
+  } satisfies Record<SyncSourceId, string>
+
+  const source = syncSources[preferences.syncSource]
+  const sourceName = sourceNames[preferences.syncSource]
+
+  const syncedTime = librarySync.syncedAt
+    ? i18n.date(new Date(librarySync.syncedAt), { timeStyle: 'short' })
     : ''
 
-  const shelvesValue = !preferences.hardcoverShelves
-    ? t({ message: 'Off', comment: 'Hardcover library setting when not syncing' })
-    : shelfSync.syncing
-      ? t({ message: 'Syncing…', comment: 'Hardcover library setting while it syncs' })
-      : shelfSync.error
-        ? isShelfKeyProblem(shelfSync.error)
-          ? t({
-              message:
-                'Your key can’t change your Hardcover library. Replace it with one that can.',
-              comment:
-                'Hardcover library setting when the API key lacks the library permissions; Hardcover is a name',
-            })
-          : t({
-              message: 'Couldn’t sync. It tries again soon.',
-              comment: 'Hardcover library setting after a sync failed for a passing reason',
-            })
-        : shelfSync.syncedAt
-          ? t({
-              message: `Synced ${syncedTime}`,
-              comment: 'Hardcover library setting with when it last synced, such as “Synced 14:05”',
-            })
-          : t({ message: 'On', comment: 'Hardcover library setting when syncing' })
+  const syncValue = !source.ready()
+    ? t({
+        message: `Add your ${sourceName} API key to sync`,
+        comment: 'Library sync row when the chosen source has no key yet, with its name',
+      })
+    : !preferences.librarySync
+      ? undefined
+      : librarySync.syncing
+        ? t({ message: 'Syncing…', comment: 'Library sync row while it syncs' })
+        : librarySync.error
+          ? source.keyProblem(librarySync.error)
+            ? t({
+                message: `Your ${sourceName} key can’t change your library. Replace it.`,
+                comment:
+                  'Library sync row when the API key lacks library permissions, with the source name',
+              })
+            : t({
+                message: 'Couldn’t sync. It tries again soon.',
+                comment: 'Library sync row after a sync failed for a passing reason',
+              })
+          : librarySync.syncedAt
+            ? t({
+                message: `Synced ${syncedTime}`,
+                comment: 'Library sync row with when it last synced, such as “Synced 14:05”',
+              })
+            : undefined
+
+  function toggleLibrarySync() {
+    if (preferences.librarySync) {
+      void setLibrarySync(false)
+    } else if (source.ready()) {
+      void setLibrarySync(true)
+    } else if (preferences.syncSource === 'hardcover') {
+      setSyncAfterKey(true)
+      setDialog('hardcover')
+    }
+  }
+
+  function resync() {
+    showFeedback(
+      t({
+        message: `Syncing everything again from ${sourceName}`,
+        comment: 'Shown after holding the library sync row, with the source name',
+      }),
+    )
+    void resyncLibrary()
+  }
 
   const channelLabels = {
     stable: t({ message: 'Stable', comment: 'Update channel: tested releases only' }),
@@ -376,28 +418,40 @@ export function SettingsScreen() {
               value: hardcoverValue,
               onPress: () => setDialog(hardcoverApiKey ? 'removeHardcover' : 'hardcover'),
             },
-            // The shelves are only there to sync with once a Hardcover key is saved.
-            ...(hardcoverApiKey
-              ? [
-                  {
-                    key: 'hardcoverShelves',
-                    glyph: 'shelfSync' as const,
-                    label: t({
-                      message: 'Hardcover library',
-                      comment:
-                        'Setting keeping the library in step with the books on Hardcover; Hardcover is a name',
-                    }),
-                    value: shelvesValue,
-                    onPress: () => setDialog('hardcoverShelves'),
-                  },
-                ]
-              : []),
             {
               key: 'annas',
               glyph: 'annasArchive',
               label: t({ message: 'Anna’s Archive', comment: 'Name of the e-book library' }),
               value: annasValue,
               onPress: () => setDialog(annasSecret ? 'removeAnnas' : 'annas'),
+            },
+          ]}
+        />
+        <Group
+          title={t({ message: 'Library', comment: 'Settings section' })}
+          rows={[
+            {
+              key: 'syncSource',
+              glyph: 'library',
+              label: t({
+                message: 'Sync source',
+                comment: 'Setting for which service the library is kept in step with',
+              }),
+              value: sourceName,
+              onPress: () => setDialog('syncSource'),
+            },
+            {
+              key: 'librarySync',
+              glyph: 'shelfSync',
+              label: t({
+                message: 'Sync library',
+                comment: 'Switch keeping the library in step with the sync source',
+              }),
+              value: syncValue,
+              toggle: preferences.librarySync,
+              onPress: toggleLibrarySync,
+              // Held while on, it syncs everything again from the source.
+              onLongPress: preferences.librarySync && source.ready() ? resync : undefined,
             },
           ]}
         />
@@ -672,19 +726,25 @@ export function SettingsScreen() {
           onDismiss={() => setDialog((current) => (current === 'removeTorbox' ? null : current))}
         />
       ) : null}
-      {dialog === 'hardcover' ? <HardcoverKeyDialog onClose={() => setDialog(null)} /> : null}
-      {dialog === 'hardcoverShelves' ? (
+      {dialog === 'hardcover' ? (
+        <HardcoverKeyDialog
+          onClose={() => {
+            setDialog(null)
+
+            if (syncAfterKey && hardcoverKey.get()) {
+              void setLibrarySync(true)
+            }
+
+            setSyncAfterKey(false)
+          }}
+        />
+      ) : null}
+      {dialog === 'syncSource' ? (
         <ChoiceDialog
-          title={t({
-            message: 'Hardcover library',
-            comment: 'Dialog title for keeping the library in step with Hardcover',
-          })}
-          options={[
-            { value: 'on' as const, label: t({ message: 'On', comment: 'Turns a setting on' }) },
-            { value: 'off' as const, label: t({ message: 'Off', comment: 'Turns a setting off' }) },
-          ]}
-          selected={preferences.hardcoverShelves ? 'on' : 'off'}
-          onSelect={(choice) => void setShelfSync(choice === 'on')}
+          title={t({ message: 'Sync source', comment: 'Dialog title' })}
+          options={syncSourceIds.map((id) => ({ value: id, label: sourceNames[id] }))}
+          selected={preferences.syncSource}
+          onSelect={(id) => void chooseSyncSource(id)}
           onDismiss={() => setDialog(null)}
         />
       ) : null}

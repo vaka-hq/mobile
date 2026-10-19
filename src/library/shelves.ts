@@ -1,5 +1,3 @@
-import { useSyncExternalStore } from 'react'
-import { AppState } from 'react-native'
 import { getState, seekTo } from '@/player/controller'
 import { hardcoverKey } from '@/settings/hardcover-key'
 import { getPreferences, setPreference } from '@/settings/preferences'
@@ -7,13 +5,14 @@ import {
   addToShelf,
   fetchShelves,
   HardcoverError,
+  HardcoverNotConnectedError,
   type HardcoverShelfEntry,
   type HardcoverWork,
   saveReadProgress,
   setShelfStatus,
 } from '@/sources/hardcover/client'
 import { hardcoverWorks } from './catalog'
-import { invalidateLibrary, onLibraryChange } from './invalidation'
+import { invalidateLibrary } from './invalidation'
 import { hardcoverWorkId, workIdOf } from './model'
 import {
   addFromShelves,
@@ -30,52 +29,12 @@ import {
 import { planShelf, type ShelfAction } from './shelf-sync'
 
 /**
- * Keeps the library in step with the listener's Hardcover shelves while sync is on in Settings:
- * at start, on returning to the app, soon after the library changes and every few minutes while
- * listening. Each run reads all the shelves in one request and changes only what differs.
+ * Hardcover as the library's sync source: the listener's shelves, kept in step book by book. When
+ * runs happen is up to `library-sync.ts`.
  */
-
-export type ShelfSyncState = {
-  syncing: boolean
-  /** When the last run finished, null before the first. */
-  syncedAt: number | null
-  /** Why the last run stopped short, until one gets through. */
-  error: Error | null
-}
-
-let state: ShelfSyncState = { syncing: false, syncedAt: null, error: null }
-
-const listeners = new Set<() => void>()
-
-function update(next: Partial<ShelfSyncState>) {
-  state = { ...state, ...next }
-
-  for (const listener of listeners) {
-    listener()
-  }
-}
-
-export function useShelfSync() {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener)
-
-      return () => {
-        listeners.delete(listener)
-      }
-    },
-    () => state,
-  )
-}
 
 /** Changes sent there are paced to Hardcover's limit of 60 requests a minute. */
 const requestGapMs = 1100
-
-/** A change here is sent this long after it, so a burst of changes goes in one run. */
-const settleMs = 10_000
-
-/** While listening, the place is sent at most this often. */
-const listeningEveryMs = 5 * 60_000
 
 function wait(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -202,9 +161,13 @@ async function detailsFor(plans: Map<number, ShelfAction[]>, books: Map<number, 
   return needed.length > 0 ? hardcoverWorks(needed) : new Map<number, HardcoverWork>()
 }
 
-async function run() {
-  if (!getPreferences().hardcoverShelves || !hardcoverKey.get()) {
-    return
+/**
+ * One run: reads all the shelves in one request and carries out each book's plan. Throws for a
+ * run that could not get through, such as without a key or with one lacking library access.
+ */
+export async function syncHardcoverShelves() {
+  if (!hardcoverKey.get()) {
+    throw new HardcoverNotConnectedError()
   }
 
   // Listening saved from here on is newer than this run and goes out with the next.
@@ -267,97 +230,16 @@ async function run() {
   }
 }
 
-let running: Promise<void> | null = null
-
-let rerun = false
-
-/** Syncs now, or once the run under way ends. */
-export function syncShelves(): Promise<void> {
-  if (running) {
-    rerun = true
-
-    return running
-  }
-
-  running = (async () => {
-    update({ syncing: true })
-
-    try {
-      do {
-        rerun = false
-        await run()
-      } while (rerun)
-
-      update({ syncing: false, syncedAt: Date.now(), error: null })
-    } catch (error) {
-      update({ syncing: false, error: error instanceof Error ? error : new Error(String(error)) })
-    } finally {
-      running = null
-    }
-  })()
-
-  return running
-}
-
-/** Turns sync on, syncing at once, or off, forgetting what the last sync knew. */
-export async function setShelfSync(enabled: boolean) {
-  await setPreference('hardcoverShelves', enabled)
-
-  if (enabled) {
-    await syncShelves()
-  } else {
-    await forgetShelves()
-    update({ syncedAt: null, error: null })
-  }
+/** Syncs afresh, as if for the first time: Hardcover's shelves win wherever they say anything. */
+export async function resyncHardcoverShelves() {
+  await forgetShelves()
+  await syncHardcoverShelves()
 }
 
 /** Whether a failure says the key cannot be used for the shelves, rather than a passing fault. */
-export function isShelfKeyProblem(error: Error | null) {
+export function isShelfKeyProblem(error: Error) {
   return (
     error instanceof HardcoverError &&
     (error.reason === 'missingScope' || error.reason === 'rejectedKey')
   )
-}
-
-let settleTimer: ReturnType<typeof setTimeout> | null = null
-
-let started = false
-
-/** Starts keeping the shelves in step for as long as the app runs. */
-export function startShelfSync() {
-  if (started) {
-    return
-  }
-
-  started = true
-
-  const soon = () => {
-    if (settleTimer) {
-      clearTimeout(settleTimer)
-    }
-
-    settleTimer = setTimeout(() => {
-      settleTimer = null
-      void syncShelves()
-    }, settleMs)
-  }
-
-  onLibraryChange((change) => {
-    // The library changing under a run is the run's own doing.
-    if (state.syncing || !getPreferences().hardcoverShelves) {
-      return
-    }
-
-    if (change === 'library' || Date.now() - (state.syncedAt ?? 0) > listeningEveryMs) {
-      soon()
-    }
-  })
-
-  AppState.addEventListener('change', (next) => {
-    if (next === 'active') {
-      void syncShelves()
-    }
-  })
-
-  void syncShelves()
 }

@@ -18,8 +18,8 @@ import { FeedbackProvider } from '@/lib/feedback'
 import { queryClient } from '@/lib/query-client'
 import { rootBackgroundColor } from '@/lib/root-background'
 import { checkForUpdatesDaily } from '@/library/app-updates'
+import { startLibrarySync } from '@/library/library-sync'
 import { resumeOfflineDownloads } from '@/library/offline'
-import { startShelfSync } from '@/library/shelves'
 import { startPlayer } from '@/player/controller'
 
 export const unstable_settings = { initialRouteName: '(tabs)' }
@@ -43,7 +43,7 @@ function AppProviders() {
     startPlayer().catch(() => undefined)
     resumeOfflineDownloads()
     checkForUpdatesDaily()
-    startShelfSync()
+    startLibrarySync()
   }, [])
 
   return (

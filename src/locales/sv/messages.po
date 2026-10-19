@@ -268,7 +268,7 @@ msgstr "Lägg till streamingnyckel"
 msgid "Add to library"
 msgstr "Lägg till i biblioteket"
 
-#. Library sync row when the chosen source has no key yet, with its name
+#. Library sync status when the chosen provider has no key yet, with its name
 #: src/screens/settings.tsx
 msgid "Add your {sourceName} API key to sync"
 msgstr "Lägg till din API-nyckel för {sourceName} för att synka"
@@ -850,7 +850,7 @@ msgstr "Det gick inte att söka efter uppdateringar"
 msgid "Couldn’t check for updates. Check your connection and try again."
 msgstr "Det gick inte att söka efter uppdateringar. Kontrollera anslutningen och försök igen."
 
-#. Library sync row after a sync failed for a passing reason
+#. Library sync status after a sync failed for a passing reason
 #: src/screens/settings.tsx
 msgid "Couldn’t sync. It tries again soon."
 msgstr "Kunde inte synka. Försöker igen snart."
@@ -1918,6 +1918,11 @@ msgctxt "book status"
 msgid "Not started"
 msgstr "Inte påbörjad"
 
+#. Library sync status before the first sync
+#: src/screens/settings.tsx
+msgid "Not synced yet"
+msgstr "Inte synkat än"
+
 #. Title of the dialog for a bookmark’s note
 #. Title of the dialog for a highlight’s note
 #: src/components/book-sheets.tsx
@@ -2713,12 +2718,7 @@ msgstr "Byter till lyssning"
 msgid "Switching to reading"
 msgstr "Byter till läsning"
 
-#. Switch keeping the library in step with the sync source
-#: src/screens/settings.tsx
-msgid "Sync library"
-msgstr "Synka biblioteket"
-
-#. Library sync row with when it last synced, such as “Synced 14:05”
+#. Library sync status with when it last synced, such as “Synced 14:05”
 #: src/screens/settings.tsx
 msgid "Synced {syncedTime}"
 msgstr "Synkat {syncedTime}"
@@ -2728,7 +2728,7 @@ msgstr "Synkat {syncedTime}"
 msgid "Syncing everything again from {sourceName}"
 msgstr "Synkar allt igen från {sourceName}"
 
-#. Library sync row while it syncs
+#. Library sync status while it syncs
 #: src/screens/settings.tsx
 msgid "Syncing…"
 msgstr "Synkar…"
@@ -3161,7 +3161,7 @@ msgstr "Du förlorar ditt förlopp, dina anteckningar och nedladdningar."
 msgid "You’ll lose your progress."
 msgstr "Du förlorar ditt förlopp."
 
-#. Library sync row when the API key lacks library permissions, with the source name
+#. Library sync status when the API key lacks library permissions, with the provider name
 #: src/screens/settings.tsx
 msgid "Your {sourceName} key can’t change your library. Replace it."
 msgstr "Din nyckel för {sourceName} kan inte ändra ditt bibliotek. Byt ut den."

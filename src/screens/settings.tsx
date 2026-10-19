@@ -306,32 +306,33 @@ export function SettingsScreen() {
     ? i18n.date(new Date(librarySync.syncedAt), { timeStyle: 'short' })
     : ''
 
-  const syncValue = !source.ready()
+  // How syncing stands, in the row under the provider: while on, or when it cannot sync at all.
+  const syncStatus = !source.ready()
     ? t({
         message: `Add your ${sourceName} API key to sync`,
-        comment: 'Library sync row when the chosen source has no key yet, with its name',
+        comment: 'Library sync status when the chosen provider has no key yet, with its name',
       })
     : !preferences.librarySync
-      ? undefined
+      ? null
       : librarySync.syncing
-        ? t({ message: 'Syncing…', comment: 'Library sync row while it syncs' })
+        ? t({ message: 'Syncing…', comment: 'Library sync status while it syncs' })
         : librarySync.error
           ? source.keyProblem(librarySync.error)
             ? t({
                 message: `Your ${sourceName} key can’t change your library. Replace it.`,
                 comment:
-                  'Library sync row when the API key lacks library permissions, with the source name',
+                  'Library sync status when the API key lacks library permissions, with the provider name',
               })
             : t({
                 message: 'Couldn’t sync. It tries again soon.',
-                comment: 'Library sync row after a sync failed for a passing reason',
+                comment: 'Library sync status after a sync failed for a passing reason',
               })
           : librarySync.syncedAt
             ? t({
                 message: `Synced ${syncedTime}`,
-                comment: 'Library sync row with when it last synced, such as “Synced 14:05”',
+                comment: 'Library sync status with when it last synced, such as “Synced 14:05”',
               })
-            : undefined
+            : t({ message: 'Not synced yet', comment: 'Library sync status before the first sync' })
 
   function toggleLibrarySync() {
     if (preferences.librarySync) {
@@ -440,20 +441,21 @@ export function SettingsScreen() {
               }),
               value: sourceName,
               onPress: () => setDialog('syncSource'),
-            },
-            {
-              key: 'librarySync',
-              glyph: 'shelfSync',
-              label: t({
-                message: 'Sync library',
-                comment: 'Switch keeping the library in step with the sync source',
-              }),
-              value: syncValue,
+              // The switch turns syncing with the provider on and off.
               toggle: preferences.librarySync,
-              onPress: toggleLibrarySync,
-              // Held while on, it syncs everything again from the source.
-              onLongPress: preferences.librarySync && source.ready() ? resync : undefined,
+              onToggle: toggleLibrarySync,
             },
+            ...(syncStatus
+              ? [
+                  {
+                    key: 'syncStatus',
+                    glyph: 'shelfSync' as const,
+                    label: syncStatus,
+                    // Held while on, it syncs everything again from the provider.
+                    onLongPress: preferences.librarySync && source.ready() ? resync : undefined,
+                  },
+                ]
+              : []),
           ]}
         />
         <Group

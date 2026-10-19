@@ -240,8 +240,12 @@ export type GroupRow = {
   drillIn?: boolean
   /** A trailing button with its own action, such as cancelling a download; replaces the badge. */
   action?: { glyph: Glyph; description: string; onPress: () => void }
-  /** A switch at the row's end, on or off; tapping the row flips it through `onPress`. */
+  /**
+   * A switch at the row's end, on or off. It flips through `onToggle`, or through `onPress` for a
+   * row that is only the switch.
+   */
   toggle?: boolean
+  onToggle?: () => void
   /** Something about the row is still being found out: a small spinner at its end. */
   pending?: boolean
   /** Shown faded and not tappable, such as a choice that is still being checked. */
@@ -403,7 +407,7 @@ export function Group({
                   <Switch
                     value={row.toggle}
                     enabled={!row.disabled}
-                    onCheckedChange={() => row.onPress?.()}
+                    onCheckedChange={() => (row.onToggle ?? row.onPress)?.()}
                   />
                 </ListItem.TrailingContent>
               ) : row.pending ? (

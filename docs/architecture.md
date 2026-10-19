@@ -179,11 +179,11 @@ For library sync with Hardcover the key also needs your library (`read:library` 
 
 ## Library sync
 
-Settings → Library keeps the library in step with one sync source at a time: Provider picks
-it, and the Sync library switch turns syncing on or off. Holding the switch's row while it is on
-syncs everything again from the source. Sources are listed in `src/library/library-sync.ts`,
-which also decides when runs happen; choosing another source stops the one before and forgets what
-it knew. Hardcover is the only source so far.
+Settings → Library keeps the library in step with one sync source at a time: the Provider row
+picks it and its switch turns syncing on or off. The row below says how syncing stands; holding
+it while syncing is on syncs everything again from the provider. Sources are listed in
+`src/library/library-sync.ts`, which also decides when runs happen; choosing another source stops
+the one before and forgets what it knew. Hardcover is the only source so far.
 
 ### Hardcover
 

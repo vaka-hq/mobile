@@ -110,7 +110,7 @@ const nativeAudio = requireOptionalNativeModule<{
 }>('ExpoAudio')
 
 /** Makes the notification's and lock screen's skip buttons jump as far as the app's do. */
-function applySkipIntervals() {
+export function applySkipIntervals() {
   const { skipBackSeconds, skipForwardSeconds } = getPreferences()
 
   nativeAudio?.setSkipIntervals?.(skipBackSeconds, skipForwardSeconds)

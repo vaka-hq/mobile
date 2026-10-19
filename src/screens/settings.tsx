@@ -33,7 +33,7 @@ import { offlineBytes, useOfflineBooks } from '@/library/offline'
 import { cachedMetadataSize, clearCachedMetadata } from '@/library/repository'
 import { installSpeechModel, removeSpeechModel, useSpeechModel } from '@/library/speech-model'
 import { forgetStreamUrls } from '@/library/streams'
-import { audioCacheSize, clearAudioCache } from '@/player/controller'
+import { applySkipIntervals, audioCacheSize, clearAudioCache } from '@/player/controller'
 import { type AbbProxy, setAbbProxy, useAbbProxy } from '@/settings/abb-proxy'
 import {
   connectAnnas,
@@ -881,11 +881,12 @@ export function SettingsScreen() {
           selected={
             dialog === 'skipBack' ? preferences.skipBackSeconds : preferences.skipForwardSeconds
           }
+          // The notification's buttons jump the new distance at once, not from the next file.
           onSelect={(value) =>
             void setPreference(
               dialog === 'skipBack' ? 'skipBackSeconds' : 'skipForwardSeconds',
               value,
-            )
+            ).then(applySkipIntervals)
           }
           onDismiss={() => setDialog(null)}
         />

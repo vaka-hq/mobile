@@ -87,12 +87,19 @@ export function languageCode(name: string | null) {
   }
 
   for (const [code, names] of Object.entries(languages)) {
-    if (names.includes(first)) {
+    if (names.includes(first) && isLanguage(code)) {
       return code
     }
   }
 
   return null
+}
+
+/** The language's English name however the site names it, else the name as given. */
+function englishName(language: string | null) {
+  const code = languageCode(language)
+
+  return (code === null ? undefined : languages[code][0]) ?? plain(language ?? '')
 }
 
 /**
@@ -115,7 +122,7 @@ export function compareLanguages(preferred: string) {
   }
 
   return (a: string | null, b: string | null) =>
-    rank(a) - rank(b) || (rank(a) === 2 ? plain(a ?? '').localeCompare(plain(b ?? '')) : 0)
+    rank(a) - rank(b) || (rank(a) === 2 ? englishName(a).localeCompare(englishName(b)) : 0)
 }
 
 /**

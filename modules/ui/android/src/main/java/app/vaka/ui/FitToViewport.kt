@@ -13,7 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import expo.modules.kotlin.views.ComposeProps
@@ -34,10 +34,12 @@ class ViewportBoxProps : ComposeProps
  * rest: when the app bar slides away while scrolling, the list moves up and grows, and that
  * growth is taken off again, so what was fitted does not change as the page scrolls. The foot
  * moves only when something below, such as the mini player, comes or goes, and that counts.
+ * The top is taken within the screen's own Compose tree, not the window: a back swipe's preview
+ * scales and moves the whole screen beneath, which is no rising of the list.
  */
 @Composable
 fun FunctionalComposableScope.ViewportBoxContent() {
-  // The list's top in the window at rest, the lowest it has been, and where it is now.
+  // The list's top in the screen at rest, the lowest it has been, and where it is now.
   var restTop by remember { mutableFloatStateOf(Float.NaN) }
   var top by remember { mutableFloatStateOf(Float.NaN) }
 
@@ -45,7 +47,7 @@ fun FunctionalComposableScope.ViewportBoxContent() {
     Modifier
       .fillMaxSize()
       .onGloballyPositioned { coordinates ->
-        val y = coordinates.positionInWindow().y
+        val y = coordinates.positionInRoot().y
         top = y
         if (restTop.isNaN() || y > restTop) restTop = y
       }

@@ -40,8 +40,7 @@ export type EbookResult = {
 }
 
 /**
- * `remote` is a file known and chosen but not on the phone; `done` has a copy here, kept for
- * offline reading or only in the cache while it is read.
+ * `remote` is a file known and chosen but not on the phone; `done` is downloaded to it.
  */
 const ebookStatuses = ['remote', 'downloading', 'done', 'failed'] as const
 
@@ -92,10 +91,7 @@ export type Ebook = {
   /** The Hardcover book it was found for, when it was. */
   workId: string | null
   status: EbookStatus
-  /**
-   * Kept on the phone to read offline, until the listener deletes it; otherwise a copy being read
-   * lives in the cache, which clearing it or Android may empty.
-   */
+  /** On the phone, until the listener deletes it. */
   kept: boolean
   bytes: number
   total: number
@@ -162,52 +158,34 @@ function toEbook(data: z.infer<typeof ebookRow>): Ebook {
   }
 }
 
-// Kept files live with the app's documents; copies fetched only to read live in the cache.
+// Downloaded files live with the app's documents.
 function keptDirectory() {
   return new Directory(Paths.document, 'ebooks')
-}
-
-function cacheDirectory() {
-  return new Directory(Paths.cache, 'ebooks')
 }
 
 function keptFile(md5: string) {
   return new File(keptDirectory(), `${md5}.epub`)
 }
 
-function cachedFile(md5: string) {
-  return new File(cacheDirectory(), `${md5}.epub`)
-}
-
-/** The local file of an e-book on the phone, kept or cached, for the reader to open. */
+/** The local file of an e-book on the phone, for the reader to open. */
 export function ebookUri(md5: string) {
-  const kept = keptFile(md5)
-
-  return (kept.exists ? kept : cachedFile(md5)).uri
+  return keptFile(md5).uri
 }
 
-/** Whether an e-book's file is on the phone, kept or cached. */
+/** Whether an e-book's file is on the phone. */
 export function hasEbookFile(md5: string) {
-  return keptFile(md5).exists || cachedFile(md5).exists
+  return keptFile(md5).exists
 }
 
-/**
- * An e-book as its files show it now: the cache can be emptied behind the app's back, and a
- * download the app was closed during never finished.
- */
+/** An e-book as its file shows it now: a download the app was closed during never finished. */
 function withFiles(ebook: Ebook): Ebook {
   if (running.has(ebook.md5)) {
     return ebook
   }
 
   const kept = keptFile(ebook.md5).exists
-  const onPhone = kept || cachedFile(ebook.md5).exists
 
-  return {
-    ...ebook,
-    kept,
-    status: onPhone ? 'done' : ebook.status === 'failed' ? 'failed' : 'remote',
-  }
+  return { ...ebook, kept, status: kept ? 'done' : ebook.status === 'failed' ? 'failed' : 'remote' }
 }
 
 function readAll() {
@@ -225,23 +203,23 @@ const running = new Map<string, AbortController>()
 
 /** Deletes what downloads cut short by the app closing left behind. */
 function removePartialFiles() {
-  for (const directory of [keptDirectory(), cacheDirectory()]) {
-    if (directory.exists) {
-      for (const entry of directory.list()) {
-        if (entry instanceof File && entry.name.endsWith('.part')) {
-          entry.delete()
-        }
+  const directory = keptDirectory()
+
+  if (directory.exists) {
+    for (const entry of directory.list()) {
+      if (entry instanceof File && entry.name.endsWith('.part')) {
+        entry.delete()
       }
     }
   }
 }
 
 /**
- * Moves e-books fetched into the cache to read, before every download was kept, to stay on the
- * phone with the rest, so a book once read counts as downloaded.
+ * Moves e-books older builds fetched into the cache to read, before every download was kept, to
+ * stay on the phone with the rest, so a book once read counts as downloaded.
  */
 async function keepCachedFiles() {
-  const cache = cacheDirectory()
+  const cache = new Directory(Paths.cache, 'ebooks')
 
   if (!cache.exists) {
     return
@@ -572,16 +550,6 @@ function isZip(file: File) {
   }
 }
 
-/** Moves a copy fetched into the cache to read, before files were kept, to stay on the phone. */
-async function keepCachedFile(md5: string) {
-  const cached = cachedFile(md5)
-
-  if (cached.exists && !keptFile(md5).exists) {
-    keptDirectory().create({ intermediates: true, idempotent: true })
-    await cached.move(keptFile(md5))
-  }
-}
-
 /**
  * The record a download started from, with what changed while it ran: the book it was chosen
  * for, and where it was read to, which a reset of the book's progress may have cleared.
@@ -606,9 +574,8 @@ function latest(base: Ebook): Ebook {
 }
 
 /**
- * Brings a file onto the phone to stay, whether to read it now or offline later; a copy fetched
- * into the cache to read before files were kept is moved to stay. Anna's Archive's fast link is
- * used with a member key, else Library Genesis. Found for a book, the file becomes the one it is
+ * Brings a file onto the phone to stay, whether to read it now or offline later. Anna's Archive's
+ * fast link is used with a member key, else Library Genesis. Found for a book, the file becomes the one it is
  * read in.
  */
 export async function downloadEbook(result: EbookResult, workId: string | null) {
@@ -620,8 +587,6 @@ export async function downloadEbook(result: EbookResult, workId: string | null) 
   }
 
   if (previous && readyToRead(result.md5)) {
-    await keepCachedFile(result.md5)
-
     await save(
       withFiles({
         ...previous,
@@ -721,10 +686,10 @@ export async function removeEbookFile(md5: string) {
   running.get(md5)?.abort()
   running.delete(md5)
 
-  for (const file of [keptFile(md5), cachedFile(md5)]) {
-    if (file.exists) {
-      file.delete()
-    }
+  const file = keptFile(md5)
+
+  if (file.exists) {
+    file.delete()
   }
 
   const ebook = getEbook(md5)
@@ -772,28 +737,6 @@ export async function removeEbook(md5: string) {
   await removeEbookFile(md5)
   publish(md5, null)
   await database.runAsync('DELETE FROM ebooks WHERE md5 = ?', md5)
-}
-
-/** Bytes the copies fetched only to read take in the cache. */
-export function ebookCacheBytes() {
-  const directory = cacheDirectory()
-
-  return directory.exists ? (directory.size ?? 0) : 0
-}
-
-/** Empties the cache of copies fetched only to read; kept files and every place stay. */
-export async function clearEbookCache() {
-  const directory = cacheDirectory()
-
-  if (directory.exists) {
-    directory.delete()
-  }
-
-  for (const ebook of ebooks.values()) {
-    if (!running.has(ebook.md5)) {
-      publish(ebook.md5, withFiles(ebook))
-    }
-  }
 }
 
 /** Remembers where the reader is; called as pages turn. */

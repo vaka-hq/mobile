@@ -18,7 +18,7 @@ import {
   useUpdateState,
 } from '@/library/app-updates'
 import { exportBackup, hasSecrets } from '@/library/backup'
-import { clearEbookCache, ebookBytes, ebookCacheBytes, useEbooks } from '@/library/ebooks'
+import { ebookBytes, useEbooks } from '@/library/ebooks'
 import { invalidateLibrary } from '@/library/invalidation'
 import { isLanguage } from '@/library/languages'
 import {
@@ -169,8 +169,7 @@ export function SettingsScreen() {
     queryFn: async () => {
       const [metadata, audio] = await Promise.all([cachedMetadataSize(), audioCacheSize()])
 
-      // E-books fetched only to read are cached too; kept ones are counted with the downloads.
-      return metadata + audio + ebookCacheBytes()
+      return metadata + audio
     },
     staleTime: 0,
   })
@@ -1069,7 +1068,7 @@ export function SettingsScreen() {
           })}
           confirmLabel={t({ message: 'Clear', comment: 'Confirms clearing the cache' })}
           onConfirm={() => {
-            Promise.all([clearCachedMetadata(), clearAudioCache(), clearEbookCache()])
+            Promise.all([clearCachedMetadata(), clearAudioCache()])
               .then(() => {
                 queryClient.clear()
                 invalidateLibrary()

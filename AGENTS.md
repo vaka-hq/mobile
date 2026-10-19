@@ -153,7 +153,8 @@ short: how the app works belongs in `docs/`.
   signed-in search and the `fast_download` API) or Library Genesis (no key). Choosing one only
   remembers it. On a book's page, a file not on the phone shows Download, which downloads it into
   the app's documents to stay, as the Storage sheet's download does; only then does it show Read,
-  which never downloads. Once downloaded, its contents are read from the file natively
+  which never downloads. Elsewhere (Library, Browse, the player) Read on a file not on the phone
+  downloads it the same way, to stay, and then opens it. Once downloaded, its contents are read from the file natively
   (`readBookSections`), so choosing to continue from listening finds the place in the question
   itself, before the reader opens. Copies cached to read by older builds are moved there at start.
 - Files found for a book are ranked in `src/library/ebook-rank.ts` (pure and tested): those by

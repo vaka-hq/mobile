@@ -99,8 +99,8 @@ export function EbookResultRow({
 }
 
 /**
- * Opens a file to read: at once when it is on the phone, else once it has been fetched into the
- * cache, provided the screen it was tapped on is still showing.
+ * Opens a file to read: at once when it is on the phone, else once it has been downloaded to stay,
+ * provided the screen it was tapped on is still showing.
  */
 export function useOpenEbook() {
   const router = useRouter()

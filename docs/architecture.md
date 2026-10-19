@@ -166,8 +166,8 @@ books and genre pages for a day and its genres for a week. When a fresh answer c
 such as offline, the last one kept is used, so a book's page still opens; expired answers go a
 month after expiring, or sooner once the cache passes 16 MB. TorBox's cache and seeding answers
 are kept briefly (`src/library/torbox-cache.ts`); key checks are never cached. Settings → Clear
-cached data forgets browsed books, cached answers, streamed audio and e-book copies read without
-being downloaded, but keeps the library, progress and bookmarks. Multi-step writes run in
+cached data forgets browsed books, cached answers and streamed audio, but keeps the library,
+progress, bookmarks and downloads. Multi-step writes run in
 exclusive transactions.
 
 The API keys and the proxy sign-in live in `expo-secure-store`; one that can no longer be

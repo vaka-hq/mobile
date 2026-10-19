@@ -23,16 +23,16 @@ remembers the stream last chosen or played and opens with it.
   `Screen`, `Action`, `List`, `BookRow`, `Cover`, `InfoRow`, `Notice`,
   `Empty`, `Loading`, `LoadMore`, `ChipRow`, `SearchField`, the speed and sleep sheets and the
   dialogs. Screens name what a thing is; only `src/ui/glyphs.ts` names Material Symbols.
-- `modules/android-components` bridges the Material 3 pieces Expo UI lacks: the `Scaffold`
+- `modules/ui` bridges the Material 3 pieces Expo UI lacks: the `Scaffold`
   with its snackbar, the top app bars and the collapsing `HeaderAppBar` with its `GatedListView`
   and `BodyCentre`,
   the `ShortNavigationBar` under the tabs, the `ModalSheet` behind every bottom sheet, connected
   button groups, `CoverImage` (Coil, covers decoded at display size with a placeholder in their
   dominant colour), and the native e-book reader, `BookView`. Each screen is one Compose tree
   inside a `Host`; the tab bar and mini player share another.
-- `modules/speech` runs the offline Vosk recogniser on a stretch of audio, for finding a reading
-  place in a recording; `modules/proxied-http` reads pages through an HTTP proxy;
-  `modules/app-updates` checks a downloaded update and hands it to Android's installer.
+- `modules/platform` holds the native work beyond the interface: the offline Vosk recogniser run
+  on a stretch of audio, for finding a reading place in a recording; reading pages through an HTTP
+  proxy; and checking a downloaded update and handing it to Android's installer.
 - `src/sources/` holds one client per service: `audiobookbay` (HTML parsing of listings and posts),
   `hardcover` (API key, GraphQL and matching), `torbox` (REST client and track selection),
   `annas-archive` and `libgen` (e-book search and downloads), `ip-check` (the proxy's exit
@@ -116,14 +116,14 @@ then the others by name.
 
 A book's e-books are found on Anna's Archive (with the listener's member key) and Library Genesis,
 EPUB only. Choosing one only remembers it; reading downloads it to stay, as the Storage sheet
-does. The reader is native (`BookView` in `modules/android-components`): it lays the EPUB out with
+does. The reader is native (`BookView` in `modules/ui`): it lays the EPUB out with
 Compose text, turns pages, and keeps highlights with notes, bookmarks, contents and search.
 Selecting text works as it does elsewhere on Android, with a vibration, the magnifier and the
 floating text toolbar, whose Highlight and Note the app carries out. Its
 display settings are a card over the page. Listening and reading keep their own places and meet
 when the listener says so: the switch buttons carry the place over, and opening one after newer
 progress in the other asks where to start; Settings → Handoff sets how closely. The exact mode listens to a few seconds of the audio
-with the offline Vosk recogniser (`modules/speech`) to find the words on the page. Its model is
+with the offline Vosk recogniser (`modules/platform`) to find the words on the page. Its model is
 downloaded when the mode is chosen, picking up where a dropped connection left off rather than
 starting over.
 
@@ -269,7 +269,7 @@ or the newest of any for Nightly (`src/library/update-release.ts`, pure and test
 when its `update.json` has a higher version code than the running build. Later puts that version
 off until the listener asks. Updating downloads the APK for the phone's CPU, checks it against the
 SHA-256 checksum GitHub records for every release file, and hands it to Android's installer
-through a `PackageInstaller` session (`modules/app-updates`). The app must first be allowed to
+through a `PackageInstaller` session (`modules/platform`). The app must first be allowed to
 install apps, which opens that setting the first time; on Android 12 and later an app so allowed
 may then update itself without asking again. Android refuses an update not signed with the same
 key. Moving from Nightly to Stable waits for a stable release newer than the running build, since

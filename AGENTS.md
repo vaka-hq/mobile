@@ -24,9 +24,16 @@ short: how the app works belongs in `docs/`.
   by screens; `src/library/` is persistence, orchestration and the TanStack Query hooks;
   `src/sources/` has one client per external service; `src/player/` owns playback; `src/media/`
   reads chapters from audio files; `src/settings/` holds preferences and secrets.
-- `modules/` holds the app's own native modules: `android-components` (the Compose bridge and the
-  e-book reader), `speech` (offline Vosk recognition), `proxied-http` (reading through a proxy)
-  and `app-updates` (installing the app's own updates).
+- `modules/` holds the app's two native modules: `ui` (the Compose bridge, the e-book reader and
+  the stack's motion and Back) and `platform` (offline Vosk recognition, reading through a proxy
+  and installing the app's own updates, as the `Speech`, `ProxiedHttp` and `AppUpdates` modules).
+- Native modules are written with Expo Modules 2.0 (`expoModule { v2 true }` in the module's
+  `build.gradle`): plain Kotlin classes with `@ExpoModule`, `@JS`, `@Event` and `@Record`, found at
+  compile time rather than listed in `expo-module.config.json`. A `@JS suspend` function starts on
+  the JavaScript thread, so blocking work goes in `withContext(Dispatchers.IO)` (or `Main` for
+  views); errors JavaScript checks by code extend `JavaScriptThrowable`. Views have no 2.0 form
+  yet, so `ui`'s Compose views stay on the definition DSL as `VakaViews`, listed in its
+  `expo-module.config.json`, beside its functions in `VakaUI`.
 
 ## Interface
 
@@ -34,7 +41,7 @@ short: how the app works belongs in `docs/`.
   missing; screens must not name a Material Symbol or a colour role directly. New glyphs go in
   `src/ui/glyphs.ts`.
 - Use Expo UI's Jetpack Compose components wherever one applies. Missing Material 3 pieces go in
-  the focused Compose bridge `modules/android-components`, never as React Native look-alikes.
+  the focused Compose bridge `modules/ui`, never as React Native look-alikes.
   The native Scaffold resolves slots once: keep bottom bar slots mounted.
 - Every bottom sheet is `Sheet` from `src/ui/sheets.tsx`, on the native `ModalSheet` port of the
   reference app's PartialSheetDialog; never use Expo UI's ModalBottomSheet.
@@ -46,7 +53,7 @@ short: how the app works belongs in `docs/`.
   with `height='fill'` or `LoadingPage`, is centred by the bridged `BodyCentre` in what the
   keyboard leaves of the body; `imePadding` would take off the keyboard's whole height, too much
   on a tab, whose body already ends above the navigation bar.
-- Expo UI 57 pitfalls seen on device: toggling `enabled` on an icon button inside an app bar slot
+- Expo UI pitfalls seen on device (57, unchanged in 58 as far as tested): toggling `enabled` on an icon button inside an app bar slot
   removes it (guard the handler instead), and `NavigationBarItem.SelectedIcon` is not rendered
   (swap the icon source on focus). The tab bar is the bridged `ShortNavigationBar`; its icons are
   slots, so selection swaps the icon source the same way. `onVisibilityChanged` never reports a `Box` with nothing
@@ -57,7 +64,7 @@ short: how the app works belongs in `docs/`.
   Library, the root screen, while the full player is closed, so Android owns Back there, as in
   the reference project. A JS `BackHandler` on that screen therefore never fires; anything that
   must catch Back there has to turn React Native's callback back on first. The native side reads
-  a private field of `ReactActivity` and is pinned to React Native 0.86.3: review it when
+  a private field of `ReactActivity` and is pinned to React Native 0.88.0: review it when
   upgrading.
 - Stack screens move as the system Settings app's pages do. They open and close with Android 17's
   activity transitions (`config/android-transitions`, installed over react-native-screens'
@@ -69,7 +76,10 @@ short: how the app works belongs in `docs/`.
 - A committed back preview skips JavaScript's `BackHandler`, so wherever one takes Back for
   itself it also calls `useBackPreviewBlocked` (`src/components/system-back.tsx`). A closing
   screen's Compose content would redraw empty, so `Screen` and the reader keep its last frame
-  through the transition (`LeavingFrame`).
+  through the transition (`LeavingFrame`), holding the removal with expo-router's
+  `usePreventRemove` until the frame is in place. A committed back swipe tells JavaScript before
+  it dismisses the screen natively (`onNativeDismissal`), and the screen lets go then: expo-router
+  reports a native dismissal it was still holding as an error.
 - Android colour roles follow Material 3: screens on `surface`, containers on
   `surfaceContainerHigh`, sheets on the default `surfaceContainerLow`, text `onSurface` and
   `onSurfaceVariant`. Colour comes from the dynamic palette; covers are the only imagery.
@@ -147,7 +157,7 @@ short: how the app works belongs in `docs/`.
   the book's author first, then by the preferred language, then the title and size decide.
   E-books download directly, never through torrents, so they are not checked for availability
   first.
-- The reader is native: `BookView` in `modules/android-components`, where `EpubBook.kt` and
+- The reader is native: `BookView` in `modules/ui`, where `EpubBook.kt` and
   `EpubHtml.kt` parse the EPUB with Android's zip and XML parsers, `BookLayout.kt` lays it out with
   Compose text and `BookView.kt` paginates and draws it, slides pages as they turn and draws the
   overview's row of cards. It takes JSON commands and reports JSON events, parsed with zod in
@@ -188,7 +198,7 @@ short: how the app works belongs in `docs/`.
   Listening picks up at the top of the page reading reached, and the reader marks the sentence it
   picks up from. Finding a place stops when the listener cancels.
 - The exact mode (`readingSync: 'words'`) hears a short stretch of the audio with the offline Vosk
-  recognizer in `modules/speech`, never the microphone, and finds the words in the text. Its
+  recognizer in `modules/platform`, never the microphone, and finds the words in the text. Its
   English model is downloaded when that mode is chosen in Settings and deleted when it is left;
   it is never shipped with the app.
 
@@ -208,7 +218,7 @@ short: how the app works belongs in `docs/`.
   The workflow sets the version name and code (`VAKA_VERSION_NAME`, `VAKA_VERSION_CODE`, the build
   time in minutes); never set them in `app.config.ts`. Pin every action to a full commit SHA with
   its version in a comment. The production app updates itself from these releases
-  (`src/library/app-updates.ts`, `modules/app-updates`), reading each one's `update.json`; keep
+  (`src/library/app-updates.ts`, `modules/platform`), reading each one's `update.json`; keep
   the asset names (`vaka-<name>-<abi>.apk`, `update.json`) in step with the app.
 - The app icon, splash mark and themed icon come from `scripts/generate-icons.ts`
   (`vp run icons:generate`). The licences under Settings come from

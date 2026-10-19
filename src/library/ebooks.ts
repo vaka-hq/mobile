@@ -11,7 +11,7 @@ import {
   signInToAnnas,
 } from '@/sources/annas-archive/client'
 import { libgenDownload, libgenHeaders, searchLibgen } from '@/sources/libgen/client'
-import { readBookSections } from '../../modules/android-components'
+import { readBookSections } from '../../modules/ui'
 import { database } from './database'
 import { UnexpectedAnswerError } from './errors'
 
@@ -557,7 +557,7 @@ function isZip(file: File) {
   const handle = file.open(FileMode.ReadOnly)
 
   try {
-    const head = handle.readBytes(2)
+    const head = handle.readBytesSync(2)
 
     return head[0] === 0x50 && head[1] === 0x4b
   } finally {

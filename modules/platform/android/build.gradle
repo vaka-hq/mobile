@@ -1,0 +1,28 @@
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'app.vaka.platform'
+version = '0.1.0'
+
+// Expo Modules 2.0: annotated Kotlin classes, found at compile time rather than listed.
+expoModule {
+  v2 true
+}
+
+android {
+  namespace "app.vaka.platform"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+    consumerProguardFiles 'consumer-rules.pro'
+  }
+}
+
+dependencies {
+  // React Native already ships OkHttp; reading through a proxy uses that copy rather than its own.
+  implementation 'com.facebook.react:react-android'
+  // Offline speech recognition; its language model is downloaded when the listener turns the
+  // mode on, never shipped with the app.
+  implementation 'com.alphacephei:vosk-android:0.3.75@aar'
+  implementation 'net.java.dev.jna:jna:5.19.1@aar'
+}

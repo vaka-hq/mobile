@@ -1,7 +1,7 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 import { z } from 'zod'
 import { Host } from '@/components/host'
-import { BookView, type BookViewRef } from '../../modules/android-components'
+import { BookView, type BookViewRef } from '../../modules/ui'
 
 /** How the reader sets the book, from its settings and theme. */
 export type ReaderStyle = {

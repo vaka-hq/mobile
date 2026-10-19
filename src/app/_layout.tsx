@@ -22,7 +22,7 @@ import { startLibrarySync } from '@/library/library-sync'
 import { resumeOfflineDownloads } from '@/library/offline'
 import { startPlayer } from '@/player/controller'
 
-export const unstable_settings = { initialRouteName: '(tabs)' }
+export const unstable_settings = { anchor: '(tabs)' }
 
 function AppProviders() {
   const colorScheme = useAppColorScheme()

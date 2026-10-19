@@ -43,8 +43,8 @@ import {
   useMaterialColors,
 } from '@/lib/compose-ui'
 import { type HighlightColor, highlightColors } from '@/library/ebooks'
-import { TopAppBar } from '../../modules/android-components'
-import { SideReveal } from '../../modules/android-components'
+import { TopAppBar } from '../../modules/ui'
+import { SideReveal } from '../../modules/ui'
 import { type Glyph, glyphs } from './glyphs'
 import { Action } from './screen'
 

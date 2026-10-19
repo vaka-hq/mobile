@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { bottomCornerRadius } from '../../modules/android-components'
+import { bottomCornerRadius } from '../../modules/ui'
 
 /** The mini player bar: a 2 dp progress line over a 48 dp cover with 8 dp above and below. */
 export const miniPlayerHeight = 66

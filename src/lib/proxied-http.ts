@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ProxiedHttp, type ProxyServer } from '../../modules/proxied-http'
+import { ProxiedHttp, type ProxyServer } from '../../modules/platform'
 import { HttpError, type TextReader, withDeadline } from './http'
 
 /** The proxy refused the username and password. */

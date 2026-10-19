@@ -291,11 +291,6 @@ msgstr "Adding…"
 msgid "Address"
 msgstr "Address"
 
-#. Sync setting: the place is found by listening to the words
-#: src/screens/settings.tsx
-msgid "Advanced"
-msgstr "Advanced"
-
 #. A language books can be preferred in
 #: src/ui/languages.ts
 msgid "Afrikaans"
@@ -374,6 +369,11 @@ msgstr "Anyone with the file can use them."
 #: src/screens/welcome.tsx
 msgid "API key"
 msgstr "API key"
+
+#. Sync setting: the place is estimated from its share of the chapter
+#: src/screens/settings.tsx
+msgid "Approximate"
+msgstr "Approximate"
 
 #. A language books can be preferred in
 #: src/ui/languages.ts
@@ -1136,6 +1136,11 @@ msgstr "Esperanto"
 #: src/ui/languages.ts
 msgid "Estonian"
 msgstr "Estonian"
+
+#. Sync setting: the exact sentence is found by listening to the words
+#: src/screens/settings.tsx
+msgid "Exact"
+msgstr "Exact"
 
 #. Browse chip: an audiobook genre
 #: src/screens/browse.tsx
@@ -2216,11 +2221,6 @@ msgstr "Released"
 msgid "Released under the {name} licence. The package includes no licence text."
 msgstr "Released under the {name} licence. The package includes no licence text."
 
-#. Update channel choice: stable releases
-#: src/screens/settings.tsx
-msgid "Releases that have been tried for a while."
-msgstr "Releases that have been tried for a while."
-
 #. Confirms removing a book from the library
 #. Confirms removing a series from the library
 #: src/components/library-toggle.tsx
@@ -2489,11 +2489,6 @@ msgstr "Show all sources"
 #: src/screens/reader.tsx
 msgid "Show reader controls"
 msgstr "Show reader controls"
-
-#. Sync setting: the place is estimated from the chapters
-#: src/screens/settings.tsx
-msgid "Simple"
-msgstr "Simple"
 
 #. Book fact label
 #. Upload detail
@@ -2771,11 +2766,6 @@ msgstr "The key is removed from this device. E-books come from Library Genesis u
 #: src/screens/settings.tsx
 msgid "The key was not accepted. Tap to replace it."
 msgstr "The key was not accepted. Tap to replace it."
-
-#. Update channel choice: nightly builds
-#: src/screens/settings.tsx
-msgid "The newest changes, built each day. May have bugs."
-msgstr "The newest changes, built each day. May have bugs."
 
 #. Start-up check: the saved proxy does not answer
 #: src/components/account-alert.tsx

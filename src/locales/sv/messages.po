@@ -291,11 +291,6 @@ msgstr "Lägger till …"
 msgid "Address"
 msgstr "Adress"
 
-#. Sync setting: the place is found by listening to the words
-#: src/screens/settings.tsx
-msgid "Advanced"
-msgstr "Avancerad"
-
 #. A language books can be preferred in
 #: src/ui/languages.ts
 msgid "Afrikaans"
@@ -374,6 +369,11 @@ msgstr "Alla som har filen kan använda dem."
 #: src/screens/welcome.tsx
 msgid "API key"
 msgstr "API-nyckel"
+
+#. Sync setting: the place is estimated from its share of the chapter
+#: src/screens/settings.tsx
+msgid "Approximate"
+msgstr "Ungefärlig"
 
 #. A language books can be preferred in
 #: src/ui/languages.ts
@@ -1136,6 +1136,11 @@ msgstr "Esperanto"
 #: src/ui/languages.ts
 msgid "Estonian"
 msgstr "Estniska"
+
+#. Sync setting: the exact sentence is found by listening to the words
+#: src/screens/settings.tsx
+msgid "Exact"
+msgstr "Exakt"
 
 #. Browse chip: an audiobook genre
 #: src/screens/browse.tsx
@@ -2216,11 +2221,6 @@ msgstr "Utgiven"
 msgid "Released under the {name} licence. The package includes no licence text."
 msgstr "Släppt under licensen {name}. Paketet innehåller ingen licenstext."
 
-#. Update channel choice: stable releases
-#: src/screens/settings.tsx
-msgid "Releases that have been tried for a while."
-msgstr "Versioner som har provats ett tag."
-
 #. Confirms removing a book from the library
 #. Confirms removing a series from the library
 #: src/components/library-toggle.tsx
@@ -2489,11 +2489,6 @@ msgstr "Visa alla källor"
 #: src/screens/reader.tsx
 msgid "Show reader controls"
 msgstr "Visa läsarens kontroller"
-
-#. Sync setting: the place is estimated from the chapters
-#: src/screens/settings.tsx
-msgid "Simple"
-msgstr "Enkel"
 
 #. Book fact label
 #. Upload detail
@@ -2771,11 +2766,6 @@ msgstr "Nyckeln tas bort från enheten. E-böcker hämtas från Library Genesis 
 #: src/screens/settings.tsx
 msgid "The key was not accepted. Tap to replace it."
 msgstr "Nyckeln godtogs inte. Tryck för att byta den."
-
-#. Update channel choice: nightly builds
-#: src/screens/settings.tsx
-msgid "The newest changes, built each day. May have bugs."
-msgstr "De senaste ändringarna, byggda varje dag. Kan innehålla buggar."
 
 #. Start-up check: the saved proxy does not answer
 #: src/components/account-alert.tsx

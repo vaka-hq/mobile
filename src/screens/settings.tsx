@@ -94,12 +94,12 @@ export function SettingsScreen() {
   const syncLabels = {
     off: t({ message: 'Off', comment: 'Sync setting: not carried over' }),
     chapters: t({
-      message: 'Simple',
-      comment: 'Sync setting: the place is estimated from the chapters',
+      message: 'Approximate',
+      comment: 'Sync setting: the place is estimated from its share of the chapter',
     }),
     words: t({
-      message: 'Advanced',
-      comment: 'Sync setting: the place is found by listening to the words',
+      message: 'Exact',
+      comment: 'Sync setting: the exact sentence is found by listening to the words',
     }),
   }
 
@@ -697,22 +697,8 @@ export function SettingsScreen() {
         <ChoiceDialog
           title={t({ message: 'Update channel', comment: 'Dialog title' })}
           options={[
-            {
-              value: 'stable' as const,
-              label: channelLabels.stable,
-              description: t({
-                message: 'Releases that have been tried for a while.',
-                comment: 'Update channel choice: stable releases',
-              }),
-            },
-            {
-              value: 'nightly' as const,
-              label: channelLabels.nightly,
-              description: t({
-                message: 'The newest changes, built each day. May have bugs.',
-                comment: 'Update channel choice: nightly builds',
-              }),
-            },
+            { value: 'stable' as const, label: channelLabels.stable },
+            { value: 'nightly' as const, label: channelLabels.nightly },
           ]}
           selected={preferences.updateChannel}
           onSelect={(channel) => {

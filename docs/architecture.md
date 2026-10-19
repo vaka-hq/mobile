@@ -183,11 +183,13 @@ what it may not send waits for a key that can.
 
 ## Library sync
 
-Settings → Library keeps the library in step with one sync source at a time: the Provider row
-picks it and its switch turns syncing on or off. The row below says how syncing stands; holding
-it while syncing is on syncs everything again from the provider. Sources are listed in
-`src/library/library-sync.ts`, which also decides when runs happen; choosing another source stops
-the one before and forgets what it knew. Hardcover is the only source so far.
+Settings → Library keeps the library in step with one sync source at a time. The Provider row
+picks it, None by default; once one is picked, its switch fades in and turns syncing on or off,
+off until the listener turns it on. The row below says how syncing stands; holding it while
+syncing is on syncs everything again from the provider. Sources are listed in
+`src/library/library-sync.ts`, which also decides when runs happen; choosing another source, or
+none, stops the one before, forgets what it knew and leaves syncing off. Hardcover is the only
+source so far.
 
 ### Hardcover
 

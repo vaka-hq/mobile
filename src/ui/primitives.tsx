@@ -246,6 +246,8 @@ export type GroupRow = {
    */
   toggle?: boolean
   onToggle?: () => void
+  /** Hides the switch, which fades and grows in when it shows again, such as once it applies. */
+  toggleHidden?: boolean
   /** Something about the row is still being found out: a small spinner at its end. */
   pending?: boolean
   /** Shown faded and not tappable, such as a choice that is still being checked. */
@@ -404,11 +406,21 @@ export function Group({
               ) : null}
               {row.toggle !== undefined ? (
                 <ListItem.TrailingContent>
-                  <Switch
-                    value={row.toggle}
-                    enabled={!row.disabled}
-                    onCheckedChange={() => (row.onToggle ?? row.onPress)?.()}
-                  />
+                  <AnimatedVisibility
+                    visible={!row.toggleHidden}
+                    enterTransition={EnterTransition.fadeIn().plus(
+                      EnterTransition.expandHorizontally(),
+                    )}
+                    exitTransition={ExitTransition.fadeOut().plus(
+                      ExitTransition.shrinkHorizontally(),
+                    )}
+                  >
+                    <Switch
+                      value={row.toggle}
+                      enabled={!row.disabled}
+                      onCheckedChange={() => (row.onToggle ?? row.onPress)?.()}
+                    />
+                  </AnimatedVisibility>
                 </ListItem.TrailingContent>
               ) : row.pending ? (
                 <ListItem.TrailingContent>

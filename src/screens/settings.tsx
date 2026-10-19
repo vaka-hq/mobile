@@ -301,8 +301,9 @@ export function SettingsScreen() {
     hardcover: t({ message: 'Hardcover', comment: 'Name of the book metadata service' }),
   } satisfies Record<SyncSourceId, string>
 
-  const source = syncSources[preferences.syncSource]
-  const sourceName = sourceNames[preferences.syncSource]
+  // No provider until the listener picks one; without one there is nothing to sync or say.
+  const source = preferences.syncSource ? syncSources[preferences.syncSource] : null
+  const sourceName = preferences.syncSource ? sourceNames[preferences.syncSource] : ''
 
   const syncedTime = librarySync.syncedAt
     ? timeOfDay(librarySync.syncedAt, i18n.locale, getCalendars()[0]?.uses24hourClock ?? null)
@@ -337,28 +338,33 @@ export function SettingsScreen() {
   }
 
   // How syncing stands, in the row under the provider: while on, or when it cannot sync at all.
-  const syncStatus = !source.ready()
-    ? t({
-        message: `Add your ${sourceName} API key to sync`,
-        comment: 'Library sync status when the chosen provider has no key yet, with its name',
-      })
-    : !preferences.librarySync
-      ? null
-      : librarySync.syncing
-        ? t({ message: 'Syncing…', comment: 'Library sync status while it syncs' })
-        : librarySync.error
-          ? syncProblemText(source.problem(librarySync.error))
-          : librarySync.syncedAt
-            ? t({
-                message: `Synced ${syncedTime}`,
-                comment: 'Library sync status with when it last synced, such as “Synced 14:05”',
-              })
-            : t({ message: 'Not synced yet', comment: 'Library sync status before the first sync' })
+  const syncStatus = !source
+    ? null
+    : !source.ready()
+      ? t({
+          message: `Add your ${sourceName} API key to sync`,
+          comment: 'Library sync status when the chosen provider has no key yet, with its name',
+        })
+      : !preferences.librarySync
+        ? null
+        : librarySync.syncing
+          ? t({ message: 'Syncing…', comment: 'Library sync status while it syncs' })
+          : librarySync.error
+            ? syncProblemText(source.problem(librarySync.error))
+            : librarySync.syncedAt
+              ? t({
+                  message: `Synced ${syncedTime}`,
+                  comment: 'Library sync status with when it last synced, such as “Synced 14:05”',
+                })
+              : t({
+                  message: 'Not synced yet',
+                  comment: 'Library sync status before the first sync',
+                })
 
   function toggleLibrarySync() {
     if (preferences.librarySync) {
       void setLibrarySync(false)
-    } else if (source.ready()) {
+    } else if (source?.ready()) {
       void setLibrarySync(true)
     } else if (preferences.syncSource === 'hardcover') {
       setSyncAfterKey(true)
@@ -460,10 +466,13 @@ export function SettingsScreen() {
                 comment:
                   'Setting for which service the library is kept in step with, such as Hardcover',
               }),
-              value: sourceName,
+              value:
+                sourceName ||
+                t({ message: 'None', comment: 'Library provider when no service is chosen' }),
               onPress: () => setDialog('syncSource'),
-              // The switch turns syncing with the provider on and off.
+              // The switch turns syncing with the provider on and off; with none, it has none.
               toggle: preferences.librarySync,
+              toggleHidden: !source,
               onToggle: toggleLibrarySync,
             },
             ...(syncStatus
@@ -473,7 +482,7 @@ export function SettingsScreen() {
                     glyph: 'shelfSync' as const,
                     label: syncStatus,
                     // Held while on, it syncs everything again from the provider.
-                    onLongPress: preferences.librarySync && source.ready() ? resync : undefined,
+                    onLongPress: preferences.librarySync && source?.ready() ? resync : undefined,
                   },
                 ]
               : []),
@@ -769,9 +778,15 @@ export function SettingsScreen() {
             message: 'Provider',
             comment: 'Dialog title: which service the library is kept in step with',
           })}
-          options={syncSourceIds.map((id) => ({ value: id, label: sourceNames[id] }))}
-          selected={preferences.syncSource}
-          onSelect={(id) => void chooseSyncSource(id)}
+          options={[
+            {
+              value: 'none' as const,
+              label: t({ message: 'None', comment: 'Library provider when no service is chosen' }),
+            },
+            ...syncSourceIds.map((id) => ({ value: id, label: sourceNames[id] })),
+          ]}
+          selected={preferences.syncSource ?? 'none'}
+          onSelect={(id) => void chooseSyncSource(id === 'none' ? null : id)}
           onDismiss={() => setDialog(null)}
         />
       ) : null}

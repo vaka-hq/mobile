@@ -67,8 +67,8 @@ const preferencesSchema = z.object({
   abbSilenceNoticed: z.boolean().catch(false),
   /** The library is kept in step with the sync source. */
   librarySync: z.boolean().catch(false),
-  /** Which service the library syncs with; one at a time. */
-  syncSource: z.enum(syncSourceIds).catch('hardcover'),
+  /** Which service the library syncs with, one at a time; none until the listener picks one. */
+  syncSource: z.enum(syncSourceIds).nullable().catch(null),
   /** Whose Hardcover shelves the last sync read, so a key for another account starts afresh. */
   hardcoverShelvesUser: z.number().nullable().catch(null),
   /** The listener closed Browse's notice about adding a Hardcover key; it does not show again. */

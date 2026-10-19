@@ -79,7 +79,7 @@ export function useLibrarySync() {
 function activeSource() {
   const { librarySync, syncSource } = getPreferences()
 
-  return librarySync ? syncSources[syncSource] : null
+  return librarySync && syncSource ? syncSources[syncSource] : null
 }
 
 let running: Promise<void> | null = null
@@ -141,6 +141,10 @@ export async function resyncLibrary() {
 export async function setLibrarySync(enabled: boolean) {
   const { syncSource } = getPreferences()
 
+  if (!syncSource) {
+    return
+  }
+
   await setPreference('librarySync', enabled)
 
   if (enabled) {
@@ -151,23 +155,26 @@ export async function setLibrarySync(enabled: boolean) {
   }
 }
 
-/** Chooses the source; one syncing before stops, and the new one syncs at once while sync is on. */
-export async function chooseSyncSource(id: SyncSourceId) {
-  const { syncSource, librarySync } = getPreferences()
-  const previous = syncSources[syncSource]
+/**
+ * Chooses the source, or none. The one before stops and forgets what it knew, and sync is off
+ * until the listener turns it on for the new one.
+ */
+export async function chooseSyncSource(id: SyncSourceId | null) {
+  const { syncSource } = getPreferences()
 
   if (id === syncSource) {
     return
   }
 
   await running
-  await previous.forget()
+
+  if (syncSource) {
+    await syncSources[syncSource].forget()
+  }
+
+  await setPreference('librarySync', false)
   await setPreference('syncSource', id)
   update({ syncedAt: null, error: null })
-
-  if (librarySync) {
-    await syncLibrary()
-  }
 }
 
 /** A change here is sent this long after it, so a burst of changes goes in one run. */

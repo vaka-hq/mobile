@@ -1866,6 +1866,12 @@ msgstr "No series yet"
 msgid "No sources found"
 msgstr "No sources found"
 
+#. Library provider when no service is chosen
+#. Library provider when no service is chosen
+#: src/screens/settings.tsx
+msgid "None"
+msgstr "None"
+
 #. Storage row when nothing of its kind is downloaded
 #. Storage row when nothing of its kind is downloaded
 #: src/screens/settings.tsx

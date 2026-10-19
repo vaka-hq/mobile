@@ -36,12 +36,7 @@ const torrent = z.object({
   files: z.array(torrentFile).nullish(),
 })
 
-const cachedTorrent = z.object({
-  name: z.string().nullish(),
-  size: z.number().nullish(),
-  hash: z.string(),
-  files: z.array(z.object({ name: z.string(), size: z.number() })).nullish(),
-})
+const cachedTorrent = z.object({ hash: z.string() })
 
 export type TorBoxTorrent = z.infer<typeof torrent>
 
@@ -127,31 +122,21 @@ export function fetchAccount(apiKey: string, signal?: AbortSignal) {
   )
 }
 
-/** The cached copy of a torrent, or null when TorBox would have to download it first. */
-async function cachedTorrents(
-  apiKey: string,
-  hashes: string[],
-  listFiles: boolean,
-  signal?: AbortSignal,
-) {
-  // Lists are requested, but an empty result can arrive as an object keyed by hash.
-  const cached = await call(
-    apiKey,
-    `/torrents/checkcached?hash=${hashes.join(',')}&format=list&list_files=${listFiles}`,
-    z.union([z.array(cachedTorrent), z.record(z.string(), cachedTorrent)]).nullish(),
-    { signal },
-  )
-
-  return Array.isArray(cached) ? cached : Object.values(cached ?? {})
-}
-
 /** Which of several info hashes TorBox already holds, in one request; lowercased. */
 export async function cachedHashes(apiKey: string, hashes: string[], signal?: AbortSignal) {
   if (hashes.length === 0) {
     return new Set<string>()
   }
 
-  const items = await cachedTorrents(apiKey, hashes, false, signal)
+  // Lists are requested, but an empty result can arrive as an object keyed by hash.
+  const cached = await call(
+    apiKey,
+    `/torrents/checkcached?hash=${hashes.join(',')}&format=list&list_files=false`,
+    z.union([z.array(cachedTorrent), z.record(z.string(), cachedTorrent)]).nullish(),
+    { signal },
+  )
+
+  const items = Array.isArray(cached) ? cached : Object.values(cached ?? {})
 
   return new Set(items.map((item) => item.hash.toLowerCase()))
 }

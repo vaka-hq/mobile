@@ -5,7 +5,7 @@ import { HardcoverError, hardcoverFailure } from './failure'
 import { type HardcoverHit, pickEdition } from './match'
 import { seriesBooks } from './series'
 
-export { HardcoverError, type HardcoverFailure } from './failure'
+export { HardcoverError } from './failure'
 
 const endpoint = 'https://api.hardcover.app/v1/graphql'
 
@@ -261,7 +261,13 @@ export async function fetchHardcoverAccount(apiKey: string, signal?: AbortSignal
         return { email: user.email ?? null, username: user.username ?? null }
       }
     } catch (error) {
-      if (error instanceof HardcoverError && error.reason === 'rejectedKey') {
+      // Only Hardcover refusing the fields moves on to fewer; a refused key, the rate limit or
+      // no connection would refuse them all.
+      if (
+        !(error instanceof HardcoverError) ||
+        error.reason === 'rejectedKey' ||
+        error.reason === 'rateLimited'
+      ) {
         throw error
       }
     }
@@ -323,6 +329,22 @@ function hitFromDocument(document: z.infer<typeof searchDocument>): HardcoverHit
   }
 }
 
+/** What is read of an audiobook edition, the default one and the others alike. */
+const editionSelection = `
+  id
+  title
+  edition_format
+  audio_seconds
+  release_date
+  isbn_13
+  asin
+  users_count
+  cached_image
+  publisher { name }
+  language { language }
+  contributions { contribution author { name } }
+`
+
 /** What is read of a book, for one or many. */
 const bookSelection = `
   id
@@ -339,33 +361,9 @@ const bookSelection = `
   cached_image
   contributions { contribution author { name } }
   book_series { position series { id name } }
-  default_audio_edition {
-    id
-    title
-    edition_format
-    audio_seconds
-    release_date
-    isbn_13
-    asin
-    users_count
-    cached_image
-    publisher { name }
-    language { language }
-    contributions { contribution author { name } }
-  }
+  default_audio_edition { ${editionSelection} }
   editions(where: { reading_format_id: { _eq: 2 } }, order_by: { users_count: desc }, limit: 40) {
-    id
-    title
-    edition_format
-    audio_seconds
-    release_date
-    isbn_13
-    asin
-    users_count
-    cached_image
-    publisher { name }
-    language { language }
-    contributions { contribution author { name } }
+    ${editionSelection}
   }
 `
 
@@ -392,7 +390,7 @@ function names(contributions: z.infer<typeof contribution>[], role: 'author' | '
 }
 
 /** One audiobook recording of a Hardcover book: who reads it, in what language, from whom. */
-export const hardcoverRecordingSchema = z.object({
+const hardcoverRecordingSchema = z.object({
   editionId: z.number(),
   title: z.string().nullable(),
   format: z.string().nullable(),
@@ -593,7 +591,7 @@ const seriesResults = z.object({
   }),
 })
 
-export const hardcoverSeriesHitSchema = z.object({
+const hardcoverSeriesHitSchema = z.object({
   id: z.number(),
   name: z.string(),
   author: z.string().nullable(),
@@ -609,7 +607,7 @@ export const hardcoverSeriesPageSchema = z.object({
   hasNextPage: z.boolean(),
 })
 
-export type HardcoverSeriesPage = z.infer<typeof hardcoverSeriesPageSchema>
+type HardcoverSeriesPage = z.infer<typeof hardcoverSeriesPageSchema>
 
 const seriesSearchQuery = `
   query VakaSeriesSearch($query: String!, $perPage: Int!, $page: Int!) {
@@ -810,13 +808,13 @@ export const hardcoverBrowsePageSchema = z.object({
   hasNextPage: z.boolean(),
 })
 
-export type HardcoverBrowsePage = z.infer<typeof hardcoverBrowsePageSchema>
+type HardcoverBrowsePage = z.infer<typeof hardcoverBrowsePageSchema>
 
-export const browsePageSize = 20
+const browsePageSize = 20
 
 export const hardcoverGenreSchema = z.object({ id: z.number(), name: z.string() })
 
-export type HardcoverGenre = z.infer<typeof hardcoverGenreSchema>
+type HardcoverGenre = z.infer<typeof hardcoverGenreSchema>
 
 /** Genres that do not describe audiobooks, or say nothing at all. */
 const skippedGenres = new Set(['comics', 'comics-graphic-novels', 'general'])
@@ -864,7 +862,7 @@ export async function fetchTrending(page: number, signal?: AbortSignal) {
   }
 
   const result = await query(
-    `query VakaBooks($ids: [Int!]!) {
+    `query VakaTrendingBooks($ids: [Int!]!) {
       books(where: { id: { _in: $ids } }) { ${browseBookFields} }
     }`,
     { ids },
@@ -1042,7 +1040,6 @@ export async function fetchShelves(signal?: AbortSignal) {
 }
 
 const shelfResult = z.object({
-  id: z.number().nullish(),
   error: z.string().nullish(),
   user_book: shelfEntry.nullish(),
 })
@@ -1069,7 +1066,6 @@ export async function addToShelf(
   const { insert_user_book: result } = await query(
     `mutation VakaAddToShelf($object: UserBookCreateInput!) {
       insert_user_book(object: $object) {
-        id
         error
         user_book { ${shelfFields} }
       }
@@ -1094,7 +1090,6 @@ export async function setShelfStatus(
   const { update_user_book: result } = await query(
     `mutation VakaSetShelfStatus($id: Int!, $object: UserBookUpdateInput!) {
       update_user_book(id: $id, object: $object) {
-        id
         error
         user_book { ${shelfFields} }
       }
@@ -1120,7 +1115,6 @@ export async function saveReadProgress(
   const { update_user_book_read: result } = await query(
     `mutation VakaSaveProgress($id: Int!, $object: DatesReadInput!) {
       update_user_book_read(id: $id, object: $object) {
-        id
         error
       }
     }`,
@@ -1133,7 +1127,7 @@ export async function saveReadProgress(
       },
     },
     z.object({
-      update_user_book_read: z.object({ id: z.number().nullish(), error: z.string().nullish() }),
+      update_user_book_read: z.object({ error: z.string().nullish() }),
     }),
     signal,
   )

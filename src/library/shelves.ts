@@ -13,6 +13,7 @@ import {
 } from '@/sources/hardcover/client'
 import { hardcoverWorks } from './catalog'
 import { invalidateLibrary } from './invalidation'
+import type { SyncProblem } from './library-sync'
 import { hardcoverWorkId, workIdOf } from './model'
 import {
   addFromShelves,
@@ -49,15 +50,50 @@ async function send<T>(request: () => Promise<T>) {
   return result
 }
 
-/** Carries out a book's plan; returns the shelf entry it leaves there and whether it changed here. */
+/**
+ * Writes refused for the key, such as one that may read the shelves but not change them. The
+ * rest of the run still brings Hardcover's changes here; the refused writes wait for a key that
+ * may make them.
+ */
+type Writes = { refused: HardcoverError | null }
+
+/**
+ * Carries out a book's plan; returns the shelf entry it leaves there, whether it changed here, and
+ * whether a change for Hardcover was held back, so the book's baseline stays for the next run.
+ */
 async function carryOut(
   bookId: number,
   actions: ShelfAction[],
   remote: HardcoverShelfEntry | null,
   book: ShelfBook | undefined,
   details: HardcoverWork | null,
+  writes: Writes,
 ) {
   const workId = book?.workId ?? hardcoverWorkId(bookId)
+  let heldBack = false
+
+  /** Sends a change there unless the key's writes are refused; null when it was not sent. */
+  async function write<T>(request: () => Promise<T>) {
+    if (writes.refused) {
+      heldBack = true
+
+      return null
+    }
+
+    try {
+      return await send(request)
+    } catch (error) {
+      if (error instanceof HardcoverError && isShelfKeyProblem(error)) {
+        writes.refused = error
+        heldBack = true
+
+        return null
+      }
+
+      throw error
+    }
+  }
+
   let entry = remote
   let changedHere = false
 
@@ -108,7 +144,7 @@ async function carryOut(
       case 'addThere': {
         const editionId = book?.local.listening?.editionId ?? null
 
-        entry = await send(() => addToShelf(bookId, editionId, action.status))
+        entry = (await write(() => addToShelf(bookId, editionId, action.status))) ?? entry
         break
       }
 
@@ -116,7 +152,7 @@ async function carryOut(
         if (entry) {
           const userBookId = entry.userBookId
 
-          entry = await send(() => setShelfStatus(userBookId, action.status))
+          entry = (await write(() => setShelfStatus(userBookId, action.status))) ?? entry
         }
 
         break
@@ -126,7 +162,16 @@ async function carryOut(
         if (entry && read) {
           const seconds = Math.round(action.seconds)
 
-          await send(() => saveReadProgress(read, action.editionId, seconds))
+          const saved = await write(async () => {
+            await saveReadProgress(read, action.editionId, seconds)
+
+            return true
+          })
+
+          if (!saved) {
+            break
+          }
+
           entry = {
             ...entry,
             read: {
@@ -146,7 +191,7 @@ async function carryOut(
     }
   }
 
-  return { entry, changedHere }
+  return { entry, changedHere, heldBack }
 }
 
 /** The details a book needs to show in the library, for the books about to come in. */
@@ -198,6 +243,7 @@ export async function syncHardcoverShelves() {
   }
 
   const details = await detailsFor(plans, books)
+  const writes: Writes = { refused: null }
   let changedHere = false
 
   for (const [bookId, actions] of plans) {
@@ -219,14 +265,23 @@ export async function syncHardcoverShelves() {
       continue
     }
 
-    const done = await carryOut(bookId, actions, entry, book, bookDetails)
+    const done = await carryOut(bookId, actions, entry, book, bookDetails, writes)
 
     changedHere ||= done.changedHere
-    await saveShelfBaseline(bookId, done.entry, startedAt)
+
+    // A book with a change held back keeps its baseline, so the change is sent once it can be.
+    if (!done.heldBack) {
+      await saveShelfBaseline(bookId, done.entry, startedAt)
+    }
   }
 
   if (changedHere) {
     invalidateLibrary()
+  }
+
+  // Said once the run is over, so the listener learns their key cannot change the shelves.
+  if (writes.refused) {
+    throw writes.refused
   }
 }
 
@@ -237,9 +292,24 @@ export async function resyncHardcoverShelves() {
 }
 
 /** Whether a failure says the key cannot be used for the shelves, rather than a passing fault. */
-export function isShelfKeyProblem(error: Error) {
-  return (
-    error instanceof HardcoverError &&
-    (error.reason === 'missingScope' || error.reason === 'rejectedKey')
-  )
+function isShelfKeyProblem(error: HardcoverError) {
+  return error.reason === 'missingScope' || error.reason === 'rejectedKey'
+}
+
+/** What a failed run says about the key or Hardcover, for Settings; null for a passing fault. */
+export function shelfProblem(error: Error): SyncProblem | null {
+  if (!(error instanceof HardcoverError)) {
+    return null
+  }
+
+  switch (error.reason) {
+    case 'rejectedKey':
+      return 'rejectedKey'
+    case 'missingScope':
+      return 'missingAccess'
+    case 'rateLimited':
+      return 'limited'
+    case 'other':
+      return null
+  }
 }

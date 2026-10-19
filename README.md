@@ -34,7 +34,7 @@ On first start the app asks for a TorBox API key (torbox.app → Settings → AP
 Hardcover API key with `read:catalog` access (hardcover.app → Settings → Hardcover API) and an
 HTTP proxy for AudioBookBay, or restores a backup instead. All of them can be added later in
 Settings. To keep the library in step with your Hardcover shelves (Settings → Library),
-give the key `read:library` and `write:library` too.
+give the key `read:library`, `write:library` and `read:me:content` too.
 
 ## Developing
 

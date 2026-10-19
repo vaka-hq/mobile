@@ -25,6 +25,7 @@ import {
   chooseSyncSource,
   resyncLibrary,
   setLibrarySync,
+  type SyncProblem,
   syncSources,
   useLibrarySync,
 } from '@/library/library-sync'
@@ -307,6 +308,34 @@ export function SettingsScreen() {
     ? timeOfDay(librarySync.syncedAt, i18n.locale, getCalendars()[0]?.uses24hourClock ?? null)
     : ''
 
+  /** Why syncing keeps failing, said so the listener knows what to do about it. */
+  function syncProblemText(problem: SyncProblem | null) {
+    switch (problem) {
+      case 'rejectedKey':
+        return t({
+          message: `${sourceName} didn’t accept your key. Replace it in Accounts.`,
+          comment:
+            'Library sync status when the provider rejects the API key as invalid or expired, with its name',
+        })
+      case 'missingAccess':
+        return t({
+          message: `Your ${sourceName} key can’t sync your library. Replace it with one that can.`,
+          comment:
+            'Library sync status when the API key lacks the permissions to read or change the library, with the provider name',
+        })
+      case 'limited':
+        return t({
+          message: `${sourceName}’s request limit was reached. It tries again later.`,
+          comment: 'Library sync status when the provider’s rate limit is used up, with its name',
+        })
+      case null:
+        return t({
+          message: 'Couldn’t sync. It tries again soon.',
+          comment: 'Library sync status after a sync failed for a passing reason',
+        })
+    }
+  }
+
   // How syncing stands, in the row under the provider: while on, or when it cannot sync at all.
   const syncStatus = !source.ready()
     ? t({
@@ -318,16 +347,7 @@ export function SettingsScreen() {
       : librarySync.syncing
         ? t({ message: 'Syncing…', comment: 'Library sync status while it syncs' })
         : librarySync.error
-          ? source.keyProblem(librarySync.error)
-            ? t({
-                message: `Your ${sourceName} key can’t change your library. Replace it.`,
-                comment:
-                  'Library sync status when the API key lacks library permissions, with the provider name',
-              })
-            : t({
-                message: 'Couldn’t sync. It tries again soon.',
-                comment: 'Library sync status after a sync failed for a passing reason',
-              })
+          ? syncProblemText(source.problem(librarySync.error))
           : librarySync.syncedAt
             ? t({
                 message: `Synced ${syncedTime}`,

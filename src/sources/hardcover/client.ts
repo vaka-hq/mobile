@@ -1,8 +1,11 @@
 import { z } from 'zod'
-import { HttpError, request } from '@/lib/http'
+import { request } from '@/lib/http'
 import { hardcoverKey } from '@/settings/hardcover-key'
+import { HardcoverError, hardcoverFailure } from './failure'
 import { type HardcoverHit, pickEdition } from './match'
 import { seriesBooks } from './series'
+
+export { HardcoverError, type HardcoverFailure } from './failure'
 
 const endpoint = 'https://api.hardcover.app/v1/graphql'
 
@@ -167,19 +170,6 @@ export const hardcoverBookSchema = z.object({
 
 export type HardcoverBook = z.infer<typeof hardcoverBookSchema>
 
-/** Why Hardcover refused a request, for messages the listener can act on. */
-export type HardcoverFailure = 'rejectedKey' | 'missingScope' | 'rateLimited' | 'other'
-
-export class HardcoverError extends HttpError {
-  readonly reason: HardcoverFailure
-
-  constructor(message: string, status: number | null, reason: HardcoverFailure = 'other') {
-    super(message, status)
-    this.name = 'HardcoverError'
-    this.reason = reason
-  }
-}
-
 export class HardcoverNotConnectedError extends Error {
   constructor() {
     super('Add your Hardcover API key in Settings to load book details')
@@ -194,45 +184,6 @@ const graphqlEnvelope = z.object({
   data: z.json().nullish(),
   errors: z.array(z.object({ message: z.string() })).nullish(),
 })
-
-const failure = z.object({
-  error: z.string().nullish(),
-  error_description: z.string().nullish(),
-  scope: z.string().nullish(),
-})
-
-function failureFrom(status: number, body: string) {
-  let reason: z.infer<typeof failure> | null = null
-
-  try {
-    const parsed = failure.safeParse(JSON.parse(body))
-
-    reason = parsed.success ? parsed.data : null
-  } catch {
-    reason = null
-  }
-
-  if (status === 401) {
-    return new HardcoverError('Hardcover did not accept the API key', status, 'rejectedKey')
-  }
-
-  if (reason?.error === 'insufficient_scope') {
-    return new HardcoverError(
-      `The Hardcover API key is missing the ${reason.scope ?? 'read:catalog'} permission`,
-      status,
-      'missingScope',
-    )
-  }
-
-  if (status === 429) {
-    return new HardcoverError('Hardcover’s rate limit was reached', status, 'rateLimited')
-  }
-
-  return new HardcoverError(
-    reason?.error_description ?? reason?.error ?? `Hardcover answered ${status}`,
-    status,
-  )
-}
 
 async function graphql<T extends z.ZodType>(
   apiKey: string,
@@ -256,7 +207,7 @@ async function graphql<T extends z.ZodType>(
     },
     async (response) => {
       if (!response.ok) {
-        throw failureFrom(response.status, await response.text())
+        throw hardcoverFailure(response.status, await response.text())
       }
 
       return graphqlEnvelope.parse(await response.json())

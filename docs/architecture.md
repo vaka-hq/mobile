@@ -174,8 +174,12 @@ answers name the problem: a rejected key, a missing `read:catalog` permission or
 Without a key the app works with AudioBookBay details. Hardcover's personal keys expire on the date
 chosen when creating them; replace the key in Settings when that happens.
 
-For library sync with Hardcover the key also needs your library (`read:library` and
-`write:library`); `read:me:email` lets Settings show the account's email.
+For library sync with Hardcover the key also needs your library and profile (`read:library`,
+`write:library` and `read:me:content`); `read:me:email` lets Settings show the account's email.
+The sync's status under the provider says when Hardcover rejects the key, when the key lacks
+those permissions and when Hardcover's request limit is used up (`src/sources/hardcover/failure.ts`,
+tested). A key that may read the shelves but not change them still brings Hardcover's changes in;
+what it may not send waits for a key that can.
 
 ## Library sync
 

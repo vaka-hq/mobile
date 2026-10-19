@@ -4,7 +4,7 @@ import { hardcoverKey } from '@/settings/hardcover-key'
 import { getPreferences, type SyncSourceId, setPreference } from '@/settings/preferences'
 import { onLibraryChange } from './invalidation'
 import { forgetShelves } from './shelf-store'
-import { isShelfKeyProblem, resyncHardcoverShelves, syncHardcoverShelves } from './shelves'
+import { resyncHardcoverShelves, shelfProblem, syncHardcoverShelves } from './shelves'
 
 /**
  * Keeping the library in step with a service the listener keeps their books on. One source syncs
@@ -21,9 +21,15 @@ export type SyncSource = {
   resync: () => Promise<void>
   /** Forgets what its runs knew, for a source turned off or replaced by another. */
   forget: () => Promise<void>
-  /** Whether a failed run means its key cannot be used, rather than a passing fault. */
-  keyProblem: (error: Error) => boolean
+  /** What a failed run says about the key or the source, or null for a passing fault. */
+  problem: (error: Error) => SyncProblem | null
 }
+
+/**
+ * Why runs keep failing: the source refuses the key, the key may not read or change the library,
+ * or the source's request limit is used up for now.
+ */
+export type SyncProblem = 'rejectedKey' | 'missingAccess' | 'limited'
 
 /** Every source the library can sync with. A new one is added here and named in Settings. */
 export const syncSources: Record<SyncSourceId, SyncSource> = {
@@ -32,7 +38,7 @@ export const syncSources: Record<SyncSourceId, SyncSource> = {
     sync: syncHardcoverShelves,
     resync: resyncHardcoverShelves,
     forget: forgetShelves,
-    keyProblem: isShelfKeyProblem,
+    problem: shelfProblem,
   },
 }
 

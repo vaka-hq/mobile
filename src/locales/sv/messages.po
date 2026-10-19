@@ -180,6 +180,16 @@ msgstr "{roundedMinutes, plural, one {# min kvar} other {# min kvar}}"
 msgid "{seeders, plural, one {# seeder} other {# seeders}}"
 msgstr "{seeders, plural, one {# seedare} other {# seedare}}"
 
+#. Library sync status when the provider rejects the API key as invalid or expired, with its name
+#: src/screens/settings.tsx
+msgid "{sourceName} didn’t accept your key. Replace it in Accounts."
+msgstr "{sourceName} godtog inte din nyckel. Byt ut den under Konton."
+
+#. Library sync status when the provider’s rate limit is used up, with its name
+#: src/screens/settings.tsx
+msgid "{sourceName}’s request limit was reached. It tries again later."
+msgstr "Gränsen för förfrågningar till {sourceName} är nådd. Försöker igen senare."
+
 #. Skip interval option, for example “30 seconds”
 #: src/screens/settings.tsx
 msgid "{value} seconds"
@@ -3161,10 +3171,10 @@ msgstr "Du förlorar ditt förlopp, dina anteckningar och nedladdningar."
 msgid "You’ll lose your progress."
 msgstr "Du förlorar ditt förlopp."
 
-#. Library sync status when the API key lacks library permissions, with the provider name
+#. Library sync status when the API key lacks the permissions to read or change the library, with the provider name
 #: src/screens/settings.tsx
-msgid "Your {sourceName} key can’t change your library. Replace it."
-msgstr "Din nyckel för {sourceName} kan inte ändra ditt bibliotek. Byt ut den."
+msgid "Your {sourceName} key can’t sync your library. Replace it with one that can."
+msgstr "Din nyckel för {sourceName} kan inte synka ditt bibliotek. Byt till en som kan."
 
 #. Library load failure
 #: src/screens/library.tsx

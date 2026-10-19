@@ -11,32 +11,28 @@ import {
 } from 'expo/config-plugins'
 import { appIdentity } from './config/app-identity.ts'
 
-const withAndroidReleaseShrinking: ConfigPlugin = (config) => {
-  config = withGradleProperties(config, (gradleConfig) => {
-    const releaseProperties = {
-      'android.r8.optimizedResourceShrinking': 'true',
-      'org.gradle.jvmargs': '-Xmx4096m -XX:MaxMetaspaceSize=1024m',
-    }
+/**
+ * Gives Gradle twice the template's memory, for R8 to minify release builds in. Android
+ * Gradle Plugin 9 already shrinks resources the optimised way, and release builds keep the
+ * template's optimised R8 rules, since it refuses the unoptimised ones.
+ */
+const withGradleMemory: ConfigPlugin = (config) =>
+  withGradleProperties(config, (gradleConfig) => {
+    const key = 'org.gradle.jvmargs'
+    const value = '-Xmx4096m -XX:MaxMetaspaceSize=1024m'
 
-    for (const [key, value] of Object.entries(releaseProperties)) {
-      const existing = gradleConfig.modResults.find(
-        (item) => item.type === 'property' && item.key === key,
-      )
+    const existing = gradleConfig.modResults.find(
+      (item) => item.type === 'property' && item.key === key,
+    )
 
-      if (existing?.type === 'property') {
-        existing.value = value
-      } else {
-        gradleConfig.modResults.push({ key, type: 'property', value })
-      }
+    if (existing?.type === 'property') {
+      existing.value = value
+    } else {
+      gradleConfig.modResults.push({ key, type: 'property', value })
     }
 
     return gradleConfig
   })
-
-  // Release builds keep the template's optimised R8 rules; Android Gradle Plugin 9 refuses the
-  // unoptimised ones.
-  return config
-}
 
 const releaseSigningMarker = '// Vaka: release signing'
 
@@ -223,7 +219,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       withoutUpdatesSettings(
         withFreshExpoModuleList(
           withAndroidStackTransitions(
-            withAndroidReleaseShrinking({
+            withGradleMemory({
               ...config,
               name: variant.name,
               slug: 'vaka',
@@ -263,14 +259,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 },
               },
               plugins: [
-                [
-                  'expo-audio',
-                  {
-                    enableBackgroundPlayback: true,
-                    microphonePermission: false,
-                    recordAudioAndroid: false,
-                  },
-                ],
+                ['expo-audio', { enableBackgroundPlayback: true, recordAudioAndroid: false }],
                 [
                   'expo-build-properties',
                   {
@@ -282,7 +271,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                   },
                 ],
                 ['expo-localization', { supportedLocales: ['en', 'sv'] }],
-                ['expo-secure-store', { faceIDPermission: false }],
+                'expo-secure-store',
                 // The icon's mark on its midnight field, in light and dark mode alike.
                 [
                   'expo-splash-screen',

@@ -84,7 +84,11 @@ function activeSource() {
 
 let running: Promise<void> | null = null
 
-let rerun = false
+/** The run asked for while one is under way, made once it ends; a resync outranks a sync. */
+let pending: 'sync' | 'resync' | null = null
+
+/** When the last run ended, whether or not it got through. */
+let ranAt = 0
 
 async function runOnce(kind: 'sync' | 'resync') {
   const source = activeSource()
@@ -98,7 +102,7 @@ async function runOnce(kind: 'sync' | 'resync') {
 
 function start(kind: 'sync' | 'resync'): Promise<void> {
   if (running) {
-    rerun = true
+    pending = pending === 'resync' ? pending : kind
 
     return running
   }
@@ -107,17 +111,17 @@ function start(kind: 'sync' | 'resync'): Promise<void> {
     update({ syncing: true })
 
     try {
-      await runOnce(kind)
-
-      while (rerun) {
-        rerun = false
-        await runOnce('sync')
+      for (let next: typeof pending = kind; next; next = pending) {
+        pending = null
+        await runOnce(next)
       }
 
       update({ syncing: false, syncedAt: Date.now(), error: null })
     } catch (error) {
       update({ syncing: false, error: error instanceof Error ? error : new Error(String(error)) })
     } finally {
+      pending = null
+      ranAt = Date.now()
       running = null
     }
   })()
@@ -131,9 +135,7 @@ export function syncLibrary() {
 }
 
 /** Syncs everything again from the source, after the run under way. */
-export async function resyncLibrary() {
-  await running
-
+export function resyncLibrary() {
   return start('resync')
 }
 
@@ -150,6 +152,8 @@ export async function setLibrarySync(enabled: boolean) {
   if (enabled) {
     await syncLibrary()
   } else {
+    // A run under way would save what it learnt after it was forgotten.
+    await running
     await syncSources[syncSource].forget()
     update({ syncedAt: null, error: null })
   }
@@ -166,13 +170,14 @@ export async function chooseSyncSource(id: SyncSourceId | null) {
     return
   }
 
+  // Off first, so no run starts for the source before it is forgotten.
+  await setPreference('librarySync', false)
   await running
 
   if (syncSource) {
     await syncSources[syncSource].forget()
   }
 
-  await setPreference('librarySync', false)
   await setPreference('syncSource', id)
   update({ syncedAt: null, error: null })
 }
@@ -201,16 +206,19 @@ export function startLibrarySync() {
       return
     }
 
-    if (change === 'library' || Date.now() - (state.syncedAt ?? 0) > listeningEveryMs) {
-      if (settleTimer) {
-        clearTimeout(settleTimer)
-      }
-
-      settleTimer = setTimeout(() => {
-        settleTimer = null
-        void syncLibrary()
-      }, settleMs)
+    // Listening saves its place every few seconds; were each to put the run off, none would come.
+    if (change === 'listening' && (settleTimer || Date.now() - ranAt < listeningEveryMs)) {
+      return
     }
+
+    if (settleTimer) {
+      clearTimeout(settleTimer)
+    }
+
+    settleTimer = setTimeout(() => {
+      settleTimer = null
+      void syncLibrary()
+    }, settleMs)
   })
 
   AppState.addEventListener('change', (next) => {

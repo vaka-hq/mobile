@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Host } from '@/components/host'
 import { useAbbSilent } from '@/library/abb-reader'
 import { useAbbProxy } from '@/settings/abb-proxy'
@@ -22,8 +22,14 @@ export function AbbSilenceAlert() {
 
   if (silent && !proxy && !abbSilenceNoticed && !open) {
     setOpen(true)
-    void setPreference('abbSilenceNoticed', true)
   }
+
+  // Remembered once it shows, outside rendering, which may run more than once.
+  useEffect(() => {
+    if (open) {
+      void setPreference('abbSilenceNoticed', true)
+    }
+  }, [open])
 
   if (!open) {
     return null

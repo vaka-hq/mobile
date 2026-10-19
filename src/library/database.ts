@@ -212,7 +212,11 @@ const migrations = [
 function open() {
   const database = SQLite.openDatabaseSync('vaka.db')
 
-  database.execSync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;')
+  // An exclusive transaction runs on a connection of its own, so writes here wait for it rather
+  // than failing as locked. That connection has foreign keys off: delete children by hand there.
+  database.execSync(
+    'PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;',
+  )
 
   const version =
     database.getFirstSync<{ user_version: number }>('PRAGMA user_version')?.user_version ?? 0

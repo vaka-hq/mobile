@@ -10,9 +10,9 @@ import { Screen } from '@/ui/screen'
  * Every EPUB found for a Hardcover book, laid out as the book's recordings are: grouped by who
  * published it, with its language as the group's caption, each file's format and size, then its
  * year. The best come first and the one the book is read in is selected. Choosing another makes
- * it the book's e-book and returns to the book, as choosing a recording does; Read downloads it.
- * Files are downloaded directly, not through torrents, so none is checked beforehand: one that
- * cannot be downloaded says so when Read tries, and another can be chosen.
+ * it the book's e-book and returns to the book, as choosing a recording does, where Download
+ * fetches it. Files are downloaded directly, not through torrents, so none is checked
+ * beforehand: one that cannot be downloaded says so then, and another can be chosen.
  */
 export function WorkEbooksScreen() {
   const { t } = useLingui()

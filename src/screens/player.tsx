@@ -34,12 +34,12 @@ import { ButtonGroup, Cover, Notice, PlayerFade, PlayPauseButton, SkipIcon } fro
 import { Action, ScreenFrame } from '@/ui/screen'
 import { SleepSheet, SpeedSheet } from '@/ui/sheets'
 
-/** Seconds left on a time-based sleep timer, ticking once a second while it runs. */
 /** Whether playback failed for want of an accepted key, which only Settings can fix. */
 function keyError(error: Error) {
   return error instanceof TorBoxKeyMissingError || isAuthenticationError(error)
 }
 
+/** Seconds left on a time-based sleep timer, ticking once a second while it runs. */
 function useCountdown(endsAt: number | null) {
   const [tick, setTick] = useState(() => ({ endsAt, now: Date.now() }))
 
@@ -82,7 +82,6 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
   const addBookmark = useAddBookmark(now?.book.id ?? '')
   const [sheet, setSheet] = useState<'speed' | 'sleep' | 'chapters' | 'bookmarks' | null>(null)
   const countdown = useCountdown(now?.sleep?.kind === 'time' ? now.sleep.endsAt : null)
-  // Offered while paused, when the book's e-book was read further on than it was listened to.
   // The book's e-book, for switching to reading it from where listening stopped.
   const ebooks = useEbooks()
   const openEbook = useOpenEbook()
@@ -132,7 +131,7 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
   }
 
   const { book, summary } = now
-  const chapter = now.book.chapters?.[summary.chapterIndex]
+  const chapter = book.chapters?.[summary.chapterIndex]
   const chapterStart = chapter && chapter.track === now.track ? chapter.start : 0
   const length = summary.chapterLength
   const elapsed = dragging ?? summary.chapterElapsed

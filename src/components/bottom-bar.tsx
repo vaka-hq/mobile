@@ -1,8 +1,9 @@
 import { useLingui } from '@lingui/react/macro'
 import { useTabTrigger } from 'expo-router/ui'
 import { Host } from '@/components/host'
-import { Column, Icon } from '@/lib/compose-ui'
-import { glyphs } from '@/ui/glyphs'
+import { Column } from '@/lib/compose-ui'
+import type { Glyph } from '@/ui/glyphs'
+import { GlyphIcon } from '@/ui/primitives'
 import { ShortNavigationBar } from '../../modules/ui'
 
 type TabName = 'library' | 'browse'
@@ -10,20 +11,14 @@ type TabName = 'library' | 'browse'
 type Tab = {
   name: TabName
   label: string
-  icon: number
-  selectedIcon: number
+  icon: Glyph
+  selectedIcon: Glyph
   focused: boolean
 }
 
 function TabIcon({ tab }: { tab: Tab }) {
   // The selected state shows the filled glyph.
-  return (
-    <Icon
-      source={tab.focused ? tab.selectedIcon : tab.icon}
-      size={24}
-      contentDescription={tab.label}
-    />
-  )
+  return <GlyphIcon glyph={tab.focused ? tab.selectedIcon : tab.icon} description={tab.label} />
 }
 
 /**
@@ -38,8 +33,8 @@ export function BottomBar() {
   const library: Tab = {
     name: 'library',
     label: t({ message: 'Library', comment: 'Navigation destination: saved audiobooks' }),
-    icon: glyphs.library,
-    selectedIcon: glyphs.libraryFilled,
+    icon: 'library',
+    selectedIcon: 'libraryFilled',
     focused: Boolean(libraryTrigger.trigger?.isFocused),
   }
 
@@ -49,8 +44,8 @@ export function BottomBar() {
       message: 'Browse',
       comment: 'Navigation destination: new and trending books, and searching for more',
     }),
-    icon: glyphs.browse,
-    selectedIcon: glyphs.browseFilled,
+    icon: 'browse',
+    selectedIcon: 'browseFilled',
     focused: Boolean(browseTrigger.trigger?.isFocused),
   }
 

@@ -5,8 +5,8 @@ import { useWindowDimensions } from 'react-native'
 import { BookmarksSheet, ChaptersSheet } from '@/components/book-sheets'
 import { useOpenEbook } from '@/components/ebook-row'
 import { findingTakesTime, findPlace, type PlaceWork } from '@/components/place-prompt'
-import { fillMaxSize, fillMaxWidth, padding, size, weight } from '@/lib/compose-modifiers'
-import { Column, Icon, IconButton, Row, Slider, Text, useMaterialColors } from '@/lib/compose-ui'
+import { fillMaxSize, fillMaxWidth, padding } from '@/lib/compose-modifiers'
+import { Column, Row } from '@/lib/compose-ui'
 import { displayAuthors, displayCoverArt, displayTitle } from '@/library/display'
 import { type Ebook, ebookOfWork, ebookResultOf, useEbooks } from '@/library/ebooks'
 import { prepareReadingPlace } from '@/library/listening-reading'
@@ -28,9 +28,17 @@ import { TorBoxKeyMissingError } from '@/settings/torbox-key'
 import { isAuthenticationError } from '@/sources/torbox/client'
 import { useErrorText } from '@/ui/errors'
 import { clock, speedLabel } from '@/ui/format'
-import { glyphs } from '@/ui/glyphs'
 import { useLabels } from '@/ui/labels'
-import { ButtonGroup, Cover, Notice, PlayerFade, PlayPauseButton, SkipIcon } from '@/ui/primitives'
+import {
+  ButtonGroup,
+  Cover,
+  Notice,
+  PlayerFade,
+  PlayPauseButton,
+  SeekBar,
+  SkipButton,
+  ToneText,
+} from '@/ui/primitives'
 import { Action, ScreenFrame } from '@/ui/screen'
 import { SleepSheet, SpeedSheet } from '@/ui/sheets'
 
@@ -70,7 +78,6 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
   const { t } = useLingui()
   const errorText = useErrorText()
   const router = useRouter()
-  const colors = useMaterialColors()
   const labels = useLabels()
   const { width, height: windowHeight } = useWindowDimensions()
   const preferences = usePreferences()
@@ -217,32 +224,32 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
               verticalArrangement={{ spacedBy: 4 }}
               modifiers={[fillMaxWidth()]}
             >
-              <Text
+              <ToneText
                 maxLines={2}
                 overflow='ellipsis'
                 style={{ typography: 'titleLarge', textAlign: 'center' }}
               >
                 {displayTitle(book)}
-              </Text>
-              <Text
+              </ToneText>
+              <ToneText
+                tone='secondary'
                 maxLines={1}
                 overflow='ellipsis'
-                color={colors.onSurfaceVariant}
                 style={{ textAlign: 'center' }}
               >
                 {[labels.authors(displayAuthors(book)), book.hardcover?.releaseYear]
                   .filter(Boolean)
                   .join(' · ')}
-              </Text>
+              </ToneText>
               {summary.chapterCount > 1 ? (
-                <Text
+                <ToneText
+                  tone='accent'
                   maxLines={1}
                   overflow='ellipsis'
-                  color={colors.primary}
                   style={{ typography: 'titleSmall', textAlign: 'center' }}
                 >
                   {labels.chapter(summary.chapterTitle, summary.chapterIndex)}
-                </Text>
+                </ToneText>
               ) : null}
             </Column>
             {now.error ? (
@@ -271,81 +278,58 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
                 />
               )
             ) : null}
-            <Column modifiers={[fillMaxWidth()]}>
-              <Slider
-                value={length ? Math.min(elapsed, length) : 0}
-                min={0}
-                max={length ?? 1}
-                enabled={length !== null && length > 0}
-                onValueChange={(value) => {
-                  drag.current = {
-                    value,
-                    track: drag.current?.track ?? now.track,
-                    start: drag.current?.start ?? chapterStart,
-                  }
-                  setDragging(value)
-                }}
-                onValueChangeFinished={() => {
-                  const released = drag.current
+            {/* The chapter's elapsed and remaining time, with the whole book's time left between. */}
+            <SeekBar
+              value={length ? Math.min(elapsed, length) : 0}
+              max={length ?? 1}
+              enabled={length !== null && length > 0}
+              start={clock(elapsed)}
+              middle={
+                summary.bookTotal !== null
+                  ? labels.remaining((summary.bookTotal - summary.bookElapsed) / now.speed)
+                  : null
+              }
+              end={length !== null ? `-${clock(length - elapsed)}` : '--:--'}
+              onValueChange={(value) => {
+                drag.current = {
+                  value,
+                  track: drag.current?.track ?? now.track,
+                  start: drag.current?.start ?? chapterStart,
+                }
+                setDragging(value)
+              }}
+              onValueChangeFinished={() => {
+                const released = drag.current
 
-                  drag.current = null
-                  setDragging(null)
+                drag.current = null
+                setDragging(null)
 
-                  if (released) {
-                    void seekTo(released.track, released.start + released.value)
-                  }
-                }}
-                modifiers={[fillMaxWidth()]}
-              />
-              {/* The chapter's elapsed and remaining time, with the whole book's time left between. */}
-              <Row modifiers={[fillMaxWidth()]} verticalAlignment='center'>
-                <Text
-                  color={colors.onSurfaceVariant}
-                  style={{ typography: 'labelMedium' }}
-                  modifiers={[weight(1)]}
-                >
-                  {clock(elapsed)}
-                </Text>
-                {summary.bookTotal !== null ? (
-                  <Text color={colors.onSurfaceVariant} style={{ typography: 'labelMedium' }}>
-                    {labels.remaining((summary.bookTotal - summary.bookElapsed) / now.speed)}
-                  </Text>
-                ) : null}
-                <Text
-                  color={colors.onSurfaceVariant}
-                  style={{ typography: 'labelMedium', textAlign: 'right' }}
-                  modifiers={[weight(1)]}
-                >
-                  {length !== null ? `-${clock(length - elapsed)}` : '--:--'}
-                </Text>
-              </Row>
-            </Column>
+                if (released) {
+                  void seekTo(released.track, released.start + released.value)
+                }
+              }}
+            />
             <Row
               verticalAlignment='center'
               horizontalArrangement='spaceEvenly'
               modifiers={[fillMaxWidth()]}
             >
-              <IconButton onClick={() => void skipChapter(-1)} enabled={summary.chapterCount > 1}>
-                <Icon
-                  source={glyphs.previousChapter}
-                  size={28}
-                  contentDescription={t({ message: 'Previous chapter', comment: 'Player control' })}
-                />
-              </IconButton>
-              <IconButton
-                onClick={() => void seekBy(-preferences.skipBackSeconds)}
-                modifiers={[size(56, 56)]}
-              >
-                <SkipIcon
-                  direction='back'
-                  seconds={preferences.skipBackSeconds}
-                  dimension={32}
-                  description={t({
-                    message: `Back ${preferences.skipBackSeconds} seconds`,
-                    comment: 'Player control jumping backwards',
-                  })}
-                />
-              </IconButton>
+              <Action
+                glyph='previousChapter'
+                dimension={28}
+                label={t({ message: 'Previous chapter', comment: 'Player control' })}
+                enabled={summary.chapterCount > 1}
+                onPress={() => void skipChapter(-1)}
+              />
+              <SkipButton
+                direction='back'
+                seconds={preferences.skipBackSeconds}
+                description={t({
+                  message: `Back ${preferences.skipBackSeconds} seconds`,
+                  comment: 'Player control jumping backwards',
+                })}
+                onPress={() => void seekBy(-preferences.skipBackSeconds)}
+              />
               <PlayPauseButton
                 playing={now.playing || now.loading}
                 buffering={now.loading}
@@ -355,30 +339,22 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
                 pauseLabel={t({ message: 'Pause', comment: 'Pauses the audiobook' })}
                 onPress={togglePlay}
               />
-              <IconButton
-                onClick={() => void seekBy(preferences.skipForwardSeconds)}
-                modifiers={[size(56, 56)]}
-              >
-                <SkipIcon
-                  direction='forward'
-                  seconds={preferences.skipForwardSeconds}
-                  dimension={32}
-                  description={t({
-                    message: `Forward ${preferences.skipForwardSeconds} seconds`,
-                    comment: 'Player control jumping forwards',
-                  })}
-                />
-              </IconButton>
-              <IconButton
-                onClick={() => void skipChapter(1)}
+              <SkipButton
+                direction='forward'
+                seconds={preferences.skipForwardSeconds}
+                description={t({
+                  message: `Forward ${preferences.skipForwardSeconds} seconds`,
+                  comment: 'Player control jumping forwards',
+                })}
+                onPress={() => void seekBy(preferences.skipForwardSeconds)}
+              />
+              <Action
+                glyph='nextChapter'
+                dimension={28}
+                label={t({ message: 'Next chapter', comment: 'Player control' })}
                 enabled={summary.chapterIndex < summary.chapterCount - 1}
-              >
-                <Icon
-                  source={glyphs.nextChapter}
-                  size={28}
-                  contentDescription={t({ message: 'Next chapter', comment: 'Player control' })}
-                />
-              </IconButton>
+                onPress={() => void skipChapter(1)}
+              />
             </Row>
             <ButtonGroup
               buttons={[

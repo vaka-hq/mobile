@@ -1,5 +1,13 @@
 import { useLingui } from '@lingui/react/macro'
-import { type ReactNode, type Ref, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import {
+  type ComponentProps,
+  type ReactNode,
+  type Ref,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react'
 import {
   animateContentSize,
   animated,
@@ -26,6 +34,7 @@ import {
   Box,
   Button,
   Card,
+  CircularProgressIndicator,
   Column,
   EnterTransition,
   ExitTransition,
@@ -40,6 +49,7 @@ import {
   ListItem,
   LoadingIndicator,
   Row,
+  Slider,
   Switch,
   Text,
   TextButton,
@@ -577,8 +587,95 @@ function RowButton({
 }
 
 /** One of the app's glyphs in the colour of the slot it sits in, such as a card's trailing mark. */
-export function GlyphIcon({ glyph }: { glyph: Glyph }) {
-  return <Icon source={glyphs[glyph]} size={24} />
+export function GlyphIcon({ glyph, description }: { glyph: Glyph; description?: string }) {
+  return <Icon source={glyphs[glyph]} size={24} contentDescription={description} />
+}
+
+export type ToneTextProps = Omit<ComponentProps<typeof Text>, 'color'> & {
+  /**
+   * Supporting text, such as an author under a title, or text that stands out in the accent
+   * colour, such as the chapter playing; without it, the colour of the slot it sits in.
+   */
+  tone?: 'secondary' | 'accent'
+}
+
+/** Text in one of the app's tones rather than a named colour. */
+export function ToneText({ tone, ...props }: ToneTextProps) {
+  const colors = useMaterialColors()
+
+  return (
+    <Text
+      {...props}
+      color={
+        tone === 'secondary'
+          ? colors.onSurfaceVariant
+          : tone === 'accent'
+            ? colors.primary
+            : undefined
+      }
+    />
+  )
+}
+
+/**
+ * A short status beside its glyph, such as whether a book can be streamed: a small spinner in the
+ * glyph's place while it is still being found out, and the glyph in red for a warning.
+ */
+export function StatusLine({
+  glyph,
+  message,
+  pending = false,
+  warning = false,
+}: {
+  glyph: Glyph
+  message: string
+  pending?: boolean
+  warning?: boolean
+}) {
+  const colors = useMaterialColors()
+
+  return (
+    <Row verticalAlignment='center' horizontalArrangement={{ spacedBy: 12 }}>
+      <Box contentAlignment='center' modifiers={[size(24, 24)]}>
+        {pending ? (
+          <CircularProgressIndicator strokeWidth={2} modifiers={[size(18, 18)]} />
+        ) : (
+          <Icon
+            source={glyphs[glyph]}
+            size={20}
+            tint={warning ? colors.error : colors.onSurfaceVariant}
+          />
+        )}
+      </Box>
+      <Text
+        color={colors.onSurfaceVariant}
+        style={{ typography: 'bodyMedium' }}
+        modifiers={[weight(1)]}
+      >
+        {message}
+      </Text>
+    </Row>
+  )
+}
+
+/** A filled button as wide as its column, with a glyph before its label. */
+export function WideButton({
+  glyph,
+  label,
+  enabled = true,
+  onPress,
+}: {
+  glyph: Glyph
+  label: string
+  enabled?: boolean
+  onPress: () => void
+}) {
+  return (
+    <Button onClick={onPress} enabled={enabled} modifiers={[fillMaxWidth()]}>
+      <Icon source={glyphs[glyph]} size={20} />
+      <Text modifiers={[padding(8, 0, 0, 0)]}>{label}</Text>
+    </Button>
+  )
 }
 
 /** The head of a setup step: its icon in a tonal circle, its title and a short line under it. */
@@ -1371,21 +1468,122 @@ export function SearchField({
   )
 }
 
-export type SkipIconProps = {
+export type SkipButtonProps = {
   direction: 'back' | 'forward'
   seconds: number
-  /** The icon's size in dp. */
-  dimension: number
   description: string
+  /** The mini player's smaller, tonal button; otherwise the full player's plain one. */
+  compact?: boolean
+  onPress: () => void
 }
 
-/** The skip control's icon: a circular arrow with the interval in its middle, as players show it. */
-export function SkipIcon({ direction, seconds, dimension, description }: SkipIconProps) {
-  return (
+/**
+ * The skip control: a circular arrow with the interval in its middle, as players show it, jumping
+ * back or forward by that interval.
+ */
+export function SkipButton({
+  direction,
+  seconds,
+  description,
+  compact = false,
+  onPress,
+}: SkipButtonProps) {
+  const icon = (
     <Icon
       source={glyphs[skipGlyph(direction, seconds)]}
-      size={dimension}
+      size={compact ? 22 : 32}
       contentDescription={description}
+    />
+  )
+
+  return compact ? (
+    <FilledTonalIconButton onClick={onPress} modifiers={[size(40, 40)]}>
+      {icon}
+    </FilledTonalIconButton>
+  ) : (
+    <IconButton onClick={onPress} modifiers={[size(56, 56)]}>
+      {icon}
+    </IconButton>
+  )
+}
+
+export type SeekBarProps = {
+  value: number
+  max: number
+  enabled: boolean
+  /** Under the bar's start and end, and optionally between them, such as the time played and left. */
+  start: string
+  middle?: string | null
+  end: string
+  onValueChange: (value: number) => void
+  onValueChangeFinished: () => void
+}
+
+/** A full-width slider through a span, such as a chapter, with its times beneath it. */
+export function SeekBar({
+  value,
+  max,
+  enabled,
+  start,
+  middle,
+  end,
+  onValueChange,
+  onValueChangeFinished,
+}: SeekBarProps) {
+  const colors = useMaterialColors()
+
+  return (
+    <Column modifiers={[fillMaxWidth()]}>
+      <Slider
+        value={value}
+        min={0}
+        max={max}
+        enabled={enabled}
+        onValueChange={onValueChange}
+        onValueChangeFinished={onValueChangeFinished}
+        modifiers={[fillMaxWidth()]}
+      />
+      <Row modifiers={[fillMaxWidth()]} verticalAlignment='center'>
+        <Text
+          color={colors.onSurfaceVariant}
+          style={{ typography: 'labelMedium' }}
+          modifiers={[weight(1)]}
+        >
+          {start}
+        </Text>
+        {middle ? (
+          <Text color={colors.onSurfaceVariant} style={{ typography: 'labelMedium' }}>
+            {middle}
+          </Text>
+        ) : null}
+        <Text
+          color={colors.onSurfaceVariant}
+          style={{ typography: 'labelMedium', textAlign: 'right' }}
+          modifiers={[weight(1)]}
+        >
+          {end}
+        </Text>
+      </Row>
+    </Column>
+  )
+}
+
+/**
+ * A flat 2 dp progress line along an edge, such as the mini player's top, on the container
+ * colour, with no stop mark or gap.
+ */
+export function EdgeProgress({ progress }: { progress: number }) {
+  const colors = useMaterialColors()
+
+  return (
+    <LinearProgressIndicator
+      progress={Math.min(1, progress)}
+      trackColor={colors.surfaceContainer}
+      drawStopIndicator={{ stopSize: 0 }}
+      gapSize={0}
+      // Flat ends: a round cap draws a dot at the start even with no progress at all.
+      strokeCap='butt'
+      modifiers={[fillMaxWidth(), height(2)]}
     />
   )
 }

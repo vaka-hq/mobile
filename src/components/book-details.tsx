@@ -4,20 +4,13 @@ import { type ReactNode, useEffect, useRef } from 'react'
 import { useWindowDimensions } from 'react-native'
 import { useCancelDownloadPrompt } from '@/components/cancel-download'
 import { useDownloadGuard } from '@/components/download-guard'
-import { animateContentSize, fillMaxWidth, padding, size, weight } from '@/lib/compose-modifiers'
+import { animateContentSize, fillMaxWidth } from '@/lib/compose-modifiers'
 import {
   AnimatedVisibility,
-  Box,
-  Button,
-  CircularProgressIndicator,
   Column,
   EnterTransition,
   ExitTransition,
-  Icon,
   LinearProgressIndicator,
-  Row,
-  Text,
-  useMaterialColors,
 } from '@/lib/compose-ui'
 import { useFeedback } from '@/lib/feedback'
 import type { TorBoxStatus } from '@/library/books'
@@ -31,9 +24,17 @@ import { usePlayerValue } from '@/player/use-player'
 import { useTorBoxKey } from '@/settings/torbox-key'
 import type { HardcoverBook } from '@/sources/hardcover/client'
 import { useErrorText } from '@/ui/errors'
-import { glyphs } from '@/ui/glyphs'
 import { useLabels } from '@/ui/labels'
-import { Cover, type CoverArt, Group, type GroupRow, type SpringAction } from '@/ui/primitives'
+import {
+  Cover,
+  type CoverArt,
+  Group,
+  type GroupRow,
+  type SpringAction,
+  StatusLine,
+  ToneText,
+  WideButton,
+} from '@/ui/primitives'
 
 export type BookHeaderProps = {
   title: string
@@ -60,7 +61,6 @@ export function BookHeader({
   fitted = false,
 }: BookHeaderProps) {
   const { t } = useLingui()
-  const colors = useMaterialColors()
   const labels = useLabels()
   const { width } = useWindowDimensions()
 
@@ -71,38 +71,38 @@ export function BookHeader({
   const credits = (
     <Column modifiers={[fillMaxWidth(), animateContentSize()]}>
       <Column verticalArrangement={{ spacedBy: 2 }}>
-        <Text style={{ typography: 'headlineMedium' }}>{title}</Text>
+        <ToneText style={{ typography: 'headlineMedium' }}>{title}</ToneText>
         {subtitle ? (
-          <Text color={colors.onSurfaceVariant} style={{ typography: 'titleMedium' }}>
+          <ToneText tone='secondary' style={{ typography: 'titleMedium' }}>
             {subtitle}
-          </Text>
+          </ToneText>
         ) : null}
       </Column>
       <Column verticalArrangement={{ spacedBy: 2 }}>
         {authors.length > 0 || released ? (
-          <Text color={colors.primary} style={{ typography: 'titleMedium' }}>
+          <ToneText tone='accent' style={{ typography: 'titleMedium' }}>
             {[authors.length > 0 ? labels.authors(authors) : null, released]
               .filter(Boolean)
               .join(' · ')}
-          </Text>
+          </ToneText>
         ) : null}
         {narrators.length > 0 ? (
-          <Text color={colors.onSurfaceVariant} style={{ typography: 'bodyMedium' }}>
+          <ToneText tone='secondary' style={{ typography: 'bodyMedium' }}>
             {t({
               message: `Narrated by ${narratedBy}`,
               comment: 'Narrator credit under the author on the book page',
             })}
-          </Text>
+          </ToneText>
         ) : null}
         {series ? (
-          <Text color={colors.onSurfaceVariant} style={{ typography: 'bodyMedium' }}>
+          <ToneText tone='secondary' style={{ typography: 'bodyMedium' }}>
             {series.position !== null
               ? t({
                   message: `Book ${series.position} of ${series.name}`,
                   comment: 'Position in a book series, for example “Book 2 of The Expanse”',
                 })
               : series.name}
-          </Text>
+          </ToneText>
         ) : null}
       </Column>
     </Column>
@@ -280,7 +280,6 @@ export function ListenPanel({ book }: { book: BookRecord }) {
   const { t } = useLingui()
   const errorText = useErrorText()
   const router = useRouter()
-  const colors = useMaterialColors()
   const apiKey = useTorBoxKey()
 
   const { playing, current, status, kind, onPhone, start, cancelPrompt, downloadGuard, listen } =
@@ -369,26 +368,12 @@ export function ListenPanel({ book }: { book: BookRecord }) {
       modifiers={[fillMaxWidth(), animateContentSize()]}
       verticalArrangement={{ spacedBy: 12 }}
     >
-      <Row verticalAlignment='center' horizontalArrangement={{ spacedBy: 12 }}>
-        <Box contentAlignment='center' modifiers={[size(24, 24)]}>
-          {checking ? (
-            <CircularProgressIndicator strokeWidth={2} modifiers={[size(18, 18)]} />
-          ) : (
-            <Icon
-              source={glyphs[glyph]}
-              size={20}
-              tint={glyph === 'warning' ? colors.error : colors.onSurfaceVariant}
-            />
-          )}
-        </Box>
-        <Text
-          color={colors.onSurfaceVariant}
-          style={{ typography: 'bodyMedium' }}
-          modifiers={[weight(1)]}
-        >
-          {message}
-        </Text>
-      </Row>
+      <StatusLine
+        glyph={glyph}
+        message={message}
+        pending={checking}
+        warning={glyph === 'warning'}
+      />
       <AnimatedVisibility
         visible={kind === 'downloading'}
         enterTransition={EnterTransition.fadeIn().plus(EnterTransition.expandVertically())}
@@ -399,10 +384,12 @@ export function ListenPanel({ book }: { book: BookRecord }) {
           modifiers={[fillMaxWidth()]}
         />
       </AnimatedVisibility>
-      <Button onClick={action.run} enabled={action.enabled} modifiers={[fillMaxWidth()]}>
-        <Icon source={glyphs[action.glyph]} size={20} />
-        <Text modifiers={[padding(8, 0, 0, 0)]}>{action.label}</Text>
-      </Button>
+      <WideButton
+        glyph={action.glyph}
+        label={action.label}
+        enabled={action.enabled}
+        onPress={action.run}
+      />
       {cancelPrompt.dialog}
       {downloadGuard.dialog}
     </Column>

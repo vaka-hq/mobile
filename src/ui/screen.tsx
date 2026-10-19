@@ -16,22 +16,28 @@ export type ActionProps = {
   label: string
   onPress: () => void
   enabled?: boolean
+  /** The glyph's size in dp, larger for a control that needs to stand out, such as the player's. */
+  dimension?: number
 }
 
 /**
  * An icon button with its accessible label. It sets no colour: in an app bar or list item slot it
  * takes the colour that slot provides.
  */
-export function Action({ glyph, label, onPress, enabled = true }: ActionProps) {
+export function Action({ glyph, label, onPress, enabled = true, dimension = 24 }: ActionProps) {
   return (
     <IconButton onClick={onPress} enabled={enabled}>
-      <Icon source={glyphs[glyph]} size={24} contentDescription={label} />
+      <Icon source={glyphs[glyph]} size={dimension} contentDescription={label} />
     </IconButton>
   )
 }
 
 /** An action that stands out beside a field, such as the way to Settings: a filled icon button. */
-export function FilledAction({ glyph, label, onPress }: Omit<ActionProps, 'enabled'>) {
+export function FilledAction({
+  glyph,
+  label,
+  onPress,
+}: Omit<ActionProps, 'enabled' | 'dimension'>) {
   return (
     <FilledIconButton onClick={onPress}>
       <Icon source={glyphs[glyph]} size={24} contentDescription={label} />

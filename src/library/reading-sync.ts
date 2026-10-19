@@ -283,7 +283,7 @@ function contentSpan<T>(
 }
 
 /** A place carried from listening to reading: how far into the e-book, and the part it is in. */
-export type ReadingPlace = { fraction: number; label: string | null }
+type ReadingPlace = { fraction: number; label: string | null }
 
 /** Where to read on from, for a listener `seconds` into the audiobook. */
 export function listeningToReading(
@@ -339,7 +339,7 @@ export function listeningToReading(
 }
 
 /** A place carried from reading to listening: seconds into the audiobook, and its chapter. */
-export type ListeningPlace = { seconds: number; title: string | null }
+type ListeningPlace = { seconds: number; title: string | null }
 
 /** Where to listen on from, for a reader `fraction` of the way into the e-book. */
 export function readingToListening(

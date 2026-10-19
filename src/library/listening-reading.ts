@@ -7,7 +7,6 @@ import { type BookRecord, workIdOf } from './model'
 import { offlineTrackUri } from './offline'
 import {
   audioParts,
-  type AudioPart,
   listeningToReading,
   locatePassage,
   readingToListening,
@@ -230,8 +229,8 @@ export function useFromListening(
 
 /**
  * Where a book was last listened to, when that is newer than the reading of `ebook` and elsewhere:
- * how far in, in seconds, and how long the book is when that is known. Null when reading is as recent, nothing
- * was heard, or listening and reading are kept apart.
+ * how far in, in seconds, and how long the book is when that is known. Null when reading is as
+ * recent, nothing was heard, or listening and reading are kept apart.
  */
 export async function newerListening(workId: string, ebook: Ebook | null) {
   if (getPreferences().readingSync === 'off') {
@@ -257,7 +256,7 @@ export async function newerListening(workId: string, ebook: Ebook | null) {
 }
 
 /** The e-book of a book read most recently, with what matching needs. */
-export function readEbookOf(workId: string) {
+function readEbookOf(workId: string) {
   return listEbooks()
     .filter((ebook) => ebook.workId === workId && ebook.lastReadAt !== null && ebook.sections)
     .sort((a, b) => (b.lastReadAt ?? 0) - (a.lastReadAt ?? 0))[0]
@@ -317,16 +316,14 @@ export async function listeningPlaceFor(
   }
 
   const found = hearsExactly(reading.language ?? book.abb.language)
-    ? await hearPassage(book, parts, place.seconds, reading.passage, signal).catch(
-        (error: Error) => {
-          // Cancelled, the search stops; any other failure falls back to the chapter estimate.
-          if (signal?.aborted) {
-            throw error
-          }
+    ? await hearPassage(book, place.seconds, reading.passage, signal).catch((error: Error) => {
+        // Cancelled, the search stops; any other failure falls back to the chapter estimate.
+        if (signal?.aborted) {
+          throw error
+        }
 
-          return null
-        },
-      )
+        return null
+      })
     : null
 
   // Listening starts at the top of the page reading reached, a moment early so its first word is
@@ -391,14 +388,13 @@ export function useRecordingOf(workId: string | null) {
  */
 async function hearPassage(
   book: BookRecord,
-  parts: AudioPart[],
   seconds: number,
   passage: string | null,
   signal?: AbortSignal,
 ) {
   const model = speechModelUri()
 
-  if (!Speech || !model || !passage || !book.durations || parts.length === 0) {
+  if (!Speech || !model || !passage || !book.durations) {
     return null
   }
 

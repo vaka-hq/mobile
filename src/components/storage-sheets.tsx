@@ -39,12 +39,8 @@ export function AudiobookDownloadsSheet({ onDismiss }: { onDismiss: () => void }
   const shown = downloaded.filter((entry) => offline.has(entry.id))
   const finished = shown.filter((entry) => entry.finished)
 
-  async function retry(bookId: string) {
-    try {
-      await keepOffline(bookId)
-    } catch (error) {
-      showFeedback(errorText(error instanceof Error ? error : null))
-    }
+  function report(error: Error) {
+    showFeedback(errorText(error))
   }
 
   return (
@@ -117,7 +113,7 @@ export function AudiobookDownloadsSheet({ onDismiss }: { onDismiss: () => void }
                           onPress={() => setDeleting(entry.id)}
                         />
                       }
-                      onPress={failed ? () => void retry(entry.id) : undefined}
+                      onPress={failed ? () => void keepOffline(entry.id).catch(report) : undefined}
                     />
                   )
                 })}
@@ -146,7 +142,7 @@ export function AudiobookDownloadsSheet({ onDismiss }: { onDismiss: () => void }
           confirmLabel={t({ message: 'Delete', comment: 'Confirms deleting downloads' })}
           onConfirm={() => {
             for (const entry of finished) {
-              void deleteAudiobookDownload(entry.id)
+              void deleteAudiobookDownload(entry.id).catch(report)
             }
           }}
           onDismiss={() => setAsking(false)}
@@ -160,7 +156,7 @@ export function AudiobookDownloadsSheet({ onDismiss }: { onDismiss: () => void }
             comment: 'Warns that deleting an audiobook download deletes its saved data',
           })}
           confirmLabel={t({ message: 'Delete', comment: 'Confirms deleting downloads' })}
-          onConfirm={() => void deleteAudiobookDownload(deleting)}
+          onConfirm={() => void deleteAudiobookDownload(deleting).catch(report)}
           onDismiss={() => setDeleting(null)}
         />
       ) : null}
@@ -175,6 +171,8 @@ export function AudiobookDownloadsSheet({ onDismiss }: { onDismiss: () => void }
  */
 export function EbookDownloadsSheet({ onDismiss }: { onDismiss: () => void }) {
   const { t, i18n } = useLingui()
+  const errorText = useErrorText()
+  const { showFeedback } = useFeedback()
   const ebooks = useEbooks()
   const openBody = useOpenSheetBody()
   const [asking, setAsking] = useState(false)
@@ -267,7 +265,9 @@ export function EbookDownloadsSheet({ onDismiss }: { onDismiss: () => void }) {
           confirmLabel={t({ message: 'Delete', comment: 'Confirms deleting downloads' })}
           onConfirm={() => {
             for (const ebook of finished) {
-              void deleteEbookFile(ebook.md5)
+              void deleteEbookFile(ebook.md5).catch((error: Error) =>
+                showFeedback(errorText(error)),
+              )
             }
           }}
           onDismiss={() => setAsking(false)}
@@ -281,7 +281,9 @@ export function EbookDownloadsSheet({ onDismiss }: { onDismiss: () => void }) {
             comment: 'Warns that deleting an e-book download deletes its saved data',
           })}
           confirmLabel={t({ message: 'Delete', comment: 'Confirms deleting downloads' })}
-          onConfirm={() => void deleteEbookFile(deleting)}
+          onConfirm={() =>
+            void deleteEbookFile(deleting).catch((error: Error) => showFeedback(errorText(error)))
+          }
           onDismiss={() => setDeleting(null)}
         />
       ) : null}

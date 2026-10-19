@@ -72,12 +72,8 @@ export function useDownloads({
     return total > 0 ? Math.floor((copy.bytes / total) * 100) : 0
   }
 
-  async function keep(bookId: string) {
-    try {
-      await keepOffline(bookId)
-    } catch (error) {
-      showFeedback(errorText(error instanceof Error ? error : null))
-    }
+  function report(error: Error) {
+    showFeedback(errorText(error))
   }
 
   // Every row keeps the same parts in every state, the name above, the state below and one
@@ -88,7 +84,7 @@ export function useDownloads({
   function recordingRow(book: BookRecord): GroupRow {
     const copy = offline.get(book.id) ?? null
     const total = recordingBytes(book)
-    const download = () => void keep(book.id)
+    const download = () => void keepOffline(book.id).catch(report)
 
     const downloadAction = {
       glyph: 'download' as const,
@@ -130,7 +126,7 @@ export function useDownloads({
         action: {
           glyph: 'clear',
           description: t({ message: 'Cancel download', comment: 'Stops an audiobook download' }),
-          onPress: () => void removeOffline(book.id),
+          onPress: () => void removeOffline(book.id).catch(report),
         },
       }
     }
@@ -162,7 +158,6 @@ export function useDownloads({
       label: [result.publisher, ebookFormat(result)].filter(Boolean).join(' · '),
     }
 
-    // Deleting a download removes only the file; the place, highlights and notes stay.
     if (ebook?.kept && ebook.status === 'done') {
       return {
         ...base,
@@ -187,7 +182,7 @@ export function useDownloads({
         action: {
           glyph: 'clear',
           description: t({ message: 'Cancel download', comment: 'Stops an e-book download' }),
-          onPress: () => void removeEbookFile(ebook.md5),
+          onPress: () => void removeEbookFile(ebook.md5).catch(report),
         },
       }
     }
@@ -330,9 +325,11 @@ export function useDownloads({
           }
           confirmLabel={t({ message: 'Delete', comment: 'Confirms deleting downloads' })}
           onConfirm={() =>
-            void (deleting.kind === 'audiobook'
-              ? deleteAudiobookDownload(deleting.id)
-              : deleteEbookFile(deleting.md5))
+            void (
+              deleting.kind === 'audiobook'
+                ? deleteAudiobookDownload(deleting.id)
+                : deleteEbookFile(deleting.md5)
+            ).catch(report)
           }
           onDismiss={() => setDeleting(null)}
         />

@@ -1,8 +1,10 @@
 import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
+import { useFeedback } from '@/lib/feedback'
 import { useSetWorkInLibrary } from '@/library/queries'
 import type { HardcoverWork } from '@/sources/hardcover/client'
 import { ConfirmDialog } from '@/ui/dialogs'
+import { useErrorText } from '@/ui/errors'
 
 /** What removing a book from the library asks first, since its progress goes with it. */
 export function useRemovalQuestion() {
@@ -24,22 +26,28 @@ export function useRemovalQuestion() {
  * tree.
  */
 export function useLibraryToggle(workId: string, hardcover: HardcoverWork | null) {
+  const errorText = useErrorText()
+  const { showFeedback } = useFeedback()
   const setInLibrary = useSetWorkInLibrary(workId, hardcover)
   const question = useRemovalQuestion()
   const [asking, setAsking] = useState(false)
+
+  function change(inLibrary: boolean) {
+    setInLibrary.mutate(inLibrary, { onError: (error) => showFeedback(errorText(error)) })
+  }
 
   function toggle(inLibrary: boolean) {
     if (inLibrary) {
       setAsking(true)
     } else {
-      setInLibrary.mutate(true)
+      change(true)
     }
   }
 
   const dialog = asking ? (
     <ConfirmDialog
       {...question}
-      onConfirm={() => setInLibrary.mutate(false)}
+      onConfirm={() => change(false)}
       onDismiss={() => setAsking(false)}
     />
   ) : null

@@ -11,7 +11,7 @@ export const syncSourceIds = ['hardcover'] as const
 
 export type SyncSourceId = (typeof syncSourceIds)[number]
 
-/** Android's player accepts rates up to 2×. */
+/** The fastest the player goes; expo-audio is patched to play up to it, past its own 2×. */
 export const maxPlaybackSpeed = 3
 
 export const playbackSpeeds = [0.75, 0.9, 1, 1.1, 1.2, 1.25, 1.3, 1.5, 1.75, 2, 2.5, 3] as const

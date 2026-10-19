@@ -21,12 +21,7 @@ import { invalidateLibrary } from '@/library/invalidation'
 import { isLanguage } from '@/library/languages'
 import { offlineBytes, useOfflineBooks } from '@/library/offline'
 import { cachedMetadataSize, clearCachedMetadata } from '@/library/repository'
-import {
-  installSpeechModel,
-  removeSpeechModel,
-  speechModelBytes,
-  useSpeechModel,
-} from '@/library/speech-model'
+import { installSpeechModel, removeSpeechModel, useSpeechModel } from '@/library/speech-model'
 import { forgetStreamUrls } from '@/library/streams'
 import { audioCacheSize, clearAudioCache } from '@/player/controller'
 import { type AbbProxy, setAbbProxy, useAbbProxy } from '@/settings/abb-proxy'
@@ -96,17 +91,15 @@ export function SettingsScreen() {
     { style: 'percent' },
   )
 
-  const speechSize = dataSize(speechModelBytes, i18n.locale)
-
   const syncLabels = {
-    off: t({ message: 'Off', comment: 'Listening and reading setting: not carried over' }),
+    off: t({ message: 'Off', comment: 'Sync setting: not carried over' }),
     chapters: t({
       message: 'Simple',
-      comment: 'Listening and reading setting: the place is estimated from the chapters',
+      comment: 'Sync setting: the place is estimated from the chapters',
     }),
     words: t({
       message: 'Advanced',
-      comment: 'Listening and reading setting: the place is found by listening to the words',
+      comment: 'Sync setting: the place is found by listening to the words',
     }),
   }
 
@@ -464,20 +457,20 @@ export function SettingsScreen() {
               key: 'readingSync',
               glyph: 'readingSync',
               label: t({
-                message: 'Listening and reading',
-                comment: 'Setting for carrying the place between the audiobook and the e-book',
+                message: 'Sync',
+                comment:
+                  'Setting for carrying the place between the audiobook and the e-book of the same book',
               }),
               value:
                 preferences.readingSync === 'words' && speechModel.status === 'downloading'
                   ? t({
                       message: `Downloading speech model · ${speechProgress}`,
-                      comment: 'Listening and reading setting while its speech model downloads',
+                      comment: 'Sync setting while its speech model downloads',
                     })
                   : preferences.readingSync === 'words' && speechModel.status !== 'ready'
                     ? t({
                         message: 'Speech model missing. Choose again to download it.',
-                        comment:
-                          'Listening and reading setting when its speech model failed to download',
+                        comment: 'Sync setting when its speech model failed to download',
                       })
                     : syncLabels[preferences.readingSync],
               onPress: () => setDialog('readingSync'),
@@ -742,33 +735,15 @@ export function SettingsScreen() {
       ) : null}
       {dialog === 'readingSync' ? (
         <ChoiceDialog
-          title={t({ message: 'Listening and reading', comment: 'Dialog title' })}
+          title={t({
+            message: 'Sync',
+            comment:
+              'Dialog title: how the place is carried between the audiobook and the e-book of the same book',
+          })}
           options={[
-            {
-              value: 'off' as const,
-              label: syncLabels.off,
-              description: t({
-                message: 'Each keeps its own place.',
-                comment: 'Listening and reading choice: no carrying over',
-              }),
-            },
-            {
-              value: 'chapters' as const,
-              label: syncLabels.chapters,
-              description: t({
-                message: 'Picks up near the same spot in the chapter.',
-                comment: 'Listening and reading choice: chapter estimate',
-              }),
-            },
-            {
-              value: 'words' as const,
-              label: syncLabels.words,
-              description: t({
-                message: `Finds the exact sentence. Downloads ${speechSize} for English books.`,
-                comment:
-                  'Listening and reading choice: exact place by speech recognition, with the download size',
-              }),
-            },
+            { value: 'off' as const, label: syncLabels.off },
+            { value: 'chapters' as const, label: syncLabels.chapters },
+            { value: 'words' as const, label: syncLabels.words },
           ]}
           selected={preferences.readingSync}
           onSelect={(mode) => void chooseReadingSync(mode)}

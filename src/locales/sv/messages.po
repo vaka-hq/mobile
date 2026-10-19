@@ -291,7 +291,7 @@ msgstr "Lägger till …"
 msgid "Address"
 msgstr "Adress"
 
-#. Listening and reading setting: the place is found by listening to the words
+#. Sync setting: the place is found by listening to the words
 #: src/screens/settings.tsx
 msgid "Advanced"
 msgstr "Avancerad"
@@ -1035,7 +1035,7 @@ msgstr "Laddar ned · {percent} %"
 msgid "Downloading {percent}%"
 msgstr "Laddar ned {percent} %"
 
-#. Listening and reading setting while its speech model downloads
+#. Sync setting while its speech model downloads
 #: src/screens/settings.tsx
 msgid "Downloading speech model · {speechProgress}"
 msgstr "Laddar ned talmodell · {speechProgress}"
@@ -1102,11 +1102,6 @@ msgstr "Det gick inte att söka efter e-böcker. Försök igen om en stund."
 #: src/screens/browse.tsx
 msgid "E-books couldn’t be searched"
 msgstr "Det gick inte att söka efter e-böcker"
-
-#. Listening and reading choice: no carrying over
-#: src/screens/settings.tsx
-msgid "Each keeps its own place."
-msgstr "Var och en har sin egen plats."
 
 #. Edits a bookmark’s note
 #. Highlight sheet row
@@ -1184,11 +1179,6 @@ msgstr "Söker källor …"
 #: src/screens/reader.tsx
 msgid "Finding the place…"
 msgstr "Letar efter stället …"
-
-#. Listening and reading choice: exact place by speech recognition, with the download size
-#: src/screens/settings.tsx
-msgid "Finds the exact sentence. Downloads {speechSize} for English books."
-msgstr "Hittar exakt mening. Laddar ner {speechSize} för engelska böcker."
 
 #. Confirms marking a book finished
 #. Confirms marking a book finished
@@ -1605,12 +1595,6 @@ msgctxt "book status"
 msgid "Listening"
 msgstr "Lyssnar"
 
-#. Dialog title
-#. Setting for carrying the place between the audiobook and the e-book
-#: src/screens/settings.tsx
-msgid "Listening and reading"
-msgstr "Lyssna och läsa"
-
 #. Book page progress: listening, with the time left and how far in
 #: src/screens/work.tsx
 msgid "Listening, {heardLeft} left ({heardPercent})"
@@ -1935,8 +1919,8 @@ msgstr "Inget sparat än"
 msgid "Nothing to add"
 msgstr "Inget att lägga till"
 
-#. Listening and reading setting: not carried over
 #. Sleep timer option
+#. Sync setting: not carried over
 #: src/screens/settings.tsx
 #: src/ui/sheets.tsx
 msgid "Off"
@@ -2031,11 +2015,6 @@ msgstr "Pausa {title}"
 #: src/ui/languages.ts
 msgid "Persian"
 msgstr "Persiska"
-
-#. Listening and reading choice: chapter estimate
-#: src/screens/settings.tsx
-msgid "Picks up near the same spot in the chapter."
-msgstr "Fortsätter nära samma ställe i kapitlet."
 
 #. Highlight colour
 #: src/ui/reader.tsx
@@ -2511,7 +2490,7 @@ msgstr "Visa alla källor"
 msgid "Show reader controls"
 msgstr "Visa läsarens kontroller"
 
-#. Listening and reading setting: the place is estimated from the chapters
+#. Sync setting: the place is estimated from the chapters
 #: src/screens/settings.tsx
 msgid "Simple"
 msgstr "Enkel"
@@ -2629,7 +2608,7 @@ msgstr "Det gick inte att söka efter källor. Försök igen om en stund."
 msgid "Spanish"
 msgstr "Spanska"
 
-#. Listening and reading setting when its speech model failed to download
+#. Sync setting when its speech model failed to download
 #: src/screens/settings.tsx
 msgid "Speech model missing. Choose again to download it."
 msgstr "Talmodellen saknas. Välj igen för att ladda ned den."
@@ -2704,6 +2683,12 @@ msgstr "Byter till lyssning"
 #: src/screens/reader.tsx
 msgid "Switching to reading"
 msgstr "Byter till läsning"
+
+#. Dialog title: how the place is carried between the audiobook and the e-book of the same book
+#. Setting for carrying the place between the audiobook and the e-book of the same book
+#: src/screens/settings.tsx
+msgid "Sync"
+msgstr "Synk"
 
 #. A language books can be preferred in
 #: src/ui/languages.ts

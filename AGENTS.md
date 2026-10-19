@@ -222,7 +222,9 @@ short: how the app works belongs in `docs/`.
 - Releases are published by `.github/workflows/release.yml`: a pushed `v` tag makes a stable
   release named after it, and `main` becomes a nightly pre-release once a day when it has changed.
   The workflow sets the version name and code (`VAKA_VERSION_NAME`, `VAKA_VERSION_CODE`, the build
-  time in minutes); never set them in `app.config.ts`. Pin every action to a full commit SHA with
+  time in minutes); never set them in `app.config.ts`. A nightly's name is not a plain number,
+  which some config plugins expect, so the config's `version` keeps its leading numbers and
+  `withVersionName` writes the whole name into `build.gradle` after them. Pin every action to a full commit SHA with
   its version in a comment. The production app updates itself from these releases
   (`src/library/app-updates.ts`, `modules/platform`), reading each one's `update.json`; keep
   the asset names (`vaka-<name>-<abi>.apk`, `update.json`) in step with the app.

@@ -12,7 +12,7 @@ import {
   setShelfStatus,
 } from '@/sources/hardcover/client'
 import { hardcoverWorks } from './catalog'
-import { invalidateLibrary } from './invalidation'
+import { refreshLibrary } from './invalidation'
 import type { SyncProblem } from './library-sync'
 import { hardcoverWorkId, workIdOf } from './model'
 import {
@@ -304,7 +304,7 @@ export async function syncHardcoverShelves() {
   }
 
   if (changedHere) {
-    invalidateLibrary()
+    refreshLibrary()
   }
 
   // Said once the run is over, so the listener learns their key cannot change the shelves.

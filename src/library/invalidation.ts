@@ -47,10 +47,18 @@ function notify(change: LibraryChange) {
   }
 }
 
-export function invalidateLibrary() {
+/**
+ * Shows the library afresh without telling the listeners of a change, for library sync's own
+ * changes, which must not start another run.
+ */
+export function refreshLibrary() {
   void queryClient.invalidateQueries({ queryKey: queryKeys.library })
   void queryClient.invalidateQueries({ queryKey: queryKeys.works })
   void queryClient.invalidateQueries({ queryKey: queryKeys.followedSeries })
+}
+
+export function invalidateLibrary() {
+  refreshLibrary()
   notify('library')
 }
 

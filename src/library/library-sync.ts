@@ -201,13 +201,17 @@ export function startLibrarySync() {
   started = true
 
   onLibraryChange((change) => {
-    // The library changing under a run is the run's own doing.
-    if (state.syncing || !activeSource()) {
+    if (!activeSource()) {
       return
     }
 
     // Listening saves its place every few seconds; were each to put the run off, none would come.
-    if (change === 'listening' && (settleTimer || Date.now() - ranAt < listeningEveryMs)) {
+    // A run moving a book's place is heard as listening too, so listening waits out a run. The
+    // run's own changes to the library are not heard, so the listener's made meanwhile follow it.
+    if (
+      change === 'listening' &&
+      (state.syncing || settleTimer || Date.now() - ranAt < listeningEveryMs)
+    ) {
       return
     }
 

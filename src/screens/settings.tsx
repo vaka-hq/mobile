@@ -2,6 +2,7 @@ import { plural } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import * as Application from 'expo-application'
+import { getCalendars } from 'expo-localization'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useBackupRestore } from '@/components/backup-restore'
@@ -58,7 +59,7 @@ import { normalizeBaseUrl } from '@/sources/audiobookbay/client'
 import { isAuthenticationError } from '@/sources/torbox/client'
 import { ChoiceDialog, ConfirmDialog, FormDialog, TextDialog } from '@/ui/dialogs'
 import { useErrorText } from '@/ui/errors'
-import { dataSize, speedLabel } from '@/ui/format'
+import { dataSize, speedLabel, timeOfDay } from '@/ui/format'
 import { useLanguageNames } from '@/ui/languages'
 import { Group, List } from '@/ui/primitives'
 import { Screen } from '@/ui/screen'
@@ -303,7 +304,7 @@ export function SettingsScreen() {
   const sourceName = sourceNames[preferences.syncSource]
 
   const syncedTime = librarySync.syncedAt
-    ? i18n.date(new Date(librarySync.syncedAt), { timeStyle: 'short' })
+    ? timeOfDay(librarySync.syncedAt, i18n.locale, getCalendars()[0]?.uses24hourClock ?? null)
     : ''
 
   // How syncing stands, in the row under the provider: while on, or when it cannot sync at all.

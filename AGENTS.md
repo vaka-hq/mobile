@@ -80,7 +80,13 @@ short: how the app works belongs in `docs/`.
   through the transition (`LeavingFrame`), holding the removal with expo-router's
   `usePreventRemove` until the frame is in place. A committed back swipe tells JavaScript before
   it dismisses the screen natively (`onNativeDismissal`), and the screen lets go then: expo-router
-  reports a native dismissal it was still holding as an error.
+  reports a native dismissal it was still holding as an error. The route changes only once the
+  swipe's animation has ended, so what follows the tabs, the tab bar and the mini player, asks
+  `useTabsShown` (`src/components/tabs-shown.ts`), which answers for the screen a committed swipe
+  returns to.
+- The tab bar floats above the stack (`BottomBar`, in the root layout), not in the tabs' screen,
+  so screens slide past it: it slides down and fades as a screen opens over the tabs and comes
+  back as they return, and the tabs keep room for it.
 - Android colour roles follow Material 3: screens on `surface`, containers on
   `surfaceContainerHigh`, sheets on the default `surfaceContainerLow`, text `onSurface` and
   `onSurfaceVariant`. Colour comes from the dynamic palette; covers are the only imagery.

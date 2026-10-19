@@ -8,6 +8,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { AbbSilenceAlert } from '@/components/abb-silence-alert'
 import { AccountAlert } from '@/components/account-alert'
 import AppError from '@/components/app-error'
+import { BottomBar } from '@/components/bottom-bar'
 import { PlacePrompt } from '@/components/place-prompt'
 import { PlayerLayer } from '@/components/player-layer'
 import { SystemBack } from '@/components/system-back'
@@ -68,6 +69,7 @@ function AppProviders() {
               >
                 <Stack.Screen name='(tabs)' />
               </Stack>
+              <BottomBar />
               <PlayerLayer />
               <AccountAlert />
               <AbbSilenceAlert />

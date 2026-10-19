@@ -41,6 +41,11 @@ export async function withDeadline<T>(
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   const abort = () => controller.abort()
 
+  // A signal aborted before the call never fires its event, so it is passed on at once.
+  if (signal?.aborted) {
+    abort()
+  }
+
   signal?.addEventListener('abort', abort)
 
   try {
@@ -74,23 +79,28 @@ export async function request<T>(
   return withDeadline(
     init.signal,
     async (signal) => {
+      let response: Response
+
       try {
-        return await read(await fetch(url, { ...init, signal }))
+        response = await fetch(url, { ...init, signal })
       } catch (cause) {
-        // `fetch` rejects with a TypeError when the connection itself fails.
-        if (cause instanceof TypeError && !signal.aborted) {
-          throw new NetworkError()
+        // `fetch` rejects only when no answer arrived: with a TypeError by the standard, but with
+        // an error of its own from expo/fetch, the app's `fetch`, so the kind is not checked.
+        if (signal.aborted) {
+          throw cause
         }
 
-        throw cause
+        throw new NetworkError()
       }
+
+      return read(response)
     },
     timeoutMs,
   )
 }
 
 /** A page's status and body, whichever route the request took. */
-export type TextResponse = {
+type TextResponse = {
   status: number
   body: string
 }

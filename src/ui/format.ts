@@ -26,7 +26,8 @@ export function dataSize(bytes: number, locale: string) {
   let value = Math.max(0, bytes)
   let unit = 0
 
-  while (value >= 1000 && unit < dataUnits.length - 1) {
+  // From 999.5 on, the rounded number would read 1000, so it moves up a unit.
+  while (value >= 999.5 && unit < dataUnits.length - 1) {
     value /= 1000
     unit += 1
   }

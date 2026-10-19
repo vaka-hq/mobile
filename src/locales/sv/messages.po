@@ -216,8 +216,8 @@ msgstr "Lägg till"
 
 #. Browse notice when no Hardcover key is saved; tapping it asks for one
 #: src/screens/browse.tsx
-msgid "Add a Hardcover API key for better search."
-msgstr "Lägg till en API-nyckel för Hardcover för bättre sökning."
+msgid "Add a Hardcover API key for better search"
+msgstr "Lägg till en API-nyckel för Hardcover för bättre sökning"
 
 #. Match picker without a Hardcover API key
 #: src/screens/match.tsx

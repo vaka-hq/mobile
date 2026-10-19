@@ -109,7 +109,7 @@ function HardcoverNotice() {
     <Notice
       glyph='info'
       message={t({
-        message: 'Add a Hardcover API key for better search.',
+        message: 'Add a Hardcover API key for better search',
         comment: 'Browse notice when no Hardcover key is saved; tapping it asks for one',
       })}
       onPress={addKey}

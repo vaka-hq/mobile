@@ -753,8 +753,15 @@ export async function open(bookId: string, autoplay: boolean): Promise<boolean> 
     return false
   }
 
+  // A book opened paused lets the last one's player go, so the notification and headphone buttons
+  // cannot play it under the new book; one about to play keeps the player and swaps its source.
+  if (autoplay || wantsPlayback) {
+    player?.pause()
+  } else {
+    releasePlayer()
+  }
+
   wantsPlayback = false
-  player?.pause()
 
   heardAt = saved?.updatedAt ?? book.lastPlayedAt ?? 0
   written = saved
@@ -1029,18 +1036,12 @@ export function setSleepTimer(minutes: number | 'chapter' | null) {
  * Stops playback and releases the media session and its notification. The book is not restored
  * into the mini player on the next launch; playing it, or another book, brings the player back.
  */
-export async function close() {
-  const closedId = state.book?.id ?? ''
-
-  openToken += 1
-
-  // The player is let go even if saving the place fails.
-  await persist().catch(() => undefined)
-  clearSleepTimer()
-  wantsPlayback = false
-  generation += 1
-  // Released rather than kept: while a player stays bound to the media service, Android keeps its
-  // notification. The next book creates a new one.
+/**
+ * Lets the native player go. Released rather than kept: while a player stays bound to the media
+ * service, Android keeps its notification and its controls play what it holds. The next book
+ * creates a new one.
+ */
+function releasePlayer() {
   const released = player
 
   player = null
@@ -1053,6 +1054,19 @@ export async function close() {
   // Frees the native player and its media session now rather than whenever it is collected.
   released?.release()
   loaded = null
+}
+
+export async function close() {
+  const closedId = state.book?.id ?? ''
+
+  openToken += 1
+
+  // The player is let go even if saving the place fails.
+  await persist().catch(() => undefined)
+  clearSleepTimer()
+  wantsPlayback = false
+  generation += 1
+  releasePlayer()
   update(initialState)
   invalidateLibrary()
   await setPreference('closedBookId', closedId)

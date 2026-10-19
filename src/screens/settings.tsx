@@ -5,6 +5,7 @@ import * as Application from 'expo-application'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useBackupRestore } from '@/components/backup-restore'
+import { HardcoverKeyDialog } from '@/components/hardcover-key-dialog'
 import { type ProxyFields, useProxySetup } from '@/components/proxy-setup'
 import { AudiobookDownloadsSheet, EbookDownloadsSheet } from '@/components/storage-sheets'
 import { useFeedback } from '@/lib/feedback'
@@ -21,18 +22,12 @@ import { invalidateLibrary } from '@/library/invalidation'
 import { isLanguage } from '@/library/languages'
 import { offlineBytes, useOfflineBooks } from '@/library/offline'
 import { cachedMetadataSize, clearCachedMetadata } from '@/library/repository'
-import {
-  installSpeechModel,
-  removeSpeechModel,
-  speechModelBytes,
-  useSpeechModel,
-} from '@/library/speech-model'
+import { installSpeechModel, removeSpeechModel, useSpeechModel } from '@/library/speech-model'
 import { forgetStreamUrls } from '@/library/streams'
 import { audioCacheSize, clearAudioCache } from '@/player/controller'
 import { type AbbProxy, setAbbProxy, useAbbProxy } from '@/settings/abb-proxy'
 import {
   connectAnnas,
-  connectHardcover,
   connectTorBox,
   useAnnasAccount,
   useHardcoverAccount,
@@ -96,17 +91,15 @@ export function SettingsScreen() {
     { style: 'percent' },
   )
 
-  const speechSize = dataSize(speechModelBytes, i18n.locale)
-
   const syncLabels = {
-    off: t({ message: 'Off', comment: 'Listening and reading setting: not carried over' }),
+    off: t({ message: 'Off', comment: 'Sync setting: not carried over' }),
     chapters: t({
-      message: 'Simple',
-      comment: 'Listening and reading setting: the place is estimated from the chapters',
+      message: 'Approximate',
+      comment: 'Sync setting: the place is estimated from its share of the chapter',
     }),
     words: t({
-      message: 'Advanced',
-      comment: 'Listening and reading setting: the place is found by listening to the words',
+      message: 'Exact',
+      comment: 'Sync setting: the exact sentence is found by listening to the words',
     }),
   }
 
@@ -218,27 +211,6 @@ export function SettingsScreen() {
 
   const keyProblems = useKeyProblems()
   const hardcoverProblem = keyProblems.hardcover
-
-  /** Resolves with a problem to show in the dialog, or null once the key is saved. */
-  async function saveHardcoverKey(value: string) {
-    try {
-      const account = await connectHardcover(value)
-
-      setDialog(null)
-      showFeedback(
-        account?.email
-          ? t({
-              message: `Connected to Hardcover as ${account.email}`,
-              comment: 'Hardcover key saved, with the account email',
-            })
-          : t({ message: 'Connected to Hardcover', comment: 'Hardcover key saved' }),
-      )
-
-      return null
-    } catch (error) {
-      return hardcoverProblem(error instanceof Error ? error : new Error(String(error)))
-    }
-  }
 
   const proxySetup = useProxySetup()
   const proxyProblem = proxySetup.problem
@@ -464,20 +436,20 @@ export function SettingsScreen() {
               key: 'readingSync',
               glyph: 'readingSync',
               label: t({
-                message: 'Listening and reading',
-                comment: 'Setting for carrying the place between the audiobook and the e-book',
+                message: 'Sync',
+                comment:
+                  'Setting for carrying the place between the audiobook and the e-book of the same book',
               }),
               value:
                 preferences.readingSync === 'words' && speechModel.status === 'downloading'
                   ? t({
                       message: `Downloading speech model · ${speechProgress}`,
-                      comment: 'Listening and reading setting while its speech model downloads',
+                      comment: 'Sync setting while its speech model downloads',
                     })
                   : preferences.readingSync === 'words' && speechModel.status !== 'ready'
                     ? t({
                         message: 'Speech model missing. Choose again to download it.',
-                        comment:
-                          'Listening and reading setting when its speech model failed to download',
+                        comment: 'Sync setting when its speech model failed to download',
                       })
                     : syncLabels[preferences.readingSync],
               onPress: () => setDialog('readingSync'),
@@ -654,17 +626,7 @@ export function SettingsScreen() {
           onDismiss={() => setDialog((current) => (current === 'removeTorbox' ? null : current))}
         />
       ) : null}
-      {dialog === 'hardcover' ? (
-        <TextDialog
-          title={t({ message: 'Hardcover API key', comment: 'Dialog title' })}
-          label={t({ message: 'API key', comment: 'Text field label' })}
-          initialValue=''
-          secret
-          confirmLabel={t({ message: 'Save', comment: 'Saves a setting' })}
-          onConfirm={saveHardcoverKey}
-          onDismiss={() => setDialog(null)}
-        />
-      ) : null}
+      {dialog === 'hardcover' ? <HardcoverKeyDialog onClose={() => setDialog(null)} /> : null}
       {dialog === 'removeHardcover' ? (
         <ConfirmDialog
           title={t({ message: 'Replace the Hardcover key?', comment: 'Dialog title' })}
@@ -704,22 +666,8 @@ export function SettingsScreen() {
         <ChoiceDialog
           title={t({ message: 'Update channel', comment: 'Dialog title' })}
           options={[
-            {
-              value: 'stable' as const,
-              label: channelLabels.stable,
-              description: t({
-                message: 'Releases that have been tried for a while.',
-                comment: 'Update channel choice: stable releases',
-              }),
-            },
-            {
-              value: 'nightly' as const,
-              label: channelLabels.nightly,
-              description: t({
-                message: 'The newest changes, built each day. May have bugs.',
-                comment: 'Update channel choice: nightly builds',
-              }),
-            },
+            { value: 'stable' as const, label: channelLabels.stable },
+            { value: 'nightly' as const, label: channelLabels.nightly },
           ]}
           selected={preferences.updateChannel}
           onSelect={(channel) => {
@@ -742,33 +690,15 @@ export function SettingsScreen() {
       ) : null}
       {dialog === 'readingSync' ? (
         <ChoiceDialog
-          title={t({ message: 'Listening and reading', comment: 'Dialog title' })}
+          title={t({
+            message: 'Sync',
+            comment:
+              'Dialog title: how the place is carried between the audiobook and the e-book of the same book',
+          })}
           options={[
-            {
-              value: 'off' as const,
-              label: syncLabels.off,
-              description: t({
-                message: 'Each keeps its own place.',
-                comment: 'Listening and reading choice: no carrying over',
-              }),
-            },
-            {
-              value: 'chapters' as const,
-              label: syncLabels.chapters,
-              description: t({
-                message: 'Picks up near the same spot in the chapter.',
-                comment: 'Listening and reading choice: chapter estimate',
-              }),
-            },
-            {
-              value: 'words' as const,
-              label: syncLabels.words,
-              description: t({
-                message: `Finds the exact sentence. Downloads ${speechSize} for English books.`,
-                comment:
-                  'Listening and reading choice: exact place by speech recognition, with the download size',
-              }),
-            },
+            { value: 'off' as const, label: syncLabels.off },
+            { value: 'chapters' as const, label: syncLabels.chapters },
+            { value: 'words' as const, label: syncLabels.words },
           ]}
           selected={preferences.readingSync}
           onSelect={(mode) => void chooseReadingSync(mode)}

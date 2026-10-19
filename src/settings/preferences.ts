@@ -60,6 +60,8 @@ const preferencesSchema = z.object({
    * address; they are told again only after it has answered in between.
    */
   abbSilenceNoticed: z.boolean().catch(false),
+  /** The listener closed Browse's notice about adding a Hardcover key; it does not show again. */
+  hardcoverNoticeDismissed: z.boolean().catch(false),
   /** Which releases the app updates to: tested ones only, or the nightly builds as well. */
   updateChannel: z.enum(['stable', 'nightly']).catch('stable'),
   /** When updates were last looked for, in milliseconds; they are looked for once a day. */

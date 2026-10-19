@@ -214,6 +214,11 @@ msgstr "Konton"
 msgid "Add"
 msgstr "Lägg till"
 
+#. Browse notice when no Hardcover key is saved; tapping it asks for one
+#: src/screens/browse.tsx
+msgid "Add a Hardcover API key for better search"
+msgstr "Lägg till en API-nyckel för Hardcover för bättre sökning"
+
 #. Match picker without a Hardcover API key
 #: src/screens/match.tsx
 msgid "Add a Hardcover API key in Settings first."
@@ -291,11 +296,6 @@ msgstr "Lägger till …"
 msgid "Address"
 msgstr "Adress"
 
-#. Listening and reading setting: the place is found by listening to the words
-#: src/screens/settings.tsx
-msgid "Advanced"
-msgstr "Avancerad"
-
 #. A language books can be preferred in
 #: src/ui/languages.ts
 msgid "Afrikaans"
@@ -370,10 +370,16 @@ msgstr "Alla som har filen kan använda dem."
 #. Text field label
 #. Text field label
 #. Text field label
+#: src/components/hardcover-key-dialog.tsx
 #: src/screens/settings.tsx
 #: src/screens/welcome.tsx
 msgid "API key"
 msgstr "API-nyckel"
+
+#. Sync setting: the place is estimated from its share of the chapter
+#: src/screens/settings.tsx
+msgid "Approximate"
+msgstr "Ungefärlig"
 
 #. A language books can be preferred in
 #: src/ui/languages.ts
@@ -739,9 +745,11 @@ msgid "Clear series"
 msgstr "Rensa serier"
 
 #. Closes an information dialog
+#. Closes the Browse notice for good
 #. Closes the reader’s display settings panel
 #: src/components/reader-sheets.tsx
 #: src/components/update-alert.tsx
+#: src/screens/browse.tsx
 msgid "Close"
 msgstr "Stäng"
 
@@ -773,13 +781,13 @@ msgid "Connected to Anna’s Archive"
 msgstr "Ansluten till Anna’s Archive"
 
 #. Hardcover key saved
-#: src/screens/settings.tsx
+#: src/components/hardcover-key-dialog.tsx
 msgid "Connected to Hardcover"
 msgstr "Ansluten till Hardcover"
 
 #. Hardcover key saved, with the account email
 #. placeholder {0}: account.email
-#: src/screens/settings.tsx
+#: src/components/hardcover-key-dialog.tsx
 msgid "Connected to Hardcover as {0}"
 msgstr "Ansluten till Hardcover som {0}"
 
@@ -1035,7 +1043,7 @@ msgstr "Laddar ned · {percent} %"
 msgid "Downloading {percent}%"
 msgstr "Laddar ned {percent} %"
 
-#. Listening and reading setting while its speech model downloads
+#. Sync setting while its speech model downloads
 #: src/screens/settings.tsx
 msgid "Downloading speech model · {speechProgress}"
 msgstr "Laddar ned talmodell · {speechProgress}"
@@ -1103,11 +1111,6 @@ msgstr "Det gick inte att söka efter e-böcker. Försök igen om en stund."
 msgid "E-books couldn’t be searched"
 msgstr "Det gick inte att söka efter e-böcker"
 
-#. Listening and reading choice: no carrying over
-#: src/screens/settings.tsx
-msgid "Each keeps its own place."
-msgstr "Var och en har sin egen plats."
-
 #. Edits a bookmark’s note
 #. Highlight sheet row
 #: src/components/book-sheets.tsx
@@ -1141,6 +1144,11 @@ msgstr "Esperanto"
 #: src/ui/languages.ts
 msgid "Estonian"
 msgstr "Estniska"
+
+#. Sync setting: the exact sentence is found by listening to the words
+#: src/screens/settings.tsx
+msgid "Exact"
+msgstr "Exakt"
 
 #. Browse chip: an audiobook genre
 #: src/screens/browse.tsx
@@ -1184,11 +1192,6 @@ msgstr "Söker källor …"
 #: src/screens/reader.tsx
 msgid "Finding the place…"
 msgstr "Letar efter stället …"
-
-#. Listening and reading choice: exact place by speech recognition, with the download size
-#: src/screens/settings.tsx
-msgid "Finds the exact sentence. Downloads {speechSize} for English books."
-msgstr "Hittar exakt mening. Laddar ner {speechSize} för engelska böcker."
 
 #. Confirms marking a book finished
 #. Confirms marking a book finished
@@ -1276,7 +1279,7 @@ msgid "Hardcover"
 msgstr "Hardcover"
 
 #. Dialog title
-#: src/screens/settings.tsx
+#: src/components/hardcover-key-dialog.tsx
 msgid "Hardcover API key"
 msgstr "API-nyckel för Hardcover"
 
@@ -1605,12 +1608,6 @@ msgctxt "book status"
 msgid "Listening"
 msgstr "Lyssnar"
 
-#. Dialog title
-#. Setting for carrying the place between the audiobook and the e-book
-#: src/screens/settings.tsx
-msgid "Listening and reading"
-msgstr "Lyssna och läsa"
-
 #. Book page progress: listening, with the time left and how far in
 #: src/screens/work.tsx
 msgid "Listening, {heardLeft} left ({heardPercent})"
@@ -1935,8 +1932,8 @@ msgstr "Inget sparat än"
 msgid "Nothing to add"
 msgstr "Inget att lägga till"
 
-#. Listening and reading setting: not carried over
 #. Sleep timer option
+#. Sync setting: not carried over
 #: src/screens/settings.tsx
 #: src/ui/sheets.tsx
 msgid "Off"
@@ -2031,11 +2028,6 @@ msgstr "Pausa {title}"
 #: src/ui/languages.ts
 msgid "Persian"
 msgstr "Persiska"
-
-#. Listening and reading choice: chapter estimate
-#: src/screens/settings.tsx
-msgid "Picks up near the same spot in the chapter."
-msgstr "Fortsätter nära samma ställe i kapitlet."
 
 #. Highlight colour
 #: src/ui/reader.tsx
@@ -2237,11 +2229,6 @@ msgstr "Utgiven"
 msgid "Released under the {name} licence. The package includes no licence text."
 msgstr "Släppt under licensen {name}. Paketet innehåller ingen licenstext."
 
-#. Update channel choice: stable releases
-#: src/screens/settings.tsx
-msgid "Releases that have been tried for a while."
-msgstr "Versioner som har provats ett tag."
-
 #. Confirms removing a book from the library
 #. Confirms removing a series from the library
 #: src/components/library-toggle.tsx
@@ -2401,6 +2388,7 @@ msgstr "Sans"
 #. Saves a setting
 #. Saves a setting
 #: src/components/book-sheets.tsx
+#: src/components/hardcover-key-dialog.tsx
 #: src/screens/reader.tsx
 #: src/screens/settings.tsx
 msgid "Save"
@@ -2510,11 +2498,6 @@ msgstr "Visa alla källor"
 #: src/screens/reader.tsx
 msgid "Show reader controls"
 msgstr "Visa läsarens kontroller"
-
-#. Listening and reading setting: the place is estimated from the chapters
-#: src/screens/settings.tsx
-msgid "Simple"
-msgstr "Enkel"
 
 #. Book fact label
 #. Upload detail
@@ -2629,7 +2612,7 @@ msgstr "Det gick inte att söka efter källor. Försök igen om en stund."
 msgid "Spanish"
 msgstr "Spanska"
 
-#. Listening and reading setting when its speech model failed to download
+#. Sync setting when its speech model failed to download
 #: src/screens/settings.tsx
 msgid "Speech model missing. Choose again to download it."
 msgstr "Talmodellen saknas. Välj igen för att ladda ned den."
@@ -2704,6 +2687,12 @@ msgstr "Byter till lyssning"
 #: src/screens/reader.tsx
 msgid "Switching to reading"
 msgstr "Byter till läsning"
+
+#. Dialog title: how the place is carried between the audiobook and the e-book of the same book
+#. Setting for carrying the place between the audiobook and the e-book of the same book
+#: src/screens/settings.tsx
+msgid "Sync"
+msgstr "Synk"
 
 #. A language books can be preferred in
 #: src/ui/languages.ts
@@ -2786,11 +2775,6 @@ msgstr "Nyckeln tas bort från enheten. E-böcker hämtas från Library Genesis 
 #: src/screens/settings.tsx
 msgid "The key was not accepted. Tap to replace it."
 msgstr "Nyckeln godtogs inte. Tryck för att byta den."
-
-#. Update channel choice: nightly builds
-#: src/screens/settings.tsx
-msgid "The newest changes, built each day. May have bugs."
-msgstr "De senaste ändringarna, byggda varje dag. Kan innehålla buggar."
 
 #. Start-up check: the saved proxy does not answer
 #: src/components/account-alert.tsx

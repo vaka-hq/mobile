@@ -2209,6 +2209,7 @@ msgid "Read"
 msgstr "Read"
 
 #. Library row button opening the book to read on, with its title
+#. Library row button opening the book to read on, with its title
 #: src/screens/library.tsx
 msgid "Read {title}"
 msgstr "Read {title}"

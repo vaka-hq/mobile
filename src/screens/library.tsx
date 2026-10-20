@@ -148,15 +148,19 @@ function ebookItem(ebook: Ebook): Extract<Item, { kind: 'ebook' }> {
 /**
  * One book in the library. It opens the book; holding it offers marking it
  * and removing it. A book in progress also carries on from here: one listened to last plays or
- * pauses, and one read last opens to read. The one in the player is highlighted.
+ * pauses, and one read last opens to read. The one in the player is highlighted, as is the one
+ * read last.
  */
 function LibraryRow({
   item,
   layout,
+  readLast,
   confirm,
 }: {
   item: Extract<Item, { kind: 'work' }>
   layout: Layout
+  /** It is the book read most recently. */
+  readLast: boolean
   confirm: (confirmation: Confirmation) => void
 }) {
   const { entry, ebook, state } = item
@@ -256,7 +260,7 @@ function LibraryRow({
       <DropdownMenu.Trigger>
         <BookRow
           card={layout}
-          selected={current}
+          selected={current || readLast}
           title={title}
           subtitle={[labels.authors(shown.authors), shown.year].filter(Boolean).join(' · ') || null}
           detail={detail}
@@ -283,6 +287,7 @@ function LibraryRow({
               />
             ) : state === 'reading' && ebook ? (
               <ReadButton
+                selected={current || readLast}
                 label={t({
                   message: `Read ${title}`,
                   comment: 'Library row button opening the book to read on, with its title',
@@ -365,21 +370,32 @@ function LibraryRow({
 
 /**
  * An e-book that belongs to no book, such as one found in Search: it opens where reading stopped,
- * and holding it offers to delete it. One still downloading shows how far it has got.
+ * as its Read button does while it is being read, and holding it offers to delete it. One still
+ * downloading shows how far it has got.
  */
 function EbookLibraryRow({
   ebook,
   layout,
+  readLast,
   confirm,
 }: {
   ebook: Ebook
   layout: Layout
+  /** It is the book read most recently, which is highlighted. */
+  readLast: boolean
   confirm: (confirmation: Confirmation) => void
 }) {
   const { t, i18n } = useLingui()
   const labels = useLabels()
   const openEbook = useOpenEbook()
   const [menuOpen, setMenuOpen] = useState(false)
+  const { title } = ebook
+
+  const reading =
+    ebook.status !== 'downloading' && ebook.lastReadAt !== null && ebook.progress < readToEnd
+
+  // A file not on the phone is fetched as it is opened, as listening streams.
+  const read = () => openEbook(ebookResultOf(ebook))
 
   const detail =
     ebook.status === 'downloading'
@@ -396,12 +412,25 @@ function EbookLibraryRow({
       <DropdownMenu.Trigger>
         <BookRow
           card={layout}
+          selected={readLast}
           title={ebook.title}
           subtitle={[labels.authors(ebook.authors), ebook.year].filter(Boolean).join(' · ') || null}
           detail={detail}
           coverUri={ebook.coverUrl}
-          // A file not on the phone is fetched as it is opened, as listening streams.
-          onPress={() => openEbook(ebookResultOf(ebook))}
+          // One being read carries on from here, as a book read last does.
+          trailing={
+            reading ? (
+              <ReadButton
+                selected={readLast}
+                label={t({
+                  message: `Read ${title}`,
+                  comment: 'Library row button opening the book to read on, with its title',
+                })}
+                onPress={read}
+              />
+            ) : undefined
+          }
+          onPress={read}
           onLongPress={() => setMenuOpen(true)}
         />
       </DropdownMenu.Trigger>
@@ -492,6 +521,17 @@ export function LibraryScreen() {
         : [],
     ),
   ]
+
+  // The book read most recently, of those read last rather than listened to, is highlighted as
+  // the one in the player is. A work's e-book is the one it was read in last.
+  const readLast =
+    items.reduce<Item | null>(
+      (latest, item) =>
+        item.state === 'reading' && (item.ebook?.lastReadAt ?? 0) > (latest?.ebook?.lastReadAt ?? 0)
+          ? item
+          : latest,
+      null,
+    )?.key ?? null
 
   // The order and filters are kept, so the library opens as it was left, even after a restart.
   const preferences = usePreferences()
@@ -651,12 +691,19 @@ export function LibraryScreen() {
 
   function entryOf(item: Item, index: number, count: number) {
     return item.kind === 'work' ? (
-      <LibraryRow key={item.key} item={item} layout={{ index, count }} confirm={setConfirmation} />
+      <LibraryRow
+        key={item.key}
+        item={item}
+        layout={{ index, count }}
+        readLast={item.key === readLast}
+        confirm={setConfirmation}
+      />
     ) : (
       <EbookLibraryRow
         key={item.key}
         ebook={item.ebook}
         layout={{ index, count }}
+        readLast={item.key === readLast}
         confirm={setConfirmation}
       />
     )

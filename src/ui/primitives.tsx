@@ -430,7 +430,10 @@ export type BookRowProps = {
   trailing?: ReactNode
   /** Draws the row as part of a card run, inset from the screen edges like settings groups. */
   card?: CardPosition
-  /** The current one of the list, such as the book playing, in the secondary container colour. */
+  /**
+   * The current one of the list, such as the book playing or the one read last, in the secondary
+   * container colour.
+   */
   selected?: boolean
   onPress: () => void
   /** Held down, the row does this instead, such as opening its menu. */
@@ -553,8 +556,17 @@ export function PlayToggle({
 }
 
 /** The same round tonal button, opening a book to read from where reading stopped. */
-export function ReadButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return <RowButton glyph='read' label={label} selected={false} onPress={onPress} />
+export function ReadButton({
+  label,
+  selected = false,
+  onPress,
+}: {
+  label: string
+  /** The row it sits on is selected. */
+  selected?: boolean
+  onPress: () => void
+}) {
+  return <RowButton glyph='read' label={label} selected={selected} onPress={onPress} />
 }
 
 function RowButton({

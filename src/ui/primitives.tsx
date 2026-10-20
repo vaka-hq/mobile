@@ -86,6 +86,8 @@ export type CoverArt = {
 export type CoverProps = CoverArt & {
   /** The square slot in dp; the cover keeps its own proportions inside it. */
   dimension: number
+  /** Narrows the slot to this width, keeping it `dimension` tall, for rows of mostly tall covers. */
+  slotWidth?: number
   description?: string
   /** Inside the expanding player, covers with the same key travel between its two layouts. */
   sharedKey?: string
@@ -108,6 +110,7 @@ export function Cover({
   color,
   aspect,
   dimension,
+  slotWidth,
   description,
   sharedKey,
   fill,
@@ -125,6 +128,7 @@ export function Cover({
         uri={uri}
         description={description}
         dimension={dimension}
+        slotWidth={slotWidth}
         cornerRadius={radius}
         color={color}
         aspect={aspect}
@@ -152,7 +156,7 @@ export function Cover({
     <Box
       contentAlignment='center'
       modifiers={[
-        size(dimension, dimension),
+        size(Math.min(slotWidth ?? dimension, dimension), dimension),
         clip(composeGeometry.RoundedCorner(radius)),
         background(colors.surfaceContainerHighest),
       ]}
@@ -504,7 +508,8 @@ export function BookRow({
         padding(16, 12, trailing ? 12 : 16, 12),
       ]}
     >
-      <Cover uri={coverUri} color={coverColor} aspect={coverAspect} dimension={80} />
+      {/* Most covers are tall, so a slot narrower than it is tall leaves little room beside them. */}
+      <Cover uri={coverUri} color={coverColor} aspect={coverAspect} dimension={80} slotWidth={64} />
       {/* The title and who wrote it read as one, a little apart from what is left of the book. */}
       <Column modifiers={[weight(1)]} verticalArrangement={{ spacedBy: 6 }}>
         <Column>

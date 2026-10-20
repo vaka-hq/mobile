@@ -42,6 +42,8 @@ data class CoverImageProps(
   val description: String = "",
   // The square slot the cover is centred in, in dp.
   val dimension: Double = 64.0,
+  // A narrower slot, as tall as `dimension`, for rows of mostly tall covers; 0 keeps it square.
+  val slotWidth: Double = 0.0,
   val cornerRadius: Double = 4.0,
   // The cover's dominant colour, shown until the image fades in.
   val color: Color? = null,
@@ -89,7 +91,8 @@ fun CoverImageContent(props: CoverImageProps, onImageError: () -> Unit) {
     }
   } else {
     val dimension = props.dimension.toFloat().let { if (it.isFinite() && it > 0) it else 64f }.dp
-    CoverImageBody(props, dimension, knownAspect, loadedAspect, { loadedAspect = it }, onImageError)
+    val slotWidth = props.slotWidth.toFloat().let { if (it.isFinite() && it > 0) it.dp else dimension }
+    CoverImageBody(props, dimension, knownAspect, loadedAspect, { loadedAspect = it }, onImageError, minOf(slotWidth, dimension))
   }
 }
 
@@ -101,7 +104,8 @@ private fun CoverImageBody(
   knownAspect: Float?,
   loadedAspect: Float?,
   onAspect: (Float) -> Unit,
-  onImageError: () -> Unit
+  onImageError: () -> Unit,
+  slotWidth: Dp = dimension
 ) {
   val context = LocalContext.current
   // A shared cover decodes at one size in both of its places, so the same cached image is on
@@ -114,8 +118,10 @@ private fun CoverImageBody(
     with(LocalDensity.current) { dimension.roundToPx() }.coerceIn(1, 2048)
   }
   val aspect = knownAspect ?: loadedAspect ?: 1f
-  val width = if (aspect >= 1f) dimension else dimension * aspect
-  val height = if (aspect >= 1f) dimension / aspect else dimension
+  // As large as fits the slot: as wide as it where the cover is wider than the slot's shape.
+  val wide = aspect >= slotWidth / dimension
+  val width = if (wide) slotWidth else dimension * aspect
+  val height = if (wide) slotWidth / aspect else dimension
   // A placeholder only where its shape is right; otherwise the loaded image simply fades in.
   val placeholder = if (knownAspect != null) {
     props.color.composeOrNull ?: MaterialTheme.colorScheme.surfaceContainerHighest
@@ -157,7 +163,7 @@ private fun CoverImageBody(
   }
 
   Box(
-    modifier = if (props.hug) shared.size(width, height) else shared.size(dimension),
+    modifier = if (props.hug) shared.size(width, height) else shared.size(slotWidth, dimension),
     contentAlignment = Alignment.Center
   ) {
     AsyncImage(

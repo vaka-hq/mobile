@@ -186,6 +186,8 @@ export type CoverImageProps = {
   uri: string
   description?: string
   dimension: number
+  /** A narrower slot, as tall as `dimension`, for rows of mostly tall covers. */
+  slotWidth?: number
   cornerRadius: number
   color?: string | null
   aspect?: number | null

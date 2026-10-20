@@ -20,6 +20,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionOnScreen
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -141,6 +146,11 @@ private fun CoverImageBody(
   // The loaded image, which stands in while the viewer loads its larger one.
   var loadedKey by remember(props.uri) { mutableStateOf<MemoryCache.Key?>(null) }
   var viewing by remember { mutableStateOf(false) }
+  // Hidden here while the viewer shows the cover, so it seems to have moved there.
+  var away by remember { mutableStateOf(false) }
+  // Where the cover is on screen, which the viewer opens from and closes into.
+  val bounds = remember { mutableStateOf<Rect?>(null) }
+  val cornerPixels = with(LocalDensity.current) { props.cornerRadius.toFloat().dp.toPx() }
   val viewable = props.viewable && props.uri.isNotBlank() && loadedKey != null
 
   val scopes = LocalPlayerSharedScopes.current
@@ -171,6 +181,10 @@ private fun CoverImageBody(
       contentDescription = props.description.ifBlank { null },
       modifier = Modifier
         .size(width, height)
+        .onGloballyPositioned {
+          if (props.viewable) bounds.value = Rect(it.positionOnScreen(), it.size.toSize())
+        }
+        .graphicsLayer { alpha = if (away) 0f else 1f }
         .clip(RoundedCornerShape(props.cornerRadius.toFloat().dp))
         .background(placeholder)
         .then(
@@ -201,7 +215,13 @@ private fun CoverImageBody(
       closeLabel = props.closeLabel,
       aspect = knownAspect ?: loadedAspect,
       placeholderKey = loadedKey,
-      onClose = { viewing = false }
+      source = bounds,
+      sourceCornerRadius = cornerPixels,
+      onShown = { away = true },
+      onClose = {
+        away = false
+        viewing = false
+      }
     )
   }
 }

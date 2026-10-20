@@ -2,7 +2,7 @@ package app.vaka.ui
 
 import android.view.WindowManager
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -15,13 +15,17 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -29,9 +33,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
@@ -40,6 +46,8 @@ import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -81,47 +89,65 @@ private const val doubleTapScale = 2.5f
 /** Pinched out below this and let go, the viewer closes rather than springing back. */
 private const val closeScale = 0.8f
 
+/** As far as a pinch out can shrink the cover. */
+private const val minScale = 0.25f
+
+/** Dragged away, the cover shrinks to this share of its size at most. */
+private const val dragShrink = 0.5f
+
+// Material 3's emphasized easing, which its container transforms use.
+private val emphasized = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+private const val transitionMillis = 350
+
 /**
- * A cover on its own over a black backdrop, opened by tapping it. It pinches and double-taps to
- * zoom and pans while zoomed; it closes with Back, its close button, a tap beside the image, a
- * swipe up or down, or a pinch out below its fitted size. The image already on screen stands in
- * while the larger one loads.
+ * A cover on its own over a black backdrop, opened by tapping it. It grows out of the cover on the
+ * page into place and shrinks back into it however it closes: Back, the close button where the app
+ * bar's Back sits, a tap beside the image, a swipe in any direction, which shrinks it as it goes, or
+ * a pinch out below its fitted size.
+ * It pinches and double-taps to zoom and pans while zoomed. The image on the page stands in while
+ * the larger one loads, so the two match as it moves.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CoverViewer(
   uri: String,
   description: String,
   closeLabel: String,
-  // The cover's width over height, when known, so panning stops at its edges from the start.
+  // The cover's width over height, so it is laid out at its fitted size from the first frame.
   aspect: Float?,
   // The cover on the page, shown at once while the larger one loads.
   placeholderKey: MemoryCache.Key?,
+  // Where the cover is on screen, and its corners, which the viewer opens from and closes into.
+  source: State<Rect?>,
+  sourceCornerRadius: Float,
+  // The viewer has drawn over the page, so the cover there can be hidden.
+  onShown: () -> Unit,
   onClose: () -> Unit
 ) {
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
   val closed by rememberUpdatedState(onClose)
-  val appear = remember { Animatable(0f) }
+  val shown by rememberUpdatedState(onShown)
+  // 0 at the cover on the page, 1 in place on its own.
+  val open = remember { Animatable(0f) }
   var closing by remember { mutableStateOf(false) }
   var scale by remember { mutableFloatStateOf(1f) }
   var offset by remember { mutableStateOf(Offset.Zero) }
-  // How far a swipe has carried the cover up or down, at its fitted size.
-  var drag by remember { mutableFloatStateOf(0f) }
+  // How far a swipe has carried the cover, at its fitted size.
+  var drag by remember { mutableStateOf(Offset.Zero) }
   var imageAspect by remember { mutableStateOf(aspect) }
   var settle by remember { mutableStateOf<Job?>(null) }
 
+  // Shrinks back into the page from wherever it is, zoomed, panned or swiped.
   val close: () -> Unit = {
     if (!closing) {
       closing = true
+      settle?.cancel()
       scope.launch {
-        appear.animateTo(0f, tween(200, easing = FastOutSlowInEasing))
+        open.animateTo(0f, tween(transitionMillis, easing = emphasized))
         closed()
       }
     }
-  }
-
-  LaunchedEffect(Unit) {
-    appear.animateTo(1f, tween(250, easing = FastOutSlowInEasing))
   }
 
   val request = remember(context, uri, placeholderKey) {
@@ -141,8 +167,8 @@ fun CoverViewer(
     val window = (LocalView.current.parent as? DialogWindowProvider)?.window
 
     DisposableEffect(window) {
-      // The backdrop is drawn here, so it can fade with a swipe; the system bars' icons are light
-      // over it whatever the theme.
+      // The backdrop is drawn here, so it can fade with the transition; the system bars' icons
+      // are light over it whatever the theme.
       window?.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
       window?.setWindowAnimations(0)
       window?.let {
@@ -154,7 +180,22 @@ fun CoverViewer(
       onDispose { }
     }
 
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    // Where the viewer sits on screen, to place the page's cover within it.
+    var origin by remember { mutableStateOf<Offset?>(null) }
+
+    LaunchedEffect(origin != null) {
+      if (origin == null) return@LaunchedEffect
+      // Hidden on the page only once the viewer has drawn its first frame over it.
+      withFrameNanos { }
+      shown()
+      open.animateTo(1f, tween(transitionMillis, easing = emphasized))
+    }
+
+    BoxWithConstraints(
+      Modifier
+        .fillMaxSize()
+        .onGloballyPositioned { origin = it.positionOnScreen() }
+    ) {
       val density = LocalDensity.current
       val touchSlop = LocalViewConfiguration.current.touchSlop
       val width = with(density) { maxWidth.toPx() }
@@ -167,6 +208,12 @@ fun CoverViewer(
         if (it > width / height) Offset(width, width / it) else Offset(height * it, height)
       } ?: Offset(width, height)
 
+      // The page's cover in the viewer's coordinates: the scale and shift that put the fitted
+      // image over it.
+      val from = source.value?.let { rect -> origin?.let { rect.translate(-it) } }
+      val fromScale = from?.let { it.width / fitted.x } ?: 1f
+      val fromShift = from?.let { it.center - centre } ?: Offset.Zero
+
       // Panning stops where the image's edge meets the screen's, on each axis on its own.
       fun bounded(value: Offset, at: Float) = Offset(
         value.x.coerceIn(-max(0f, (fitted.x * at - width) / 2f), max(0f, (fitted.x * at - width) / 2f)),
@@ -175,14 +222,14 @@ fun CoverViewer(
 
       fun settleTo(targetScale: Float, targetOffset: Offset) {
         settle?.cancel()
-        val fromScale = scale
-        val fromOffset = offset
-        val fromDrag = drag
+        val startScale = scale
+        val startOffset = offset
+        val startDrag = drag
         settle = scope.launch {
-          animate(0f, 1f, animationSpec = tween(250, easing = FastOutSlowInEasing)) { progress, _ ->
-            scale = fromScale + (targetScale - fromScale) * progress
-            offset = fromOffset + (targetOffset - fromOffset) * progress
-            drag = fromDrag * (1f - progress)
+          animate(0f, 1f, animationSpec = tween(250, easing = emphasized)) { progress, _ ->
+            scale = startScale + (targetScale - startScale) * progress
+            offset = startOffset + (targetOffset - startOffset) * progress
+            drag = startDrag * (1f - progress)
           }
         }
       }
@@ -193,25 +240,20 @@ fun CoverViewer(
         return toFocus - (toFocus - current) * (to / from)
       }
 
+      // How far a swipe has gone towards its furthest, where the cover is smallest.
+      val dragged = (drag.getDistance() / (dismissDistance * 2.5f)).coerceIn(0f, 1f)
       // The backdrop thins as a swipe or a pinch out carries the cover away.
-      val away = maxOf(abs(drag) / (dismissDistance * 3f), (1f - scale).coerceAtLeast(0f) * 2f).coerceIn(0f, 1f)
+      val away = maxOf(dragged * 0.8f, (1f - scale).coerceAtLeast(0f) * 1.5f).coerceIn(0f, 1f)
 
       Box(
         Modifier
           .fillMaxSize()
-          .graphicsLayer { alpha = appear.value * (1f - away) }
+          .graphicsLayer { alpha = open.value * (1f - away) }
           .background(Color.Black)
       )
 
-      AsyncImage(
-        model = request,
-        contentDescription = description.ifBlank { null },
-        contentScale = ContentScale.Fit,
-        onSuccess = { state ->
-          val size = state.painter.intrinsicSize
-          if (size.width > 0f && size.height > 0f) imageAspect = size.width / size.height
-        },
-        modifier = Modifier
+      Box(
+        Modifier
           .fillMaxSize()
           .pointerInput(width, height, fitted) {
             awaitEachGesture {
@@ -233,19 +275,23 @@ fun CoverViewer(
                   travel += pan
                   if (fingers > 1 || scale > 1.01f) {
                     transforming = fingers > 1 || travel.getDistance() > touchSlop
-                  } else if (abs(travel.y) > touchSlop && abs(travel.y) > abs(travel.x)) {
+                  } else if (travel.getDistance() > touchSlop) {
                     swiping = true
                   }
                 }
 
                 if (transforming) {
                   val focus = event.calculateCentroid(useCurrent = false)
-                  val next = (scale * zoom).coerceIn(closeScale / 2f, maxScale)
-                  val moved = if (focus.isSpecified()) zoomedOffset(focus, scale, next, offset) else offset
+                  val next = (scale * zoom).coerceIn(minScale, maxScale)
+                  val moved = if (focus.x.isFinite() && focus.y.isFinite()) {
+                    zoomedOffset(focus, scale, next, offset)
+                  } else {
+                    offset
+                  }
                   scale = next
                   offset = bounded(moved + pan, max(1f, next))
                 } else if (swiping) {
-                  drag += pan.y
+                  drag += pan
                 }
 
                 if (transforming || swiping) {
@@ -255,7 +301,7 @@ fun CoverViewer(
 
               when {
                 closing -> Unit
-                swiping && abs(drag) > dismissDistance -> close()
+                swiping && drag.getDistance() > dismissDistance -> close()
                 swiping -> settleTo(scale, offset)
                 transforming && scale < closeScale -> close()
                 transforming && scale < 1f -> settleTo(1f, Offset.Zero)
@@ -266,6 +312,7 @@ fun CoverViewer(
           .pointerInput(width, height, fitted) {
             detectTapGestures(
               onDoubleTap = { at ->
+                if (closing) return@detectTapGestures
                 if (scale > 1.01f) {
                   settleTo(1f, Offset.Zero)
                 } else {
@@ -275,33 +322,54 @@ fun CoverViewer(
               onTap = { at ->
                 // A tap beside the image closes the viewer; one on it does nothing.
                 val image = (fitted * scale) / 2f
-                val from = centre + offset
-                if (abs(at.x - from.x) > image.x || abs(at.y - from.y) > image.y) close()
+                val at0 = centre + offset + drag
+                if (abs(at.x - at0.x) > image.x || abs(at.y - at0.y) > image.y) close()
               }
             )
-          }
-          .graphicsLayer {
-            val opening = 0.92f + 0.08f * appear.value
-            scaleX = scale * opening
-            scaleY = scale * opening
-            translationX = offset.x
-            translationY = offset.y + drag
-            alpha = appear.value
-          }
-      )
-
-      IconButton(
-        onClick = close,
-        modifier = Modifier
-          .align(Alignment.TopStart)
-          .safeDrawingPadding()
-          .padding(4.dp)
-          .graphicsLayer { alpha = appear.value * (1f - away) }
+          },
+        contentAlignment = Alignment.Center
       ) {
-        Icon(closeSymbol, contentDescription = closeLabel.ifBlank { null }, tint = Color.White)
+        AsyncImage(
+          model = request,
+          contentDescription = description.ifBlank { null },
+          contentScale = ContentScale.Crop,
+          onSuccess = { state ->
+            val size = state.painter.intrinsicSize
+            if (size.width > 0f && size.height > 0f) imageAspect = size.width / size.height
+          },
+          modifier = Modifier
+            .size(with(density) { fitted.x.toDp() }, with(density) { fitted.y.toDp() })
+            .graphicsLayer {
+              // From the page's cover to the zoomed, panned or swiped one, as `open` runs.
+              val progress = open.value
+              val target = scale * (1f - (1f - dragShrink) * dragged)
+              val shown = fromScale + (target - fromScale) * progress
+              val shift = fromShift + (offset + drag - fromShift) * progress
+              scaleX = shown
+              scaleY = shown
+              translationX = shift.x
+              translationY = shift.y
+              // The page's rounded corners straighten as it opens; the radius is drawn before
+              // the scale, so it is divided by it.
+              val corner = sourceCornerRadius * (1f - progress) / shown.coerceAtLeast(0.01f)
+              shape = RoundedCornerShape(corner)
+              clip = true
+              // Nothing until the page's cover is placed, so the first frame is never misplaced.
+              alpha = if (origin == null) 0f else 1f
+            }
+        )
       }
+
+      TopAppBar(
+        title = {},
+        navigationIcon = {
+          IconButton(onClick = close) {
+            Icon(closeSymbol, contentDescription = closeLabel.ifBlank { null }, tint = Color.White)
+          }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+        modifier = Modifier.graphicsLayer { alpha = open.value * (1f - away) }
+      )
     }
   }
 }
-
-private fun Offset.isSpecified() = x.isFinite() && y.isFinite()

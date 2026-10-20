@@ -94,13 +94,26 @@ export type CoverProps = CoverArt & {
    * cover fitted to the screen by `FitToScreen`. `dimension` then sizes only the stand-in.
    */
   fill?: boolean
+  /** Tapped, it opens on its own full screen, where it zooms and pans. */
+  viewable?: boolean
 }
 
 /**
  * Book artwork at its own proportions with slightly rounded corners, centred in a square slot so
  * rows keep their layout while it loads; a book glyph stands in when there is none or it fails.
+ * A viewable cover opens full screen when tapped.
  */
-export function Cover({ uri, color, aspect, dimension, description, sharedKey, fill }: CoverProps) {
+export function Cover({
+  uri,
+  color,
+  aspect,
+  dimension,
+  description,
+  sharedKey,
+  fill,
+  viewable,
+}: CoverProps) {
+  const { t } = useLingui()
   const colors = useMaterialColors()
   const [failed, setFailed] = useState<string | null>(null)
   // Book covers read as printed covers: only a slight softening of the corners.
@@ -118,6 +131,18 @@ export function Cover({ uri, color, aspect, dimension, description, sharedKey, f
         sharedKey={sharedKey}
         hug={fill}
         fill={fill}
+        viewable={viewable}
+        viewLabel={
+          viewable
+            ? t({
+                message: 'View cover',
+                comment: 'Spoken for tapping a cover to see it full screen',
+              })
+            : undefined
+        }
+        closeLabel={
+          viewable ? t({ message: 'Close', comment: 'Closes the full-screen cover' }) : undefined
+        }
         onError={() => setFailed(uri)}
       />
     )

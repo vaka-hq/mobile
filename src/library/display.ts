@@ -87,18 +87,27 @@ export function displayDuration(book: BookRecord) {
   return bookDuration(book.durations) ?? book.hardcover?.edition?.durationSeconds ?? null
 }
 
-/** A library book as it shows: its stream's details when it has one, else Hardcover's book. */
+/**
+ * A library book as it shows: its stream's details when it has one, else Hardcover's book. The
+ * cover is the book's own on Hardcover, not its recording's, which only the player shows.
+ */
 export function displayEntry(entry: LibraryEntry) {
   const work = entry.work.work
   // The year the book came out, as the book pages show it after the author.
   const year = work?.releaseYear ?? entry.book?.hardcover?.releaseYear ?? null
+
+  const workCover = {
+    uri: work?.coverUrl ?? null,
+    color: work?.coverColor ?? null,
+    aspect: work?.coverAspect ?? null,
+  }
 
   if (entry.book) {
     return {
       title: displayTitle(entry.book),
       authors: displayAuthors(entry.book),
       year,
-      cover: displayCoverArt(entry.book),
+      cover: workCover.uri ? workCover : displayCoverArt(entry.book),
     }
   }
 
@@ -106,10 +115,6 @@ export function displayEntry(entry: LibraryEntry) {
     title: work ? splitTitle(work.title, work.subtitle).title : '',
     authors: work?.authors ?? [],
     year,
-    cover: {
-      uri: work?.coverUrl ?? null,
-      color: work?.coverColor ?? null,
-      aspect: work?.coverAspect ?? null,
-    },
+    cover: workCover,
   }
 }

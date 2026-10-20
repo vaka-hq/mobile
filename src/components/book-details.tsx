@@ -112,12 +112,12 @@ export function BookHeader({
   // cover the height the page has left; otherwise the cover is as wide as the page.
   return fitted ? (
     <>
-      <Cover {...cover} dimension={160} fill description={title} />
+      <Cover {...cover} dimension={160} fill viewable description={title} />
       {credits}
     </>
   ) : (
     <Column modifiers={[fillMaxWidth()]} verticalArrangement={{ spacedBy: 20 }}>
-      <Cover {...cover} dimension={width - 32} description={title} />
+      <Cover {...cover} dimension={width - 32} viewable description={title} />
       {credits}
     </Column>
   )

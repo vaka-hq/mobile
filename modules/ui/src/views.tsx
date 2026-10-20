@@ -195,6 +195,12 @@ export type CoverImageProps = {
   hug?: boolean
   /** As large as the space it is given allows, in its own shape; `dimension` is then unused. */
   fill?: boolean
+  /** Tapped, the cover opens on its own in a full-screen viewer that zooms. */
+  viewable?: boolean
+  /** Spoken for tapping a viewable cover. */
+  viewLabel?: string
+  /** Spoken for the viewer's close button. */
+  closeLabel?: string
   onError?: () => void
 }
 

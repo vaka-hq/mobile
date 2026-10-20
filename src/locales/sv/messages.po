@@ -761,10 +761,12 @@ msgstr "Rensa serier"
 
 #. Closes an information dialog
 #. Closes the Browse notice for good
+#. Closes the full-screen cover
 #. Closes the reader’s display settings panel
 #: src/components/reader-sheets.tsx
 #: src/components/update-alert.tsx
 #: src/screens/browse.tsx
+#: src/ui/primitives.tsx
 msgid "Close"
 msgstr "Stäng"
 
@@ -3129,6 +3131,11 @@ msgstr "Version"
 #: src/ui/languages.ts
 msgid "Vietnamese"
 msgstr "Vietnamesiska"
+
+#. Spoken for tapping a cover to see it full screen
+#: src/ui/primitives.tsx
+msgid "View cover"
+msgstr "Visa omslaget"
 
 #. Title of the first welcome screen
 #: src/screens/welcome.tsx

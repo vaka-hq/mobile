@@ -532,8 +532,14 @@ export function LibraryScreen() {
   }
 
   const sortLabels: Record<Sort, string> = {
-    recent: t({ message: 'Recently played', comment: 'Library sort order' }),
-    added: t({ message: 'Recently added', comment: 'Library sort order' }),
+    recent: t({
+      message: 'Recent',
+      comment: 'Library sort order: books last listened to or read first',
+    }),
+    added: t({
+      message: 'Date added',
+      comment: 'Library sort order: books added to the library last first',
+    }),
     title: t({ message: 'Title', comment: 'Library sort order' }),
     author: t({ message: 'Author', comment: 'Library sort order' }),
   }
@@ -567,7 +573,7 @@ export function LibraryScreen() {
 
   const author = (item: Item) => item.authors[0] ?? ''
 
-  // One run of books with no headings. Recently played keeps the shelves' order, books in progress
+  // One run of books with no headings. Recent keeps the shelves' order, books in progress
   // first, most recently listened to or read, then books not started, newest first, then finished
   // ones; any other order runs across them all.
   const books = (() => {

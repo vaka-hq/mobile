@@ -886,6 +886,11 @@ msgctxt "page"
 msgid "Dark"
 msgstr "Mörk"
 
+#. Library sort order: books added to the library last first
+#: src/screens/library.tsx
+msgid "Date added"
+msgstr "Datum tillagd"
+
 #. Dialog title
 #. Setting for new books
 #: src/screens/settings.tsx
@@ -2249,15 +2254,10 @@ msgstr "Redo att strömma"
 msgid "Ready. Streaming starts right away."
 msgstr "Redo. Strömningen börjar direkt."
 
-#. Library sort order
+#. Library sort order: books last listened to or read first
 #: src/screens/library.tsx
-msgid "Recently added"
-msgstr "Senast tillagda"
-
-#. Library sort order
-#: src/screens/library.tsx
-msgid "Recently played"
-msgstr "Senast spelade"
+msgid "Recent"
+msgstr "Senaste"
 
 #. Reader line spacing choice
 #: src/components/reader-sheets.tsx

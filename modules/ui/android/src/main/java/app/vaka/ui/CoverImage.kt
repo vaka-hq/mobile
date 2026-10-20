@@ -6,6 +6,7 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.size
@@ -19,6 +20,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionOnScreen
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +32,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.memory.MemoryCache
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.size.Precision
@@ -40,6 +47,8 @@ data class CoverImageProps(
   val description: String = "",
   // The square slot the cover is centred in, in dp.
   val dimension: Double = 64.0,
+  // A narrower slot, as tall as `dimension`, for rows of mostly tall covers; 0 keeps it square.
+  val slotWidth: Double = 0.0,
   val cornerRadius: Double = 4.0,
   // The cover's dominant colour, shown until the image fades in.
   val color: Color? = null,
@@ -51,7 +60,11 @@ data class CoverImageProps(
   val hug: Boolean = false,
   // The cover takes the largest size that fits the space it is given, in its own shape;
   // `dimension` is then unused.
-  val fill: Boolean = false
+  val fill: Boolean = false,
+  // Tapped, the cover opens on its own in a full-screen viewer; the labels are spoken for it.
+  val viewable: Boolean = false,
+  val viewLabel: String = "",
+  val closeLabel: String = ""
 ) : ComposeProps
 
 /** Large enough for the full player's cover on any phone. */
@@ -64,6 +77,7 @@ private const val sharedCoverPixels = 1024
  * shape draws nothing until it loads and then fades in at its size. Sizes never animate, since the
  * view can compose once with default props before the real ones arrive. Images decode at the
  * displayed size, never at the source's resolution, except shared covers, which use one size.
+ * A viewable cover opens in `CoverViewer` when tapped, once it has loaded.
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -82,7 +96,8 @@ fun CoverImageContent(props: CoverImageProps, onImageError: () -> Unit) {
     }
   } else {
     val dimension = props.dimension.toFloat().let { if (it.isFinite() && it > 0) it else 64f }.dp
-    CoverImageBody(props, dimension, knownAspect, loadedAspect, { loadedAspect = it }, onImageError)
+    val slotWidth = props.slotWidth.toFloat().let { if (it.isFinite() && it > 0) it.dp else dimension }
+    CoverImageBody(props, dimension, knownAspect, loadedAspect, { loadedAspect = it }, onImageError, minOf(slotWidth, dimension))
   }
 }
 
@@ -94,7 +109,8 @@ private fun CoverImageBody(
   knownAspect: Float?,
   loadedAspect: Float?,
   onAspect: (Float) -> Unit,
-  onImageError: () -> Unit
+  onImageError: () -> Unit,
+  slotWidth: Dp = dimension
 ) {
   val context = LocalContext.current
   // A shared cover decodes at one size in both of its places, so the same cached image is on
@@ -107,8 +123,10 @@ private fun CoverImageBody(
     with(LocalDensity.current) { dimension.roundToPx() }.coerceIn(1, 2048)
   }
   val aspect = knownAspect ?: loadedAspect ?: 1f
-  val width = if (aspect >= 1f) dimension else dimension * aspect
-  val height = if (aspect >= 1f) dimension / aspect else dimension
+  // As large as fits the slot: as wide as it where the cover is wider than the slot's shape.
+  val wide = aspect >= slotWidth / dimension
+  val width = if (wide) slotWidth else dimension * aspect
+  val height = if (wide) slotWidth / aspect else dimension
   // A placeholder only where its shape is right; otherwise the loaded image simply fades in.
   val placeholder = if (knownAspect != null) {
     props.color.composeOrNull ?: MaterialTheme.colorScheme.surfaceContainerHighest
@@ -124,6 +142,16 @@ private fun CoverImageBody(
       .crossfade(300)
       .build()
   }
+
+  // The loaded image, which stands in while the viewer loads its larger one.
+  var loadedKey by remember(props.uri) { mutableStateOf<MemoryCache.Key?>(null) }
+  var viewing by remember { mutableStateOf(false) }
+  // Hidden here while the viewer shows the cover, so it seems to have moved there.
+  var away by remember { mutableStateOf(false) }
+  // Where the cover is on screen, which the viewer opens from and closes into.
+  val bounds = remember { mutableStateOf<Rect?>(null) }
+  val cornerPixels = with(LocalDensity.current) { props.cornerRadius.toFloat().dp.toPx() }
+  val viewable = props.viewable && props.uri.isNotBlank() && loadedKey != null
 
   val scopes = LocalPlayerSharedScopes.current
   val shared = if (scopes != null && props.sharedKey.isNotBlank()) {
@@ -145,7 +173,7 @@ private fun CoverImageBody(
   }
 
   Box(
-    modifier = if (props.hug) shared.size(width, height) else shared.size(dimension),
+    modifier = if (props.hug) shared.size(width, height) else shared.size(slotWidth, dimension),
     contentAlignment = Alignment.Center
   ) {
     AsyncImage(
@@ -153,18 +181,47 @@ private fun CoverImageBody(
       contentDescription = props.description.ifBlank { null },
       modifier = Modifier
         .size(width, height)
+        .onGloballyPositioned {
+          if (props.viewable) bounds.value = Rect(it.positionOnScreen(), it.size.toSize())
+        }
+        .graphicsLayer { alpha = if (away) 0f else 1f }
         .clip(RoundedCornerShape(props.cornerRadius.toFloat().dp))
-        .background(placeholder),
+        .background(placeholder)
+        .then(
+          if (viewable) {
+            Modifier.clickable(onClickLabel = props.viewLabel.ifBlank { null }) { viewing = true }
+          } else {
+            Modifier
+          }
+        ),
       alignment = Alignment.Center,
       // Fit while the shape is still unknown, so the first frame never crops the cover.
       contentScale = if (knownAspect != null || loadedAspect != null) ContentScale.Crop else ContentScale.Fit,
       onSuccess = { state ->
+        loadedKey = state.result.memoryCacheKey
         val size = state.painter.intrinsicSize
         if (size.width > 0f && size.height > 0f) {
           onAspect(size.width / size.height)
         }
       },
       onError = { onImageError() }
+    )
+  }
+
+  if (viewing) {
+    CoverViewer(
+      uri = props.uri,
+      description = props.description,
+      closeLabel = props.closeLabel,
+      aspect = knownAspect ?: loadedAspect,
+      placeholderKey = loadedKey,
+      source = bounds,
+      sourceCornerRadius = cornerPixels,
+      onShown = { away = true },
+      onClose = {
+        away = false
+        viewing = false
+      }
     )
   }
 }

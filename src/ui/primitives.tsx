@@ -86,6 +86,8 @@ export type CoverArt = {
 export type CoverProps = CoverArt & {
   /** The square slot in dp; the cover keeps its own proportions inside it. */
   dimension: number
+  /** Narrows the slot to this width, keeping it `dimension` tall, for rows of mostly tall covers. */
+  slotWidth?: number
   description?: string
   /** Inside the expanding player, covers with the same key travel between its two layouts. */
   sharedKey?: string
@@ -94,13 +96,27 @@ export type CoverProps = CoverArt & {
    * cover fitted to the screen by `FitToScreen`. `dimension` then sizes only the stand-in.
    */
   fill?: boolean
+  /** Tapped, it opens on its own full screen, where it zooms and pans. */
+  viewable?: boolean
 }
 
 /**
  * Book artwork at its own proportions with slightly rounded corners, centred in a square slot so
  * rows keep their layout while it loads; a book glyph stands in when there is none or it fails.
+ * A viewable cover opens full screen when tapped.
  */
-export function Cover({ uri, color, aspect, dimension, description, sharedKey, fill }: CoverProps) {
+export function Cover({
+  uri,
+  color,
+  aspect,
+  dimension,
+  slotWidth,
+  description,
+  sharedKey,
+  fill,
+  viewable,
+}: CoverProps) {
+  const { t } = useLingui()
   const colors = useMaterialColors()
   const [failed, setFailed] = useState<string | null>(null)
   // Book covers read as printed covers: only a slight softening of the corners.
@@ -112,12 +128,25 @@ export function Cover({ uri, color, aspect, dimension, description, sharedKey, f
         uri={uri}
         description={description}
         dimension={dimension}
+        slotWidth={slotWidth}
         cornerRadius={radius}
         color={color}
         aspect={aspect}
         sharedKey={sharedKey}
         hug={fill}
         fill={fill}
+        viewable={viewable}
+        viewLabel={
+          viewable
+            ? t({
+                message: 'View cover',
+                comment: 'Spoken for tapping a cover to see it full screen',
+              })
+            : undefined
+        }
+        closeLabel={
+          viewable ? t({ message: 'Close', comment: 'Closes the full-screen cover' }) : undefined
+        }
         onError={() => setFailed(uri)}
       />
     )
@@ -127,7 +156,7 @@ export function Cover({ uri, color, aspect, dimension, description, sharedKey, f
     <Box
       contentAlignment='center'
       modifiers={[
-        size(dimension, dimension),
+        size(Math.min(slotWidth ?? dimension, dimension), dimension),
         clip(composeGeometry.RoundedCorner(radius)),
         background(colors.surfaceContainerHighest),
       ]}
@@ -430,7 +459,10 @@ export type BookRowProps = {
   trailing?: ReactNode
   /** Draws the row as part of a card run, inset from the screen edges like settings groups. */
   card?: CardPosition
-  /** The current one of the list, such as the book playing, in the secondary container colour. */
+  /**
+   * The current one of the list, such as the book playing or the one read last, in the secondary
+   * container colour.
+   */
   selected?: boolean
   onPress: () => void
   /** Held down, the row does this instead, such as opening its menu. */
@@ -476,7 +508,8 @@ export function BookRow({
         padding(16, 12, trailing ? 12 : 16, 12),
       ]}
     >
-      <Cover uri={coverUri} color={coverColor} aspect={coverAspect} dimension={80} />
+      {/* Most covers are tall, so a slot narrower than it is tall leaves little room beside them. */}
+      <Cover uri={coverUri} color={coverColor} aspect={coverAspect} dimension={80} slotWidth={64} />
       {/* The title and who wrote it read as one, a little apart from what is left of the book. */}
       <Column modifiers={[weight(1)]} verticalArrangement={{ spacedBy: 6 }}>
         <Column>
@@ -553,8 +586,17 @@ export function PlayToggle({
 }
 
 /** The same round tonal button, opening a book to read from where reading stopped. */
-export function ReadButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return <RowButton glyph='read' label={label} selected={false} onPress={onPress} />
+export function ReadButton({
+  label,
+  selected = false,
+  onPress,
+}: {
+  label: string
+  /** The row it sits on is selected. */
+  selected?: boolean
+  onPress: () => void
+}) {
+  return <RowButton glyph='read' label={label} selected={selected} onPress={onPress} />
 }
 
 function RowButton({

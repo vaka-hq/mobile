@@ -761,10 +761,12 @@ msgstr "Rensa serier"
 
 #. Closes an information dialog
 #. Closes the Browse notice for good
+#. Closes the full-screen cover
 #. Closes the reader’s display settings panel
 #: src/components/reader-sheets.tsx
 #: src/components/update-alert.tsx
 #: src/screens/browse.tsx
+#: src/ui/primitives.tsx
 msgid "Close"
 msgstr "Stäng"
 
@@ -885,6 +887,11 @@ msgstr "Danska"
 msgctxt "page"
 msgid "Dark"
 msgstr "Mörk"
+
+#. Library sort order: books added to the library last first
+#: src/screens/library.tsx
+msgid "Date added"
+msgstr "Datum tillagd"
 
 #. Dialog title
 #. Setting for new books
@@ -2204,6 +2211,7 @@ msgid "Read"
 msgstr "Läs"
 
 #. Library row button opening the book to read on, with its title
+#. Library row button opening the book to read on, with its title
 #: src/screens/library.tsx
 msgid "Read {title}"
 msgstr "Läs {title}"
@@ -2249,15 +2257,10 @@ msgstr "Redo att strömma"
 msgid "Ready. Streaming starts right away."
 msgstr "Redo. Strömningen börjar direkt."
 
-#. Library sort order
+#. Library sort order: books last listened to or read first
 #: src/screens/library.tsx
-msgid "Recently added"
-msgstr "Senast tillagda"
-
-#. Library sort order
-#: src/screens/library.tsx
-msgid "Recently played"
-msgstr "Senast spelade"
+msgid "Recent"
+msgstr "Senaste"
 
 #. Reader line spacing choice
 #: src/components/reader-sheets.tsx
@@ -3128,6 +3131,11 @@ msgstr "Version"
 #: src/ui/languages.ts
 msgid "Vietnamese"
 msgstr "Vietnamesiska"
+
+#. Spoken for tapping a cover to see it full screen
+#: src/ui/primitives.tsx
+msgid "View cover"
+msgstr "Visa omslaget"
 
 #. Title of the first welcome screen
 #: src/screens/welcome.tsx

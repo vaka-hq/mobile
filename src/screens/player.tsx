@@ -211,6 +211,7 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
           dimension={coverSize}
           description={displayTitle(book)}
           sharedKey={playerCoverKey}
+          viewable
         />
         {/* The cover and top bar travel with the opening player; the rest fades in after. */}
         <PlayerFade>

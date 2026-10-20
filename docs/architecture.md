@@ -28,7 +28,8 @@ remembers the stream last chosen or played and opens with it.
   and `BodyCentre`,
   the `ShortNavigationBar` under the tabs, the `ModalSheet` behind every bottom sheet, connected
   button groups, `CoverImage` (Coil, covers decoded at display size with a placeholder in their
-  dominant colour), and the native e-book reader, `BookView`. Each screen is one Compose tree
+  dominant colour; the book page's and the full player's open full screen when tapped, in
+  `CoverViewer`, which zooms and pans), and the native e-book reader, `BookView`. Each screen is one Compose tree
   inside a `Host`; the tab bar has its own in the tabs' screen, and the mini player is in the
   player layer's.
 - `modules/platform` holds the native work beyond the interface: the offline Vosk recogniser run
@@ -56,7 +57,8 @@ remembers the stream last chosen or played and opens with it.
    the match screen; their choice is never overwritten. Cover, title, authors, narrators, series,
    description and the audiobook edition are cached with the book. The edition is the one whose
    narrator matches the post (preferring its language, a cover and popularity), falling back to
-   Hardcover's default audio edition.
+   Hardcover's default audio edition. The library and the book's page show the book's own cover;
+   the edition's, the recording's art, is for the player and the mini player.
    With a Hardcover key, **Browse** finds books on Hardcover first; without one it finds uploads
    and e-books, and a notice above the results asks for one right there when tapped, until it is
    closed for good. Browse's lists fade in as they change: loading, results, nothing found, and

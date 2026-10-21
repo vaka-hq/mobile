@@ -1,8 +1,9 @@
 name: Release
 
-# A `v` tag makes a stable release named after it, such as `v1.1.0`. Once a day, and when run by
-# hand, `main` becomes a nightly pre-release when it has changed since the last one. Every
-# release holds one APK per CPU architecture and the `update.json` the app reads to update itself.
+# A `v` tag makes a stable release named after it, such as `v1.1.0`. Once a day, `main` becomes a
+# nightly pre-release when the app may have changed since the last one, and at once when run by
+# hand. Every release holds one APK per CPU architecture and the `update.json` the app reads to
+# update itself.
 on:
   push:
     tags: ['v*']
@@ -58,10 +59,27 @@ jobs:
             since=$(gh release list --exclude-drafts --limit 50 --json tagName,isPrerelease \
               --jq '[.[] | select(.isPrerelease)][0].tagName // ""')
 
-            if [ -n "$since" ] && [ "$(gh api "repos/$GH_REPO/commits/$since" --jq .sha)" = "$GITHUB_SHA" ]; then
-              echo "Nothing has changed since $since."
-              echo "skip=true" >> "$GITHUB_OUTPUT"
-              exit 0
+            # A run by hand always releases; the daily one only when the app may have changed.
+            if [ -n "$since" ] && [ "$GITHUB_EVENT_NAME" = schedule ]; then
+              since_sha=$(gh api "repos/$GH_REPO/commits/$since" --jq .sha)
+
+              if [ "$since_sha" = "$GITHUB_SHA" ]; then
+                echo "Nothing has changed since $since."
+                echo "skip=true" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+
+              # Files that never reach the APK. Anything else, and any rename's old name, releases;
+              # so does a comparison of 300 files, the most GitHub lists.
+              compare=$(gh api "repos/$GH_REPO/compare/$since_sha...$GITHUB_SHA")
+              app_changes=$(jq -r '.files[] | .filename, (.previous_filename // empty)' <<< "$compare" |
+                grep -Ev '\.md$|^docs/|^LICENSE$|\.test\.ts$|^tools/|^\.github/workflows/ci\.yml$' || true)
+
+              if [ -z "$app_changes" ] && [ "$(jq '.files | length' <<< "$compare")" -lt 300 ]; then
+                echo "Only documentation, tests and tooling have changed since $since."
+                echo "skip=true" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
             fi
 
             # The date, and this workflow's run number, which never repeats and finds the run.

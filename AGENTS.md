@@ -223,7 +223,8 @@ short: how the app works belongs in `docs/`.
   the owner's key from `~/.gradle/gradle.properties` (`VAKA_UPLOAD_*`) or, in GitHub Actions, the
   `release` environment's secrets; a production release refuses the debug key.
 - Releases are published by `.github/workflows/release.yml`: a pushed `v` tag makes a stable
-  release named after it, and `main` becomes a nightly pre-release once a day when it has changed.
+  release named after it, and `main` becomes a nightly pre-release once a day when the app may have
+  changed (not for documentation, tests or tooling alone; the list is in the workflow).
   The workflow sets the version name and code (`VAKA_VERSION_NAME`, `VAKA_VERSION_CODE`, the build
   time in minutes); never set them in `app.config.ts`. A nightly's name is not a plain number,
   which some config plugins expect, so the config's `version` keeps its leading numbers and

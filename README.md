@@ -1,6 +1,6 @@
 # Vaka
 
-An Android app for listening to audiobooks and reading their e-books, in one place.
+Android app for audiobooks and ebooks.
 
 Vaka finds audiobooks on AudioBookBay, adds covers, series and details from Hardcover, and
 streams them through your own TorBox account. It plays in the background with chapters,
@@ -10,6 +10,13 @@ and reading can pick up where the other left off.
 
 It is built with Expo and React Native, with the interface in Jetpack Compose, and runs only on
 Android.
+
+<p>
+  <img src="docs/screenshots/library.png" width="24%" alt="The library, with books being listened to and read" />
+  <img src="docs/screenshots/book.png" width="24%" alt="A book's page, with its recording and e-book" />
+  <img src="docs/screenshots/player.png" width="24%" alt="The player" />
+  <img src="docs/screenshots/reader.png" width="24%" alt="The e-book reader" />
+</p>
 
 ## Getting started
 
@@ -66,7 +73,7 @@ git tag v1.1.0 nightly-20261001.42   # promote a nightly you have been using
 git push origin v1.1.0
 ```
 
-`main` becomes a nightly once a day when it has changed, or at once from Actions → Release → Run
+`main` becomes a nightly once a day when the app has changed, or at once from Actions → Release → Run
 workflow. `docs/architecture.md` explains the channels and versions.
 
 To build a signed release locally instead, create a signing key once:

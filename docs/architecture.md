@@ -260,9 +260,11 @@ the `release` environment's secrets. There are two channels:
 - **Stable**: pushing a tag that starts with `v` releases that commit under the tag's name, such as
   `v1.1.0` for 1.1.0. The name can be anything; the habit is to tag the commit of a nightly that
   has been used for a while.
-- **Nightly**: once a day, and when the workflow is run by hand, `main` becomes a pre-release
-  tagged with the date and the workflow's run number, `nightly-20261001.42`, when it has changed
-  since the last nightly; the run number never repeats and finds the run in Actions. It is named
+- **Nightly**: once a day, `main` becomes a pre-release tagged with the date and the workflow's
+  run number, `nightly-20261001.42`, when something that may reach the app has changed since the
+  last nightly; a change only to Markdown, `docs/`, `LICENSE`, tests, `tools/` or the CI workflow
+  waits for the next one that does. Run by hand, the workflow releases at once. The run number
+  never repeats and finds the run in Actions. It is named
   after the last stable release and the commit built, `1.1.0-nightly.20261001.42+c2fa9fc`, or
   `0.0.1-nightly.…` before the first, so Settings shows which commit is running. The newest ten
   are kept.

@@ -226,6 +226,41 @@ describe('MP4 chapters', () => {
     expect(Math.max(...exact.mock.calls.map(([, length]) => length))).toBeLessThan(64)
   })
 
+  it('reads titles one request at a time and stops at the first failure', async () => {
+    const titles = Array.from({ length: 10 }, (_, index) => `Chapter ${index + 1}`)
+
+    const source = memorySource(
+      m4b(
+        titles,
+        titles.map(() => 1000),
+        false,
+        { gap: 8 * 1024 },
+      ),
+    )
+
+    let inFlight = 0
+    let most = 0
+    let calls = 0
+
+    source.readExact = async (offset, length) => {
+      calls += 1
+      inFlight += 1
+      most = Math.max(most, inFlight)
+      await new Promise((resolve) => setTimeout(resolve, 1))
+      inFlight -= 1
+
+      if (calls === 3) {
+        throw new Error('The stream answered 429')
+      }
+
+      return memorySource(new Uint8Array(0)).read(offset, length)
+    }
+
+    await expect(readMp4(source)).rejects.toThrow('429')
+    expect(most).toBe(1)
+    expect(calls).toBe(3)
+  })
+
   it('falls back to Nero chapters', async () => {
     const info = await readMp4(memorySource(m4b(['Unused'], [1000], true)))
 

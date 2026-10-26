@@ -24,20 +24,13 @@ describe('streamed byte ranges', () => {
     expect(fetch.mock.calls[0]?.[1]).toMatchObject({ headers: { Range: 'bytes=500-502' } })
   })
 
-  it('waits out a 429 for as long as the stream asks, then asks again', async () => {
-    const fetch = vi
-      .fn()
-      .mockResolvedValueOnce(
-        new Response(null, { status: 429, headers: { 'Retry-After': '0.01' } }),
-      )
-      .mockResolvedValueOnce(partial([7], 1000))
+  it('does not ask again after a 429', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 429 }))
 
     vi.stubGlobal('fetch', fetch)
 
-    const bytes = await httpSource('https://stream.test/book.m4b').readExact(10, 1)
-
-    expect([...bytes]).toEqual([7])
-    expect(fetch).toHaveBeenCalledTimes(2)
+    await expect(httpSource('https://stream.test/book.m4b').readExact(0, 1)).rejects.toThrow('429')
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('does not ask a stream that refuses connections again', async () => {

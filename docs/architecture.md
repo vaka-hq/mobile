@@ -99,7 +99,8 @@ remembers the stream last chosen or played and opens with it.
 4. **Chapters and durations** come from the media itself before playback: MP4 files are walked box
    by box to `moov` (a QuickTime chapter track's times win over Nero `chpl`; its titles sit in
    samples through the file, so they come from `chpl` when it lists as many, and are otherwise
-   read two exact ranges at a time, waiting out a 429), MP3 files give ID3v2 `CHAP`
+   read as exact ranges, one request at a time across the book, never retried: the streams turn
+   away bursts), MP3 files give ID3v2 `CHAP`
    frames and Xing/VBRI or constant-bitrate lengths. Only metadata ranges are downloaded (capped at
    12 MB). Multi-file books without embedded markers get one chapter per file; books with more than
    24 files estimate lengths from the bitrate, and the player corrects each file as it loads.

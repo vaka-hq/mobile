@@ -28,44 +28,6 @@ export class ReadBudgetExceededError extends Error {
 
 const blockSize = 64 * 1024
 
-/** A busy stream is asked again this many times before its answer stands. */
-const busyRetries = 4
-
-/** The wait before asking a busy stream again, doubling each time, unless it names one itself. */
-const busyWaitMs = 1000
-
-/** A stream asking for a longer wait than this is not waited for. */
-const longestBusyWaitMs = 10_000
-
-/** A stream that answered 429: too many requests, and how long it asked to be left, if it did. */
-class BusyError extends HttpError {
-  constructor(readonly retryAfterMs: number | null) {
-    super('The stream answered 429', 429)
-    this.name = 'BusyError'
-  }
-}
-
-function retryAfter(response: Response) {
-  const seconds = Number(response.headers.get('Retry-After'))
-
-  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : null
-}
-
-function pause(milliseconds: number, signal?: AbortSignal) {
-  return new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(resolve, milliseconds)
-
-    signal?.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(timer)
-        reject(signal.reason)
-      },
-      { once: true },
-    )
-  })
-}
-
 /** Metadata never needs more than this; a runaway parse must not download a whole book. */
 const defaultBudget = 12 * 1024 * 1024
 
@@ -78,30 +40,8 @@ export function httpSource(url: string, signal?: AbortSignal, budget = defaultBu
   let totalSize: number | null = null
   let fetched = 0
 
-  /**
-   * The bytes from `start` to `end`, inclusive, counted against the budget. A stream that says it
-   * is asked too often is left a moment and asked again, a few times.
-   */
+  /** The bytes from `start` to `end`, inclusive, counted against the budget. */
   async function fetchRange(start: number, end: number) {
-    for (let attempt = 0; ; attempt += 1) {
-      try {
-        return await fetchRangeOnce(start, end)
-      } catch (error) {
-        // Only a 429 is waited out: a refused connection may be the host turning this address
-        // away, and asking again would only keep it doing so.
-        const wait =
-          error instanceof BusyError ? (error.retryAfterMs ?? busyWaitMs * 2 ** attempt) : null
-
-        if (wait === null || attempt >= busyRetries || wait > longestBusyWaitMs) {
-          throw error
-        }
-
-        await pause(wait, signal)
-      }
-    }
-  }
-
-  async function fetchRangeOnce(start: number, end: number) {
     if (fetched + (end - start + 1) > budget) {
       throw new ReadBudgetExceededError()
     }
@@ -110,10 +50,6 @@ export function httpSource(url: string, signal?: AbortSignal, budget = defaultBu
       url,
       { headers: { Range: `bytes=${start}-${end}` }, signal },
       async (response) => {
-        if (response.status === 429) {
-          throw new BusyError(retryAfter(response))
-        }
-
         if (response.status !== 206) {
           throw new HttpError(
             response.ok

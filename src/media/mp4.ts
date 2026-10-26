@@ -288,11 +288,11 @@ const mergeGap = 4 * 1024
 const maxSpan = 64 * 1024
 
 /**
- * Title requests in flight at once, shared by every file being read. The streams answer 429 when
- * asked a few at a time, and a host asked some two dozen at once across a book's files stopped
- * taking connections at all.
+ * One title request at a time across every file being read, as the block reads before them went:
+ * the streams answer 429 when asked a few at a time, and a host asked some two dozen at once
+ * stopped taking connections from the address altogether.
  */
-const titleLimit = concurrencyLimit(2)
+const titleLimit = concurrencyLimit(1)
 
 /**
  * The byte ranges that cover every sample, in file order: neighbours share a range, and samples
@@ -323,26 +323,26 @@ export function titleSpans(offsets: number[], sizes: number[]) {
 }
 
 /**
- * Reads every chapter title, two requests at a time and only the bytes they need, rather than a
- * 64 KiB block each one after another, which ran a book with hundreds of chapters past the read
- * budget after minutes of requests.
+ * Reads every chapter title, one request at a time and only the bytes it needs, rather than a
+ * 64 KiB block each, which ran a book with hundreds of chapters past the read budget after
+ * minutes of requests and threw its titles away.
  */
 async function sampleTitles(source: ByteSource, offsets: number[], sizes: number[]) {
   const titles: string[] = offsets.map(() => '')
 
-  await Promise.all(
-    titleSpans(offsets, sizes).map((span) =>
-      titleLimit(async () => {
-        const bytes = await source.readExact(span.start, span.end - span.start)
+  // One file's titles at a time, in a loop that stops at the first failure, so nothing is still
+  // asked for after the stream has refused.
+  await titleLimit(async () => {
+    for (const span of titleSpans(offsets, sizes)) {
+      const bytes = await source.readExact(span.start, span.end - span.start)
 
-        for (const index of span.samples) {
-          const from = (offsets[index] ?? 0) - span.start
+      for (const index of span.samples) {
+        const from = (offsets[index] ?? 0) - span.start
 
-          titles[index] = textSample(bytes.subarray(from, from + (sizes[index] ?? 0)))
-        }
-      }),
-    ),
-  )
+        titles[index] = textSample(bytes.subarray(from, from + (sizes[index] ?? 0)))
+      }
+    }
+  })
 
   return titles
 }

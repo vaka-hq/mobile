@@ -26,7 +26,11 @@ remembers the stream last chosen or played and opens with it.
 - `modules/ui` bridges the Material 3 pieces Expo UI lacks: the `Scaffold`
   with its snackbar, the top app bars and the collapsing `HeaderAppBar` with its `GatedListView`
   and `BodyCentre`,
-  the `ShortNavigationBar` under the tabs, the `ModalSheet` behind every bottom sheet, connected
+  the `ShortNavigationBar` under the tabs, the `ModalSheet` behind every bottom sheet (opening at
+  half the screen by default, the chapters at three quarters and the sleep timer's few choices in
+  full), `SheetRows` for long lists in sheets such as a book's chapters, drawn natively from data
+  rather than a view per row so hundreds open at once, the player's seek bar and progress line,
+  which glide with the audio between the player's twice-a-second position reports, connected
   button groups, `CoverImage` (Coil, covers decoded at display size with a placeholder in their
   dominant colour; the book page's and the full player's open full screen when tapped, in
   `CoverViewer`, which zooms and pans), and the native e-book reader, `BookView`. Each screen is one Compose tree

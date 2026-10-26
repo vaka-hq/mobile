@@ -284,6 +284,8 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
               value={length ? Math.min(elapsed, length) : 0}
               max={length ?? 1}
               enabled={length !== null && length > 0}
+              advancing={now.playing && !now.loading}
+              rate={now.speed}
               start={clock(elapsed)}
               middle={
                 summary.bookTotal !== null

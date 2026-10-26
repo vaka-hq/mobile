@@ -49,7 +49,6 @@ import {
   ListItem,
   LoadingIndicator,
   Row,
-  Slider,
   Switch,
   Text,
   TextButton,
@@ -67,6 +66,8 @@ import {
   FitColumn,
   GatedList,
   HeaderField,
+  PlaybackLine,
+  PlaybackSlider,
   TopAppBar,
   ViewportBox,
 } from '../../modules/ui'
@@ -1553,6 +1554,10 @@ export type SeekBarProps = {
   value: number
   max: number
   enabled: boolean
+  /** Playback is moving through the span, so the thumb glides on between position reports. */
+  advancing: boolean
+  /** The playback speed, how fast it glides. */
+  rate: number
   /** Under the bar's start and end, and optionally between them, such as the time played and left. */
   start: string
   middle?: string | null
@@ -1561,11 +1566,16 @@ export type SeekBarProps = {
   onValueChangeFinished: () => void
 }
 
-/** A full-width slider through a span, such as a chapter, with its times beneath it. */
+/**
+ * A full-width slider through a span, such as a chapter, with its times beneath it. Its thumb
+ * glides with playback rather than stepping at each position report.
+ */
 export function SeekBar({
   value,
   max,
   enabled,
+  advancing,
+  rate,
   start,
   middle,
   end,
@@ -1576,14 +1586,14 @@ export function SeekBar({
 
   return (
     <Column modifiers={[fillMaxWidth()]}>
-      <Slider
+      <PlaybackSlider
         value={value}
-        min={0}
         max={max}
         enabled={enabled}
+        advancing={advancing}
+        rate={rate}
         onValueChange={onValueChange}
         onValueChangeFinished={onValueChangeFinished}
-        modifiers={[fillMaxWidth()]}
       />
       <Row modifiers={[fillMaxWidth()]} verticalAlignment='center'>
         <Text
@@ -1612,22 +1622,16 @@ export function SeekBar({
 
 /**
  * A flat 2 dp progress line along an edge, such as the mini player's top, on the container
- * colour, with no stop mark or gap.
+ * colour, with no stop mark or gap. It glides with playback while `advancing`, at `rate` seconds
+ * of `max` per second.
  */
-export function EdgeProgress({ progress }: { progress: number }) {
-  const colors = useMaterialColors()
-
-  return (
-    <LinearProgressIndicator
-      progress={Math.min(1, progress)}
-      trackColor={colors.surfaceContainer}
-      drawStopIndicator={{ stopSize: 0 }}
-      gapSize={0}
-      // Flat ends: a round cap draws a dot at the start even with no progress at all.
-      strokeCap='butt'
-      modifiers={[fillMaxWidth(), height(2)]}
-    />
-  )
+export function EdgeProgress(props: {
+  value: number
+  max: number
+  advancing: boolean
+  rate: number
+}) {
+  return <PlaybackLine {...props} />
 }
 
 export type GroupButton = {

@@ -1,3 +1,4 @@
+import { concurrencyLimit } from '@/lib/limit'
 import { ascii, uint16, uint32, uint64, utf16, utf8, trimText } from './bytes'
 import type { MediaChapter, MediaInfo } from './media-info'
 import { type ByteSource, ReadBudgetExceededError } from './source'
@@ -230,9 +231,10 @@ export function textSample(bytes: Uint8Array) {
   return trimText(text[0] === 0xfe && text[1] === 0xff ? utf16(text) : utf8(text))
 }
 
-async function quickTimeChapters(source: ByteSource, track: Track) {
+/** Where a chapter track's samples are and when each starts, from its tables alone. */
+async function chapterSamples(source: ByteSource, track: Track) {
   if (!track.stbl || track.timescale <= 0) {
-    return []
+    return null
   }
 
   const boxes = await children(source, track.stbl)
@@ -252,7 +254,7 @@ async function quickTimeChapters(source: ByteSource, track: Track) {
   ])
 
   if (!stts || !stsz || !stsc || (!stco && !co64)) {
-    return []
+    return null
   }
 
   const chunkOffsets: number[] = []
@@ -268,23 +270,88 @@ async function quickTimeChapters(source: ByteSource, track: Track) {
   }
 
   const layout = sampleLayout(stts, stsz, stsc, chunkOffsets)
-  const chapters: MediaChapter[] = []
+  const starts: number[] = []
   let time = 0
 
   for (let index = 0; index < layout.offsets.length; index += 1) {
-    const bytes = await source.read(layout.offsets[index] ?? 0, layout.sizes[index] ?? 0)
-
-    chapters.push({ title: textSample(bytes), start: time / track.timescale })
+    starts.push(time / track.timescale)
     time += layout.durations[index] ?? 0
   }
 
-  return chapters
+  return { starts, offsets: layout.offsets, sizes: layout.sizes }
+}
+
+/** Samples closer than this share one request; the bytes between cost less than another trip. */
+const mergeGap = 4 * 1024
+
+/** No shared request grows past this. */
+const maxSpan = 64 * 1024
+
+/**
+ * Title requests in flight at once, shared by every file being read. The streams answer 429 when
+ * asked a few at a time, and a host asked some two dozen at once across a book's files stopped
+ * taking connections at all.
+ */
+const titleLimit = concurrencyLimit(2)
+
+/**
+ * The byte ranges that cover every sample, in file order: neighbours share a range, and samples
+ * spread through the file, as encoders often place chapter titles beside their audio, get their
+ * own. Each sample is listed by its index.
+ */
+export function titleSpans(offsets: number[], sizes: number[]) {
+  const order = offsets
+    .map((_, index) => index)
+    .sort((a, b) => (offsets[a] ?? 0) - (offsets[b] ?? 0))
+
+  const spans: { start: number; end: number; samples: number[] }[] = []
+
+  for (const index of order) {
+    const start = offsets[index] ?? 0
+    const end = start + (sizes[index] ?? 0)
+    const last = spans.at(-1)
+
+    if (last && start - last.end <= mergeGap && Math.max(end, last.end) - last.start <= maxSpan) {
+      last.end = Math.max(last.end, end)
+      last.samples.push(index)
+    } else {
+      spans.push({ start, end, samples: [index] })
+    }
+  }
+
+  return spans
 }
 
 /**
- * Chapters and duration of an MP4/M4B/M4A file. Only the `moov` metadata is read: the audio
- * track's sample tables are skipped, and a QuickTime chapter track wins over Nero `chpl` because
- * it is what Apple players and most encoders treat as authoritative.
+ * Reads every chapter title, two requests at a time and only the bytes they need, rather than a
+ * 64 KiB block each one after another, which ran a book with hundreds of chapters past the read
+ * budget after minutes of requests.
+ */
+async function sampleTitles(source: ByteSource, offsets: number[], sizes: number[]) {
+  const titles: string[] = offsets.map(() => '')
+
+  await Promise.all(
+    titleSpans(offsets, sizes).map((span) =>
+      titleLimit(async () => {
+        const bytes = await source.readExact(span.start, span.end - span.start)
+
+        for (const index of span.samples) {
+          const from = (offsets[index] ?? 0) - span.start
+
+          titles[index] = textSample(bytes.subarray(from, from + (sizes[index] ?? 0)))
+        }
+      }),
+    ),
+  )
+
+  return titles
+}
+
+/**
+ * Chapters and duration of an MP4/M4B/M4A file. Only the `moov` metadata is read, with the
+ * chapter titles when it lacks them: the audio track's sample tables are skipped, and a QuickTime
+ * chapter track's times win over Nero `chpl` because they are what Apple players and most
+ * encoders treat as authoritative.
  */
 export async function readMp4(source: ByteSource): Promise<MediaInfo> {
   const size = (await source.size()) ?? Number.MAX_SAFE_INTEGER
@@ -325,11 +392,13 @@ export async function readMp4(source: ByteSource): Promise<MediaInfo> {
 
   const referenced = new Set(tracks.flatMap((track) => track.chapterTrackIds))
   const chapterTrack = tracks.find((track) => referenced.has(track.id) && track.handler !== 'soun')
+  const chpl = await child(source, boxes.find((box) => box.type === 'udta') ?? null, 'chpl')
+  const nero = chpl ? parseChpl(await payloadOf(source, chpl)) : []
 
   // A chapter track too large for the read budget must not cost the duration or the Nero
   // fallback. Failed requests still throw, so a transient error is retried rather than cached.
   if (chapterTrack) {
-    const chapters = await quickTimeChapters(source, chapterTrack).catch((error: Error) => {
+    const chapters = await quickTimeChapters(source, chapterTrack, nero).catch((error: Error) => {
       if (error instanceof ReadBudgetExceededError) {
         return []
       }
@@ -342,7 +411,29 @@ export async function readMp4(source: ByteSource): Promise<MediaInfo> {
     }
   }
 
-  const chpl = await child(source, boxes.find((box) => box.type === 'udta') ?? null, 'chpl')
+  return { duration, chapters: nero }
+}
 
-  return { duration, chapters: chpl ? parseChpl(await payloadOf(source, chpl)) : [] }
+/**
+ * A QuickTime chapter track's chapters. Its titles sit in samples apart from the metadata, so
+ * when the Nero list in the metadata has as many, its titles stand in for them and nothing more
+ * is read.
+ */
+async function quickTimeChapters(
+  source: ByteSource,
+  track: Track,
+  nero: MediaChapter[],
+): Promise<MediaChapter[]> {
+  const samples = await chapterSamples(source, track)
+
+  if (!samples || samples.starts.length === 0) {
+    return []
+  }
+
+  const titles =
+    nero.length === samples.starts.length
+      ? nero.map((chapter) => chapter.title)
+      : await sampleTitles(source, samples.offsets, samples.sizes)
+
+  return samples.starts.map((start, index) => ({ title: titles[index] ?? '', start }))
 }

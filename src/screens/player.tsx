@@ -11,7 +11,7 @@ import { displayAuthors, displayCoverArt, displayTitle } from '@/library/display
 import { type Ebook, ebookOfWork, ebookResultOf, useEbooks } from '@/library/ebooks'
 import { prepareReadingPlace } from '@/library/listening-reading'
 import { workIdOf } from '@/library/model'
-import { useAddBookmark } from '@/library/queries'
+import { useAddBookmark, useTimelinePending } from '@/library/queries'
 import {
   close,
   pauseAndSave,
@@ -89,6 +89,7 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
   const addBookmark = useAddBookmark(now?.book.id ?? '')
   const [sheet, setSheet] = useState<'speed' | 'sleep' | 'chapters' | 'bookmarks' | null>(null)
   const countdown = useCountdown(now?.sleep?.kind === 'time' ? now.sleep.endsAt : null)
+  const readingChapters = useTimelinePending(now?.book.id ?? '')
   // The book's e-book, for switching to reading it from where listening stopped.
   const ebooks = useEbooks()
   const openEbook = useOpenEbook()
@@ -361,12 +362,22 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
             </Row>
             <ButtonGroup
               buttons={[
-                ...(summary.chapterCount > 1
+                // Shown while the chapters are still being read, so the button does not appear
+                // out of nowhere later.
+                ...(summary.chapterCount > 1 || readingChapters
                   ? [
                       {
                         key: 'chapters',
                         glyph: 'chapters' as const,
                         label: t({ message: 'Chapters', comment: 'Opens the chapter list' }),
+                        description: readingChapters
+                          ? t({
+                              message: 'Chapters, still loading',
+                              comment:
+                                'Player button opening the chapter list while the chapters are still being read from the audio files',
+                            })
+                          : undefined,
+                        busy: readingChapters,
                         onPress: () => setSheet('chapters'),
                       },
                     ]

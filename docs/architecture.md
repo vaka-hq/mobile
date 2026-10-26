@@ -97,10 +97,13 @@ remembers the stream last chosen or played and opens with it.
    own torrents. The torrent's `.m4b`, `.m4a` and `.mp3` files become the book's tracks in natural
    order.
 4. **Chapters and durations** come from the media itself before playback: MP4 files are walked box
-   by box to `moov` (a QuickTime chapter track wins over Nero `chpl`), MP3 files give ID3v2 `CHAP`
+   by box to `moov` (a QuickTime chapter track's times win over Nero `chpl`; its titles sit in
+   samples through the file, so they come from `chpl` when it lists as many, and are otherwise
+   read two exact ranges at a time, waiting out a 429), MP3 files give ID3v2 `CHAP`
    frames and Xing/VBRI or constant-bitrate lengths. Only metadata ranges are downloaded (capped at
    12 MB). Multi-file books without embedded markers get one chapter per file; books with more than
    24 files estimate lengths from the bitrate, and the player corrects each file as it loads.
+   While they are read, the player's chapters button shows a spinner.
 5. **Playback** uses one `expo-audio` player with its Android media session: background audio, the
    media notification and lock screen controls (play/pause, skip back and forward by the intervals
    set in Settings, seek). It pauses when headphones are unplugged or Bluetooth disconnects. Tracks

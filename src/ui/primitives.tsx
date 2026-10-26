@@ -1642,6 +1642,8 @@ export type GroupButton = {
   description?: string
   /** Shows a setting that is on, such as a speed other than normal. */
   selected?: boolean
+  /** What the button opens is still on its way, such as chapters being read: a spinner shows. */
+  busy?: boolean
   onPress: () => void
   /** Held down, the button does this instead, with a spring and colour flash to confirm it. */
   onLongPress?: () => void
@@ -1652,6 +1654,8 @@ export type GroupButton = {
  * setting that is switched on.
  */
 export function ButtonGroup({ buttons }: { buttons: GroupButton[] }) {
+  const colors = useMaterialColors()
+
   return (
     <ConnectedButtonGroup
       items={buttons.map((button) => ({
@@ -1659,7 +1663,16 @@ export function ButtonGroup({ buttons }: { buttons: GroupButton[] }) {
         label: button.label,
         description: button.description,
         checked: button.selected,
-        icon: <Icon source={glyphs[button.glyph]} size={18} />,
+        icon: button.busy ? (
+          // The icon's size, in the colour of an unchecked button's content.
+          <CircularProgressIndicator
+            color={colors.onSecondaryContainer}
+            strokeWidth={2}
+            modifiers={[size(18, 18)]}
+          />
+        ) : (
+          <Icon source={glyphs[button.glyph]} size={18} />
+        ),
         onPress: button.onPress,
         onLongPress: button.onLongPress,
       }))}

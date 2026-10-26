@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mp3Duration, parseId3, readMp3 } from './mp3'
-import { readMp4 } from './mp4'
+import { readMp4, titleSpans } from './mp4'
 import { memorySource } from './source'
 
 function concat(...parts: Uint8Array[]) {
@@ -67,18 +67,31 @@ function sample(title: string) {
   return concat(u16(bytes.length), bytes)
 }
 
+type M4bOptions = {
+  /** Bytes of audio between chapter title samples, as when encoders interleave them. */
+  gap?: number
+  /** The Nero list's titles, a minute apart. */
+  nero?: string[]
+}
+
 /** An M4B shaped like encoder output: ftyp, mdat with chapter text samples, then moov. */
-function m4b(titles: string[], durations: number[], withChpl: boolean) {
+function m4b(
+  titles: string[],
+  durations: number[],
+  withChpl: boolean,
+  { gap = 0, nero = ['Nero', 'Later'] }: M4bOptions = {},
+) {
   const ftyp = box('ftyp', text('M4B '), u32(0))
   const samples = titles.map(sample)
-  const mdat = box('mdat', ...samples)
+  const audio = new Uint8Array(gap)
+  const mdat = box('mdat', ...samples.flatMap((item) => [item, audio]))
   const firstSample = ftyp.length + 8
   const chunkOffsets: number[] = []
   let offset = firstSample
 
   for (const item of samples) {
     chunkOffsets.push(offset)
-    offset += item.length
+    offset += item.length + gap
   }
 
   const chapterTrack = box(
@@ -117,13 +130,12 @@ function m4b(titles: string[], durations: number[], withChpl: boolean) {
     'chpl',
     u32(0x01000000),
     u8(0),
-    u32(2),
-    u64(0),
-    u8(4),
-    text('Nero'),
-    u64(600_000_000),
-    u8(5),
-    text('Later'),
+    u32(nero.length),
+    ...nero.flatMap((title, index) => [
+      u64(index * 600_000_000),
+      u8(text(title).length),
+      text(title),
+    ]),
   )
 
   const moov = box(
@@ -140,6 +152,30 @@ function m4b(titles: string[], durations: number[], withChpl: boolean) {
   return concat(ftyp, mdat, moov)
 }
 
+describe('chapter title ranges', () => {
+  it('shares a request between neighbours and gives scattered samples their own', () => {
+    const spans = titleSpans([100, 120, 50_000, 140], [20, 20, 30, 10])
+
+    expect(spans).toEqual([
+      { start: 100, end: 150, samples: [0, 1, 3] },
+      { start: 50_000, end: 50_030, samples: [2] },
+    ])
+  })
+
+  it('never lets a shared request grow past 64 KiB', () => {
+    const offsets = Array.from({ length: 40 }, (_, index) => index * 4000)
+
+    const spans = titleSpans(
+      offsets,
+      offsets.map(() => 10),
+    )
+
+    expect(spans.length).toBeGreaterThan(1)
+    expect(Math.max(...spans.map((span) => span.end - span.start))).toBeLessThanOrEqual(64 * 1024)
+    expect(spans.flatMap((span) => span.samples)).toHaveLength(40)
+  })
+})
+
 describe('MP4 chapters', () => {
   it('reads QuickTime chapter tracks with their start times', async () => {
     const file = m4b(['Opening Credits', 'Chapter 1', 'Chapter 2'], [5000, 120_000, 90_500], false)
@@ -151,6 +187,43 @@ describe('MP4 chapters', () => {
       { title: 'Chapter 1', start: 5 },
       { title: 'Chapter 2', start: 125 },
     ])
+  })
+
+  it('takes titles from the Nero list when it has as many, reading no samples', async () => {
+    const file = m4b(['Sample one', 'Sample two'], [5000, 7000], false, {
+      nero: ['Nero one', 'Nero two'],
+    })
+
+    const source = memorySource(file)
+    const exact = vi.spyOn(source, 'readExact')
+    const info = await readMp4(source)
+
+    expect(info.chapters).toEqual([
+      { title: 'Nero one', start: 0 },
+      { title: 'Nero two', start: 5 },
+    ])
+    expect(exact).not.toHaveBeenCalled()
+  })
+
+  it('reads titles spread through the file with one exact request each', async () => {
+    const titles = Array.from({ length: 300 }, (_, index) => `Chapter ${index + 1}`)
+
+    const file = m4b(
+      titles,
+      titles.map(() => 1000),
+      false,
+      { gap: 8 * 1024 },
+    )
+
+    const source = memorySource(file)
+    const exact = vi.spyOn(source, 'readExact')
+    const info = await readMp4(source)
+
+    expect(info.chapters).toHaveLength(300)
+    expect(info.chapters[0]).toEqual({ title: 'Chapter 1', start: 0 })
+    expect(info.chapters[299]).toEqual({ title: 'Chapter 300', start: 299 })
+    expect(exact).toHaveBeenCalledTimes(300)
+    expect(Math.max(...exact.mock.calls.map(([, length]) => length))).toBeLessThan(64)
   })
 
   it('falls back to Nero chapters', async () => {

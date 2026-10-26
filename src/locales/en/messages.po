@@ -651,6 +651,11 @@ msgstr "Chapter {number}"
 msgid "Chapters"
 msgstr "Chapters"
 
+#. Player button opening the chapter list while the chapters are still being read from the audio files
+#: src/screens/player.tsx
+msgid "Chapters, still loading"
+msgstr "Chapters, still loading"
+
 #. Listen button when checking the download failed; pressing it checks again
 #: src/components/book-details.tsx
 msgid "Check again"

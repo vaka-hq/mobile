@@ -9,6 +9,7 @@ import {
   useBookmarkNote,
   useBookmarks,
   useDeleteBookmark,
+  useTimelinePending,
 } from '@/library/queries'
 import { bookPosition, chapterEnd, chapterIndexAt } from '@/library/timeline'
 import { getState } from '@/player/controller'
@@ -18,7 +19,7 @@ import { TextDialog } from '@/ui/dialogs'
 import { useErrorText } from '@/ui/errors'
 import { clock } from '@/ui/format'
 import { useLabels } from '@/ui/labels'
-import { CardItem, Crossfade, Empty } from '@/ui/primitives'
+import { CardItem, Crossfade, Empty, Loading } from '@/ui/primitives'
 import { Action } from '@/ui/screen'
 import { Sheet, SheetList, SheetRows, useOpenSheetBody } from '@/ui/sheets'
 
@@ -52,6 +53,7 @@ export function ChaptersSheet({ bookId, onDismiss }: BookSheetProps) {
   const labels = useLabels()
   const { showFeedback } = useFeedback()
   const { data, current, chapters, durations } = useShownBook(bookId)
+  const reading = useTimelinePending(bookId)
 
   // The chapter playing, which changes far less often than the position it is found from.
   const active = usePlayerValue((state) =>
@@ -66,7 +68,10 @@ export function ChaptersSheet({ bookId, onDismiss }: BookSheetProps) {
       onDismiss={onDismiss}
     >
       {(close) =>
-        data && chapters.length === 0 ? (
+        chapters.length === 0 && reading ? (
+          // Being read from the audio files; the list takes its place once they are in.
+          <Loading />
+        ) : data && chapters.length === 0 ? (
           <Empty
             glyph='chapters'
             title={t({

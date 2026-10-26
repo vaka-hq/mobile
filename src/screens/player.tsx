@@ -35,6 +35,7 @@ import {
   Notice,
   PlayerFade,
   PlayPauseButton,
+  Reveal,
   SeekBar,
   SkipButton,
   ToneText,
@@ -221,29 +222,32 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
             verticalArrangement={{ spacedBy: 24 }}
             modifiers={[fillMaxWidth()]}
           >
-            <Column
-              horizontalAlignment='center'
-              verticalArrangement={{ spacedBy: 4 }}
-              modifiers={[fillMaxWidth()]}
-            >
-              <ToneText
-                maxLines={2}
-                overflow='ellipsis'
-                style={{ typography: 'titleLarge', textAlign: 'center' }}
+            <Column horizontalAlignment='center' modifiers={[fillMaxWidth()]}>
+              <Column
+                horizontalAlignment='center'
+                verticalArrangement={{ spacedBy: 4 }}
+                modifiers={[fillMaxWidth()]}
               >
-                {displayTitle(book)}
-              </ToneText>
-              <ToneText
-                tone='secondary'
-                maxLines={1}
-                overflow='ellipsis'
-                style={{ textAlign: 'center' }}
-              >
-                {[labels.authors(displayAuthors(book)), book.hardcover?.releaseYear]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </ToneText>
-              {summary.chapterCount > 1 ? (
+                <ToneText
+                  maxLines={2}
+                  overflow='ellipsis'
+                  style={{ typography: 'titleLarge', textAlign: 'center' }}
+                >
+                  {displayTitle(book)}
+                </ToneText>
+                <ToneText
+                  tone='secondary'
+                  maxLines={1}
+                  overflow='ellipsis'
+                  style={{ textAlign: 'center' }}
+                >
+                  {[labels.authors(displayAuthors(book)), book.hardcover?.releaseYear]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </ToneText>
+              </Column>
+              {/* The chapter's name eases in under the author once the chapters are read. */}
+              <Reveal visible={summary.chapterCount > 1} gap={4}>
                 <ToneText
                   tone='accent'
                   maxLines={1}
@@ -252,7 +256,7 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
                 >
                   {labels.chapter(summary.chapterTitle, summary.chapterIndex)}
                 </ToneText>
-              ) : null}
+              </Reveal>
             </Column>
             {now.error ? (
               // A missing or refused key is fixed in Settings; trying again would fail the same way.

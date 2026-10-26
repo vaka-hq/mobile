@@ -1663,15 +1663,29 @@ export function ButtonGroup({ buttons }: { buttons: GroupButton[] }) {
         label: button.label,
         description: button.description,
         checked: button.selected,
-        icon: button.busy ? (
-          // The icon's size, in the colour of an unchecked button's content.
-          <CircularProgressIndicator
-            color={colors.onSecondaryContainer}
-            strokeWidth={2}
-            modifiers={[size(18, 18)]}
-          />
-        ) : (
-          <Icon source={glyphs[button.glyph]} size={18} />
+        icon: (
+          // The spinner and the icon cross-fade in the icon's place, so the button keeps its size.
+          <Box contentAlignment='center' modifiers={[size(18, 18)]}>
+            <AnimatedVisibility
+              visible={button.busy ?? false}
+              enterTransition={EnterTransition.fadeIn()}
+              exitTransition={ExitTransition.fadeOut()}
+            >
+              {/* In the colour of an unchecked button's content. */}
+              <CircularProgressIndicator
+                color={colors.onSecondaryContainer}
+                strokeWidth={2}
+                modifiers={[size(18, 18)]}
+              />
+            </AnimatedVisibility>
+            <AnimatedVisibility
+              visible={!button.busy}
+              enterTransition={EnterTransition.fadeIn()}
+              exitTransition={ExitTransition.fadeOut()}
+            >
+              <Icon source={glyphs[button.glyph]} size={18} />
+            </AnimatedVisibility>
+          </Box>
         ),
         onPress: button.onPress,
         onLongPress: button.onLongPress,
@@ -1800,6 +1814,34 @@ export function CardItem({
         </ListItem.TrailingContent>
       ) : null}
     </ListItem>
+  )
+}
+
+/**
+ * Something that arrives after what is around it, such as the chapter's name once the chapters
+ * are read: it fades in as it grows to its height, so what is below moves down smoothly, and
+ * leaves the same way. `gap` is the space above it, which grows and shrinks with it.
+ */
+export function Reveal({
+  visible,
+  gap = 0,
+  children,
+}: {
+  visible: boolean
+  gap?: number
+  children: ReactNode
+}) {
+  return (
+    <AnimatedVisibility
+      visible={visible}
+      enterTransition={EnterTransition.fadeIn().plus(EnterTransition.expandVertically())}
+      exitTransition={ExitTransition.fadeOut().plus(ExitTransition.shrinkVertically())}
+      modifiers={[fillMaxWidth()]}
+    >
+      <Column horizontalAlignment='center' modifiers={[fillMaxWidth(), padding(0, gap, 0, 0)]}>
+        {children}
+      </Column>
+    </AnimatedVisibility>
   )
 }
 

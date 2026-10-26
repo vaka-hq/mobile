@@ -89,6 +89,33 @@ class VakaViewsModule : Module() {
 
     View(SheetListView::class)
 
+    ExpoUIView<SheetRowsProps>("SheetRowsView") {
+      val onRowPress by Event<ButtonGroupPressEvent>()
+
+      Content { props ->
+        SheetRowsContent(props) { index -> onRowPress(ButtonGroupPressEvent(index)) }
+      }
+    }
+
+    ExpoUIView<PlaybackSliderProps>("PlaybackSliderView") {
+      val onValueChange by Event<PlaybackValueEvent>()
+      val onValueChangeFinished by Event<Unit>()
+
+      Content { props ->
+        PlaybackSliderContent(
+          props,
+          { value -> onValueChange(PlaybackValueEvent(value)) },
+          { onValueChangeFinished(Unit) }
+        )
+      }
+    }
+
+    ExpoUIView<PlaybackLineProps>("PlaybackLineView") {
+      Content { props ->
+        PlaybackLineContent(props)
+      }
+    }
+
     ExpoUIView<ModalSheetProps>("ModalSheetView") {
       val hide by AsyncFunction()
       val onDismissRequest by Event<Unit>()

@@ -444,6 +444,96 @@ export function SheetCardList({
   )
 }
 
+export type SheetRowsProps = {
+  /** One entry per row in each list; an empty string leaves that part of the row out. */
+  keys: string[]
+  leading: string[]
+  headlines: string[]
+  supporting: string[]
+  details: string[]
+  /** The row standing out, such as the chapter playing; -1 for none. */
+  selected: number
+  /** Shown in place of the selected row's leading text, such as an icon. */
+  selectedLeading?: ReactNode
+  /** The row to bring into view when the list first shows. */
+  initialIndex: number
+  onRowPress: (index: number) => void
+}
+
+const NativeSheetRowsView: React.ComponentType<
+  Omit<SheetRowsProps, 'selectedLeading' | 'onRowPress'> & {
+    children?: ReactNode
+    onRowPress: (event: NativeSyntheticEvent<{ index: number }>) => void
+  }
+> = requireNativeView('VakaViews', 'SheetRowsView')
+
+/**
+ * A sheet's lazy list of connected cards drawn natively from plain data, with no view per row,
+ * so hundreds of rows open at once. It opens with `initialIndex` in view.
+ */
+export function SheetRows({ selectedLeading, onRowPress, ...props }: SheetRowsProps) {
+  return (
+    <NativeSheetRowsView {...props} onRowPress={(event) => onRowPress(event.nativeEvent.index)}>
+      {selectedLeading ? <Slot slotName='selectedLeading'>{selectedLeading}</Slot> : null}
+    </NativeSheetRowsView>
+  )
+}
+
+export type PlaybackSliderProps = {
+  /** Seconds into the span, as last reported. */
+  value: number
+  max: number
+  enabled: boolean
+  /** Playback is moving through the span, so the thumb glides on between reports. */
+  advancing: boolean
+  /** Seconds of audio per second, the playback speed. */
+  rate: number
+  onValueChange: (value: number) => void
+  onValueChangeFinished: () => void
+}
+
+const NativePlaybackSliderView: React.ComponentType<
+  Omit<PlaybackSliderProps, 'onValueChange' | 'onValueChangeFinished'> & {
+    onValueChange: (event: NativeSyntheticEvent<{ value: number }>) => void
+    onValueChangeFinished: () => void
+  }
+> = requireNativeView('VakaViews', 'PlaybackSliderView')
+
+/**
+ * A full-width Material slider through a span of playback, such as a chapter, whose thumb glides
+ * with the audio between the player's reports instead of stepping at each one.
+ */
+export function PlaybackSlider({
+  onValueChange,
+  onValueChangeFinished,
+  ...props
+}: PlaybackSliderProps) {
+  return (
+    <NativePlaybackSliderView
+      {...props}
+      onValueChange={(event) => onValueChange(event.nativeEvent.value)}
+      onValueChangeFinished={() => onValueChangeFinished()}
+    />
+  )
+}
+
+export type PlaybackLineProps = {
+  value: number
+  max: number
+  advancing: boolean
+  rate: number
+}
+
+const NativePlaybackLineView: React.ComponentType<PlaybackLineProps> = requireNativeView(
+  'VakaViews',
+  'PlaybackLineView',
+)
+
+/** A flat 2 dp line through a span of playback that glides with the audio, as the slider does. */
+export function PlaybackLine(props: PlaybackLineProps) {
+  return <NativePlaybackLineView {...props} />
+}
+
 export type ConnectedButtonGroupItem = {
   key: string
   label: string

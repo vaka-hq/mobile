@@ -28,11 +28,15 @@ export function MiniPlayer() {
   }
 
   const { summary } = now
-  const chapterProgress = summary.chapterLength ? summary.chapterElapsed / summary.chapterLength : 0
 
   return (
     <Column modifiers={[fillMaxWidth(), height(miniPlayerHeight), clickable(expandPlayer)]}>
-      <EdgeProgress progress={chapterProgress} />
+      <EdgeProgress
+        value={summary.chapterLength ? Math.min(summary.chapterElapsed, summary.chapterLength) : 0}
+        max={summary.chapterLength ?? 0}
+        advancing={now.playing && !now.loading}
+        rate={now.speed}
+      />
       <Row
         verticalAlignment='center'
         // The filled buttons end as far from the right edge as the cover starts from the left.

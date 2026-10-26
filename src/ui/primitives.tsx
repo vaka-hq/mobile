@@ -49,7 +49,6 @@ import {
   ListItem,
   LoadingIndicator,
   Row,
-  Slider,
   Switch,
   Text,
   TextButton,
@@ -67,6 +66,8 @@ import {
   FitColumn,
   GatedList,
   HeaderField,
+  PlaybackLine,
+  PlaybackSlider,
   TopAppBar,
   ViewportBox,
 } from '../../modules/ui'
@@ -1553,6 +1554,10 @@ export type SeekBarProps = {
   value: number
   max: number
   enabled: boolean
+  /** Playback is moving through the span, so the thumb glides on between position reports. */
+  advancing: boolean
+  /** The playback speed, how fast it glides. */
+  rate: number
   /** Under the bar's start and end, and optionally between them, such as the time played and left. */
   start: string
   middle?: string | null
@@ -1561,11 +1566,16 @@ export type SeekBarProps = {
   onValueChangeFinished: () => void
 }
 
-/** A full-width slider through a span, such as a chapter, with its times beneath it. */
+/**
+ * A full-width slider through a span, such as a chapter, with its times beneath it. Its thumb
+ * glides with playback rather than stepping at each position report.
+ */
 export function SeekBar({
   value,
   max,
   enabled,
+  advancing,
+  rate,
   start,
   middle,
   end,
@@ -1576,14 +1586,14 @@ export function SeekBar({
 
   return (
     <Column modifiers={[fillMaxWidth()]}>
-      <Slider
+      <PlaybackSlider
         value={value}
-        min={0}
         max={max}
         enabled={enabled}
+        advancing={advancing}
+        rate={rate}
         onValueChange={onValueChange}
         onValueChangeFinished={onValueChangeFinished}
-        modifiers={[fillMaxWidth()]}
       />
       <Row modifiers={[fillMaxWidth()]} verticalAlignment='center'>
         <Text
@@ -1612,22 +1622,16 @@ export function SeekBar({
 
 /**
  * A flat 2 dp progress line along an edge, such as the mini player's top, on the container
- * colour, with no stop mark or gap.
+ * colour, with no stop mark or gap. It glides with playback while `advancing`, at `rate` seconds
+ * of `max` per second.
  */
-export function EdgeProgress({ progress }: { progress: number }) {
-  const colors = useMaterialColors()
-
-  return (
-    <LinearProgressIndicator
-      progress={Math.min(1, progress)}
-      trackColor={colors.surfaceContainer}
-      drawStopIndicator={{ stopSize: 0 }}
-      gapSize={0}
-      // Flat ends: a round cap draws a dot at the start even with no progress at all.
-      strokeCap='butt'
-      modifiers={[fillMaxWidth(), height(2)]}
-    />
-  )
+export function EdgeProgress(props: {
+  value: number
+  max: number
+  advancing: boolean
+  rate: number
+}) {
+  return <PlaybackLine {...props} />
 }
 
 export type GroupButton = {
@@ -1638,6 +1642,8 @@ export type GroupButton = {
   description?: string
   /** Shows a setting that is on, such as a speed other than normal. */
   selected?: boolean
+  /** What the button opens is still on its way, such as chapters being read: a spinner shows. */
+  busy?: boolean
   onPress: () => void
   /** Held down, the button does this instead, with a spring and colour flash to confirm it. */
   onLongPress?: () => void
@@ -1648,6 +1654,8 @@ export type GroupButton = {
  * setting that is switched on.
  */
 export function ButtonGroup({ buttons }: { buttons: GroupButton[] }) {
+  const colors = useMaterialColors()
+
   return (
     <ConnectedButtonGroup
       items={buttons.map((button) => ({
@@ -1655,7 +1663,30 @@ export function ButtonGroup({ buttons }: { buttons: GroupButton[] }) {
         label: button.label,
         description: button.description,
         checked: button.selected,
-        icon: <Icon source={glyphs[button.glyph]} size={18} />,
+        icon: (
+          // The spinner and the icon cross-fade in the icon's place, so the button keeps its size.
+          <Box contentAlignment='center' modifiers={[size(18, 18)]}>
+            <AnimatedVisibility
+              visible={button.busy ?? false}
+              enterTransition={EnterTransition.fadeIn()}
+              exitTransition={ExitTransition.fadeOut()}
+            >
+              {/* In the colour of an unchecked button's content. */}
+              <CircularProgressIndicator
+                color={colors.onSecondaryContainer}
+                strokeWidth={2}
+                modifiers={[size(18, 18)]}
+              />
+            </AnimatedVisibility>
+            <AnimatedVisibility
+              visible={!button.busy}
+              enterTransition={EnterTransition.fadeIn()}
+              exitTransition={ExitTransition.fadeOut()}
+            >
+              <Icon source={glyphs[button.glyph]} size={18} />
+            </AnimatedVisibility>
+          </Box>
+        ),
         onPress: button.onPress,
         onLongPress: button.onLongPress,
       }))}
@@ -1783,6 +1814,34 @@ export function CardItem({
         </ListItem.TrailingContent>
       ) : null}
     </ListItem>
+  )
+}
+
+/**
+ * Something that arrives after what is around it, such as the chapter's name once the chapters
+ * are read: it fades in as it grows to its height, so what is below moves down smoothly, and
+ * leaves the same way. `gap` is the space above it, which grows and shrinks with it.
+ */
+export function Reveal({
+  visible,
+  gap = 0,
+  children,
+}: {
+  visible: boolean
+  gap?: number
+  children: ReactNode
+}) {
+  return (
+    <AnimatedVisibility
+      visible={visible}
+      enterTransition={EnterTransition.fadeIn().plus(EnterTransition.expandVertically())}
+      exitTransition={ExitTransition.fadeOut().plus(ExitTransition.shrinkVertically())}
+      modifiers={[fillMaxWidth()]}
+    >
+      <Column horizontalAlignment='center' modifiers={[fillMaxWidth(), padding(0, gap, 0, 0)]}>
+        {children}
+      </Column>
+    </AnimatedVisibility>
   )
 }
 

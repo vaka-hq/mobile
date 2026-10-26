@@ -11,7 +11,7 @@ import { displayAuthors, displayCoverArt, displayTitle } from '@/library/display
 import { type Ebook, ebookOfWork, ebookResultOf, useEbooks } from '@/library/ebooks'
 import { prepareReadingPlace } from '@/library/listening-reading'
 import { workIdOf } from '@/library/model'
-import { useAddBookmark } from '@/library/queries'
+import { useAddBookmark, useTimelinePending } from '@/library/queries'
 import {
   close,
   pauseAndSave,
@@ -35,6 +35,7 @@ import {
   Notice,
   PlayerFade,
   PlayPauseButton,
+  Reveal,
   SeekBar,
   SkipButton,
   ToneText,
@@ -89,6 +90,7 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
   const addBookmark = useAddBookmark(now?.book.id ?? '')
   const [sheet, setSheet] = useState<'speed' | 'sleep' | 'chapters' | 'bookmarks' | null>(null)
   const countdown = useCountdown(now?.sleep?.kind === 'time' ? now.sleep.endsAt : null)
+  const readingChapters = useTimelinePending(now?.book.id ?? '')
   // The book's e-book, for switching to reading it from where listening stopped.
   const ebooks = useEbooks()
   const openEbook = useOpenEbook()
@@ -220,29 +222,32 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
             verticalArrangement={{ spacedBy: 24 }}
             modifiers={[fillMaxWidth()]}
           >
-            <Column
-              horizontalAlignment='center'
-              verticalArrangement={{ spacedBy: 4 }}
-              modifiers={[fillMaxWidth()]}
-            >
-              <ToneText
-                maxLines={2}
-                overflow='ellipsis'
-                style={{ typography: 'titleLarge', textAlign: 'center' }}
+            <Column horizontalAlignment='center' modifiers={[fillMaxWidth()]}>
+              <Column
+                horizontalAlignment='center'
+                verticalArrangement={{ spacedBy: 4 }}
+                modifiers={[fillMaxWidth()]}
               >
-                {displayTitle(book)}
-              </ToneText>
-              <ToneText
-                tone='secondary'
-                maxLines={1}
-                overflow='ellipsis'
-                style={{ textAlign: 'center' }}
-              >
-                {[labels.authors(displayAuthors(book)), book.hardcover?.releaseYear]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </ToneText>
-              {summary.chapterCount > 1 ? (
+                <ToneText
+                  maxLines={2}
+                  overflow='ellipsis'
+                  style={{ typography: 'titleLarge', textAlign: 'center' }}
+                >
+                  {displayTitle(book)}
+                </ToneText>
+                <ToneText
+                  tone='secondary'
+                  maxLines={1}
+                  overflow='ellipsis'
+                  style={{ textAlign: 'center' }}
+                >
+                  {[labels.authors(displayAuthors(book)), book.hardcover?.releaseYear]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </ToneText>
+              </Column>
+              {/* The chapter's name eases in under the author once the chapters are read. */}
+              <Reveal visible={summary.chapterCount > 1} gap={4}>
                 <ToneText
                   tone='accent'
                   maxLines={1}
@@ -251,7 +256,7 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
                 >
                   {labels.chapter(summary.chapterTitle, summary.chapterIndex)}
                 </ToneText>
-              ) : null}
+              </Reveal>
             </Column>
             {now.error ? (
               // A missing or refused key is fixed in Settings; trying again would fail the same way.
@@ -284,6 +289,8 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
               value={length ? Math.min(elapsed, length) : 0}
               max={length ?? 1}
               enabled={length !== null && length > 0}
+              advancing={now.playing && !now.loading}
+              rate={now.speed}
               start={clock(elapsed)}
               middle={
                 summary.bookTotal !== null
@@ -359,12 +366,22 @@ export function PlayerContent({ showsFeedback }: { showsFeedback: boolean }) {
             </Row>
             <ButtonGroup
               buttons={[
-                ...(summary.chapterCount > 1
+                // Shown while the chapters are still being read, so the button does not appear
+                // out of nowhere later.
+                ...(summary.chapterCount > 1 || readingChapters
                   ? [
                       {
                         key: 'chapters',
                         glyph: 'chapters' as const,
                         label: t({ message: 'Chapters', comment: 'Opens the chapter list' }),
+                        description: readingChapters
+                          ? t({
+                              message: 'Chapters, still loading',
+                              comment:
+                                'Player button opening the chapter list while the chapters are still being read from the audio files',
+                            })
+                          : undefined,
+                        busy: readingChapters,
                         onPress: () => setSheet('chapters'),
                       },
                     ]

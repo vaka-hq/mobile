@@ -71,7 +71,8 @@ import androidx.compose.ui.unit.Dp
 
 @OptimizedComposeProps
 data class ModalSheetProps(
-  // The opening stop as a share of the screen, for content taller than it.
+  // The opening stop as a share of the screen, for content taller than it; 1 opens it as far as
+  // the content goes, up to the status bar.
   val initialHeightFraction: Float = 0.5f,
   // Shorter content opens at its own height.
   val wrapContent: Boolean = true
@@ -219,7 +220,9 @@ private fun PartialSheetDialog(
     BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
       val density = LocalDensity.current
       var contentHeight by remember { mutableIntStateOf(0) }
-      val initialHeight = maxHeight * initialHeightFraction
+      val sheetMax = maxHeight - WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+      // The sheet's viewport ends at the status bar, so a stop can go no higher.
+      val initialHeight = minOf(maxHeight * initialHeightFraction, sheetMax)
       val basePeek = if (wrapContent && contentHeight > 0) {
         minOf(initialHeight, with(density) { contentHeight.toDp() })
       } else {
@@ -229,7 +232,6 @@ private fun PartialSheetDialog(
       val revealed = remember { Animatable(0.dp, Dp.VectorConverter) }
       var sheetCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
       val navigationBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-      val sheetMax = maxHeight - WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
       val reveal: (LayoutCoordinates, Float) -> Unit = reveal@{ coordinates, bottom ->
         val sheet = sheetCoordinates ?: return@reveal
         if (!sheet.isAttached || !coordinates.isAttached) return@reveal

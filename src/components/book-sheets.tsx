@@ -9,6 +9,7 @@ import {
   useBookmarkNote,
   useBookmarks,
   useDeleteBookmark,
+  useTimelinePending,
 } from '@/library/queries'
 import { bookPosition, chapterEnd, chapterIndexAt } from '@/library/timeline'
 import { getState } from '@/player/controller'
@@ -18,9 +19,9 @@ import { TextDialog } from '@/ui/dialogs'
 import { useErrorText } from '@/ui/errors'
 import { clock } from '@/ui/format'
 import { useLabels } from '@/ui/labels'
-import { CardItem, Crossfade, Empty } from '@/ui/primitives'
+import { CardItem, Crossfade, Empty, Loading } from '@/ui/primitives'
 import { Action } from '@/ui/screen'
-import { Sheet, SheetList, useOpenSheetBody } from '@/ui/sheets'
+import { Sheet, SheetList, SheetRows, useOpenSheetBody } from '@/ui/sheets'
 
 type BookSheetProps = {
   /** The stream whose chapters or bookmarks are listed. */
@@ -52,6 +53,7 @@ export function ChaptersSheet({ bookId, onDismiss }: BookSheetProps) {
   const labels = useLabels()
   const { showFeedback } = useFeedback()
   const { data, current, chapters, durations } = useShownBook(bookId)
+  const reading = useTimelinePending(bookId)
 
   // The chapter playing, which changes far less often than the position it is found from.
   const active = usePlayerValue((state) =>
@@ -61,10 +63,15 @@ export function ChaptersSheet({ bookId, onDismiss }: BookSheetProps) {
   return (
     <Sheet
       title={t({ message: 'Chapters', comment: 'Title of the chapter list' })}
+      // Room for many chapters at a glance; a long book has hundreds.
+      opensTo={0.75}
       onDismiss={onDismiss}
     >
       {(close) =>
-        data && chapters.length === 0 ? (
+        chapters.length === 0 && reading ? (
+          // Being read from the audio files; the list takes its place once they are in.
+          <Loading />
+        ) : data && chapters.length === 0 ? (
           <Empty
             glyph='chapters'
             title={t({
@@ -73,30 +80,35 @@ export function ChaptersSheet({ bookId, onDismiss }: BookSheetProps) {
             })}
           />
         ) : (
-          <SheetList initialIndex={Math.max(0, active)}>
-            {chapters.map((chapter, index) => {
+          // Drawn natively from data, so a book with hundreds of chapters opens at once.
+          <SheetRows
+            rows={chapters.map((chapter, index) => {
               const end = chapterEnd(chapters, index, durations)
-              const selected = index === active
 
-              return (
-                <CardItem
-                  key={`${chapter.track}:${chapter.start}`}
-                  card={{ index, count: chapters.length }}
-                  selected={selected}
-                  leading={selected ? { glyph: 'listen' } : { text: String(index + 1) }}
-                  headline={labels.chapter(chapter.title, index)}
-                  supporting={clock(bookPosition(durations, chapter.track, chapter.start))}
-                  detail={end !== null ? clock(end - chapter.start) : null}
-                  onPress={() => {
-                    close()
-                    playFrom(bookId, chapter.track, chapter.start).catch((error: Error) =>
-                      showFeedback(errorText(error)),
-                    )
-                  }}
-                />
-              )
+              return {
+                key: `${chapter.track}:${chapter.start}`,
+                leading: String(index + 1),
+                headline: labels.chapter(chapter.title, index),
+                supporting: clock(bookPosition(durations, chapter.track, chapter.start)),
+                detail: end !== null ? clock(end - chapter.start) : null,
+              }
             })}
-          </SheetList>
+            selected={active}
+            selectedGlyph='listen'
+            initialIndex={Math.max(0, active)}
+            onPress={(index) => {
+              const chapter = chapters[index]
+
+              if (!chapter) {
+                return
+              }
+
+              close()
+              playFrom(bookId, chapter.track, chapter.start).catch((error: Error) =>
+                showFeedback(errorText(error)),
+              )
+            }}
+          />
         )
       }
     </Sheet>

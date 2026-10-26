@@ -3,12 +3,17 @@ import { type ReactNode, useRef, useState } from 'react'
 import { useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { fillMaxWidth, padding, weight } from '@/lib/compose-modifiers'
-import { Column, FilterChip, Row, Slider, Text, useMaterialColors } from '@/lib/compose-ui'
+import { Column, FilterChip, Icon, Row, Slider, Text, useMaterialColors } from '@/lib/compose-ui'
 import { type SleepTimer, setSleepTimer, setSpeed } from '@/player/controller'
 import { maxPlaybackSpeed } from '@/settings/preferences'
-import { ModalSheet, type ModalSheetRef, SheetCardList as SheetList } from '../../modules/ui'
+import {
+  ModalSheet,
+  type ModalSheetRef,
+  SheetCardList as SheetList,
+  SheetRows as NativeSheetRows,
+} from '../../modules/ui'
 import { speedLabel } from './format'
-import type { Glyph } from './glyphs'
+import { type Glyph, glyphs } from './glyphs'
 import { CardItem, Empty } from './primitives'
 import { Action } from './screen'
 
@@ -35,6 +40,11 @@ export type SheetProps = {
   subtitle?: string | null
   /** A control at the end of the title row, such as adding a bookmark. */
   action?: ReactNode
+  /**
+   * The share of the screen the sheet opens to at most, half by default; 1 opens it as far as its
+   * content goes, for a short, fixed set of choices.
+   */
+  opensTo?: number
   onDismiss: () => void
   /** The content; `close` animates the sheet away, after which `onDismiss` follows. */
   children: (close: () => void) => ReactNode
@@ -42,16 +52,23 @@ export type SheetProps = {
 
 /**
  * The app's bottom sheet, the reference app's native wrapper: it opens at its content's height up
- * to half the screen, grows to full height as its content scrolls, and closes the same way from
- * Back, the scrim or a choice made inside it.
+ * to `opensTo` of the screen, grows to full height as its content scrolls, and closes the same way
+ * from Back, the scrim or a choice made inside it.
  */
-export function Sheet({ title, subtitle, action, onDismiss, children }: SheetProps) {
+export function Sheet({
+  title,
+  subtitle,
+  action,
+  opensTo = listSheetFraction,
+  onDismiss,
+  children,
+}: SheetProps) {
   const sheet = useRef<ModalSheetRef>(null)
   const close = () => void sheet.current?.hide()
   const colors = useMaterialColors()
 
   return (
-    <ModalSheet ref={sheet} onDismissRequest={onDismiss}>
+    <ModalSheet ref={sheet} initialHeightFraction={opensTo} onDismissRequest={onDismiss}>
       <Column modifiers={[fillMaxWidth()]}>
         <Row verticalAlignment='center' modifiers={[fillMaxWidth(), padding(24, 0, 12, 12)]}>
           <Column modifiers={[weight(1)]}>
@@ -187,6 +204,8 @@ export function SleepSheet({
   return (
     <Sheet
       title={t({ message: 'Sleep timer', comment: 'Title of the sleep timer sheet' })}
+      // A handful of choices: all of them show at once.
+      opensTo={1}
       onDismiss={onDismiss}
     >
       {(close) => (
@@ -218,6 +237,56 @@ export function SleepSheet({
 
 /** A sheet's list of connected cards, opened with `initialIndex` in view. */
 export { SheetList }
+
+export type SheetRow = {
+  key: string
+  /** Before the headline, such as a chapter's number. */
+  leading?: string
+  headline: string
+  supporting?: string | null
+  /** At the end of the row, such as a chapter's length. */
+  detail?: string | null
+}
+
+/**
+ * A sheet's list of connected cards for long lists, such as a book's chapters: the cards look as
+ * `CardItem`'s do, but are drawn natively from `rows`, with no view each, so hundreds open at
+ * once. The `selected` row stands out with `selectedGlyph` in place of its leading text, and the
+ * list opens with `initialIndex` in view.
+ */
+export function SheetRows({
+  rows,
+  selected = -1,
+  selectedGlyph,
+  initialIndex = 0,
+  onPress,
+}: {
+  rows: SheetRow[]
+  selected?: number
+  selectedGlyph?: Glyph
+  initialIndex?: number
+  onPress: (index: number) => void
+}) {
+  const colors = useMaterialColors()
+
+  return (
+    <NativeSheetRows
+      keys={rows.map((row) => row.key)}
+      leading={rows.map((row) => row.leading ?? '')}
+      headlines={rows.map((row) => row.headline)}
+      supporting={rows.map((row) => row.supporting ?? '')}
+      details={rows.map((row) => row.detail ?? '')}
+      selected={selected}
+      selectedLeading={
+        selectedGlyph ? (
+          <Icon source={glyphs[selectedGlyph]} size={24} tint={colors.onSecondaryContainer} />
+        ) : null
+      }
+      initialIndex={initialIndex}
+      onRowPress={onPress}
+    />
+  )
+}
 
 /**
  * A filter's choices in a sheet, as the reference app has them; `children` are the choices, such

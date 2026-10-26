@@ -26,7 +26,11 @@ remembers the stream last chosen or played and opens with it.
 - `modules/ui` bridges the Material 3 pieces Expo UI lacks: the `Scaffold`
   with its snackbar, the top app bars and the collapsing `HeaderAppBar` with its `GatedListView`
   and `BodyCentre`,
-  the `ShortNavigationBar` under the tabs, the `ModalSheet` behind every bottom sheet, connected
+  the `ShortNavigationBar` under the tabs, the `ModalSheet` behind every bottom sheet (opening at
+  half the screen by default, the chapters at three quarters and the sleep timer's few choices in
+  full), `SheetRows` for long lists in sheets such as a book's chapters, drawn natively from data
+  rather than a view per row so hundreds open at once, the player's seek bar and progress line,
+  which glide with the audio between the player's twice-a-second position reports, connected
   button groups, `CoverImage` (Coil, covers decoded at display size with a placeholder in their
   dominant colour; the book page's and the full player's open full screen when tapped, in
   `CoverViewer`, which zooms and pans), and the native e-book reader, `BookView`. Each screen is one Compose tree
@@ -93,10 +97,14 @@ remembers the stream last chosen or played and opens with it.
    own torrents. The torrent's `.m4b`, `.m4a` and `.mp3` files become the book's tracks in natural
    order.
 4. **Chapters and durations** come from the media itself before playback: MP4 files are walked box
-   by box to `moov` (a QuickTime chapter track wins over Nero `chpl`), MP3 files give ID3v2 `CHAP`
+   by box to `moov` (a QuickTime chapter track's times win over Nero `chpl`; its titles sit in
+   samples through the file, so they come from `chpl` when it lists as many, and are otherwise
+   read as exact ranges, one request at a time across the book, never retried: the streams turn
+   away bursts), MP3 files give ID3v2 `CHAP`
    frames and Xing/VBRI or constant-bitrate lengths. Only metadata ranges are downloaded (capped at
    12 MB). Multi-file books without embedded markers get one chapter per file; books with more than
    24 files estimate lengths from the bitrate, and the player corrects each file as it loads.
+   While they are read, the player's chapters button shows a spinner.
 5. **Playback** uses one `expo-audio` player with its Android media session: background audio, the
    media notification and lock screen controls (play/pause, skip back and forward by the intervals
    set in Settings, seek). It pauses when headphones are unplugged or Bluetooth disconnects. Tracks

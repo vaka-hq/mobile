@@ -1,6 +1,7 @@
 import {
   keepPreviousData,
   useInfiniteQuery,
+  useIsFetching,
   useMutation,
   useQueries,
   useQuery,
@@ -277,6 +278,14 @@ export function useTimeline(book: BookRecord | undefined) {
     staleTime: Number.POSITIVE_INFINITY,
     retry: false,
   })
+}
+
+/**
+ * Whether a book's chapters and lengths are being read from its files right now, which can take a
+ * while for a book with many chapters.
+ */
+export function useTimelinePending(bookId: string) {
+  return useIsFetching({ queryKey: queryKeys.timeline(bookId) }) > 0
 }
 
 export function useWork(id: string) {
